@@ -841,7 +841,11 @@ template<> EIGEN_STRONG_INLINE Packet4f pmin<Packet4f>(const Packet4f& a, const 
   #ifdef __VSX__
   // NOTE: about 10% slower than vec_min, but consistent with std::min and SSE regarding NaN
   Packet4f ret;
+  #ifdef EIGEN_COMP_IBM
+  __asm__ ("xvcmpgesp %x0,%x1,%x2\n\txxsel %x0,%x1,%x2,%x0" : "=&wy" (ret) : "wy" (a), "wy" (b));
+  #else
   __asm__ ("xvcmpgesp %x0,%x1,%x2\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
+  #endif
   return ret;
   #else
   return vec_min(a, b);
@@ -859,7 +863,11 @@ template<> EIGEN_STRONG_INLINE Packet4f pmax<Packet4f>(const Packet4f& a, const 
   #ifdef __VSX__
   // NOTE: about 10% slower than vec_max, but consistent with std::max and SSE regarding NaN
   Packet4f ret;
+  #ifdef EIGEN_COMP_IBM
+  __asm__ ("xvcmpgtsp %x0,%x2,%x1\n\txxsel %x0,%x1,%x2,%x0" : "=&wy" (ret) : "wy" (a), "wy" (b));
+  #else 
   __asm__ ("xvcmpgtsp %x0,%x2,%x1\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
+  #endif
   return ret;
   #else
   return vec_max(a, b);
@@ -931,9 +939,15 @@ template<> EIGEN_STRONG_INLINE Packet4f pround<Packet4f>(const Packet4f& a)
     Packet4f res;
 
 #ifdef __VSX__
+#ifdef EIGEN_COMP_IBM
+    __asm__("xvrspiz %x0, %x1\n\t"
+        : "=&wy" (res)
+        : "wy" (t));
+#else
     __asm__("xvrspiz %x0, %x1\n\t"
         : "=&wa" (res)
         : "wa" (t));
+#endif
 #else
     __asm__("vrfiz %0, %1\n\t"
         : "=v" (res)
@@ -948,9 +962,15 @@ template<> EIGEN_STRONG_INLINE Packet4f print<Packet4f>(const Packet4f& a)
 {
     Packet4f res;
 
+#ifdef EIGEN_COMP_IBM
+    __asm__("xvrspic %x0, %x1\n\t"
+        : "=&wy" (res)
+        : "wy" (a));
+#else
     __asm__("xvrspic %x0, %x1\n\t"
         : "=&wa" (res)
         : "wa" (a));
+#endif
 
     return res;
 }
@@ -2414,7 +2434,11 @@ template<> EIGEN_STRONG_INLINE Packet2d pmin<Packet2d>(const Packet2d& a, const 
 {
   // NOTE: about 10% slower than vec_min, but consistent with std::min and SSE regarding NaN
   Packet2d ret;
+  #ifdef EIGEN_COMP_IBM
+  __asm__ ("xvcmpgedp %x0,%x1,%x2\n\txxsel %x0,%x1,%x2,%x0" : "=&wy" (ret) : "wy" (a), "wy" (b));
+  #else
   __asm__ ("xvcmpgedp %x0,%x1,%x2\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
+  #endif
   return ret;
  }
 
@@ -2422,7 +2446,11 @@ template<> EIGEN_STRONG_INLINE Packet2d pmax<Packet2d>(const Packet2d& a, const 
 {
   // NOTE: about 10% slower than vec_max, but consistent with std::max and SSE regarding NaN
   Packet2d ret;
+  #ifdef EIGEN_COMP_IBM
+  __asm__ ("xvcmpgtdp %x0,%x2,%x1\n\txxsel %x0,%x1,%x2,%x0" : "=&wy" (ret) : "wy" (a), "wy" (b));
+  #else
   __asm__ ("xvcmpgtdp %x0,%x2,%x1\n\txxsel %x0,%x1,%x2,%x0" : "=&wa" (ret) : "wa" (a), "wa" (b));
+  #endif
   return ret;
 }
 
@@ -2447,9 +2475,15 @@ template<> EIGEN_STRONG_INLINE Packet2d pround<Packet2d>(const Packet2d& a)
     Packet2d t = vec_add(reinterpret_cast<Packet2d>(vec_or(vec_and(reinterpret_cast<Packet2ul>(a), p2ul_SIGN), p2ul_PREV0DOT5)), a);
     Packet2d res;
 
+#ifdef EIGEN_COMP_IBM
+    __asm__("xvrdpiz %x0, %x1\n\t"
+        : "=&wy" (res)
+        : "wy" (t));
+#else
     __asm__("xvrdpiz %x0, %x1\n\t"
         : "=&wa" (res)
         : "wa" (t));
+#endif
 
     return res;
 }
@@ -2459,9 +2493,15 @@ template<> EIGEN_STRONG_INLINE Packet2d print<Packet2d>(const Packet2d& a)
 {
     Packet2d res;
 
+#ifdef EIGEN_COMP_IBM
+    __asm__("xvrdpic %x0, %x1\n\t"
+        : "=&wy" (res)
+        : "wy" (a));
+#else
     __asm__("xvrdpic %x0, %x1\n\t"
         : "=&wa" (res)
         : "wa" (a));
+#endif
 
     return res;
 }
