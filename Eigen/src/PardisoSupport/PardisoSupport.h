@@ -476,7 +476,7 @@ class PardisoLLT : public PardisoImpl< PardisoLLT<MatrixType,UpLo_> >
       // PARDISO supports only upper, row-major matrices
       PermutationMatrix<Dynamic,Dynamic,StorageIndex> p_null;
       m_matrix.resize(matrix.rows(), matrix.cols());
-      m_matrix.template selfadjointView<Upper>() = matrix.template selfadjointView<UpLo>().twistedBy(p_null);
+      m_matrix.upperSelfadjointView() = matrix.template selfadjointView<UpLo>().twistedBy(p_null);
       m_matrix.makeCompressed();
     }
 };
@@ -537,7 +537,7 @@ class PardisoLDLT : public PardisoImpl< PardisoLDLT<MatrixType,Options> >
       // PARDISO supports only upper, row-major matrices
       PermutationMatrix<Dynamic,Dynamic,StorageIndex> p_null;
       m_matrix.resize(matrix.rows(), matrix.cols());
-      m_matrix.template selfadjointView<Upper>() = matrix.template selfadjointView<UpLo>().twistedBy(p_null);
+      m_matrix.upperSelfadjointView() = matrix.template selfadjointView<UpLo>().twistedBy(p_null);
       m_matrix.makeCompressed();
     }
 };

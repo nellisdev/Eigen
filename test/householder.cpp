@@ -101,7 +101,7 @@ template<typename MatrixType> void householder(const MatrixType& m)
   VERIFY(hseq.shift() == shift);
   
   MatrixType m5 = m2;
-  m5.block(shift,0,brows,cols).template triangularView<StrictlyLower>().setZero();
+  m5.block(shift,0,brows,cols).strictlyLowerTriangularView().setZero();
   VERIFY_IS_APPROX(hseq * m5, m1); // test applying hseq directly
   m3 = hseq;
   VERIFY_IS_APPROX(m3 * m5, m1); // test evaluating hseq to a dense matrix, then applying
@@ -178,7 +178,7 @@ void householder_update(const MatrixType& m) {
     {
       const MatrixX matQR_k = matQR.leftCols(k + 1);
       const VectorX hCoeffs_k = hCoeffs.head(k + 1);
-      MatrixX R = matQR_k.template triangularView<Upper>();
+      MatrixX R = matQR_k.upperTriangularView();
       MatrixX QxR = householderSequence(matQR_k, hCoeffs_k.conjugate()) * R;
       VERIFY_IS_APPROX(QxR, A.leftCols(k + 1));
     }
@@ -208,7 +208,7 @@ void householder_update(const MatrixType& m) {
 
     const MatrixX matQR_k = matQR.leftCols(k + 1);
     const VectorX hCoeffs_k = hCoeffs.head(k + 1);
-    MatrixX R = matQR_k.template triangularView<Upper>();
+    MatrixX R = matQR_k.upperTriangularView();
     MatrixX QxR = householderSequence(matQR_k, hCoeffs_k.conjugate()) * R;
     VERIFY_IS_APPROX(QxR.leftCols(k), A.leftCols(k));
     VERIFY_IS_APPROX(QxR.col(k), newColumn);

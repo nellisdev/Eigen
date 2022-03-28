@@ -373,7 +373,7 @@ void NNLS<MatrixType>::solveInactiveSet_(const RhsVectorType &b) {
   //  = the least-squares solution for the inactive variables.
   tempSolutionVector_.head(numInactive_) =            //
       QR_.topLeftCorner(numInactive_, numInactive_)   //
-          .template triangularView<Upper>()           //
+          .upperTriangularView()           //
           .solve(tempRhsVector_.head(numInactive_));  //
 
   // tempSol(numInactive_:end) := 0 = the value for the constrained variables.

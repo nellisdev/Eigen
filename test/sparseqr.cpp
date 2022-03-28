@@ -66,7 +66,7 @@ template<typename Scalar> void test_sparseqr_scalar()
 
   // Q and R can be multiplied
   DenseMat recoveredA = solver.matrixQ()
-                      * DenseMat(solver.matrixR().template triangularView<Upper>())
+                      * DenseMat(solver.matrixR().upperTriangularView())
                       * solver.colsPermutation().transpose();
   VERIFY_IS_EQUAL(recoveredA.rows(), A.rows());
   VERIFY_IS_EQUAL(recoveredA.cols(), A.cols());

@@ -184,7 +184,7 @@ class SPQR : public SparseSolverBase<SPQR<MatrixType_> >
       Index rk = this->rank();
       y2 = y;
       y.resize((std::max)(cols(),Index(y.rows())),y.cols());
-      y.topRows(rk) = this->matrixR().topLeftCorner(rk, rk).template triangularView<Upper>().solve(y2.topRows(rk));
+      y.topRows(rk) = this->matrixR().topLeftCorner(rk, rk).upperTriangularView().solve(y2.topRows(rk));
 
       // Apply the column permutation 
       // colsPermutation() performs a copy of the permutation,

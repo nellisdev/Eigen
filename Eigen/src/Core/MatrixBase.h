@@ -241,6 +241,19 @@ template<typename Derived> class MatrixBase
     EIGEN_DEVICE_FUNC
     typename ConstTriangularViewReturnType<Mode>::Type triangularView() const;
 
+    constexpr auto upperTriangularView() { return triangularView<Upper>(); }
+    constexpr auto upperTriangularView() const { return triangularView<Upper>(); }
+    constexpr auto strictlyUpperTriangularView() { return triangularView<StrictlyUpper>(); }
+    constexpr auto strictlyUpperTriangularView() const { return triangularView<StrictlyUpper>(); }
+    constexpr auto unitUpperTriangularView() { return triangularView<UnitUpper>(); }
+    constexpr auto unitUpperTriangularView() const { return triangularView<UnitUpper>(); }
+    constexpr auto lowerTriangularView() { return triangularView<Lower>(); }
+    constexpr auto lowerTriangularView() const { return triangularView<Lower>(); }
+    constexpr auto strictlyLowerTriangularView() { return triangularView<StrictlyLower>(); }
+    constexpr auto strictlyLowerTriangularView() const { return triangularView<StrictlyLower>(); }
+    constexpr auto unitLowerTriangularView() { return triangularView<UnitLower>(); }
+    constexpr auto unitLowerTriangularView() const { return triangularView<UnitLower>(); }
+
     template<unsigned int UpLo> struct SelfAdjointViewReturnType { typedef SelfAdjointView<Derived, UpLo> Type; };
     template<unsigned int UpLo> struct ConstSelfAdjointViewReturnType { typedef const SelfAdjointView<const Derived, UpLo> Type; };
 
@@ -250,6 +263,11 @@ template<typename Derived> class MatrixBase
     template<unsigned int UpLo>
     EIGEN_DEVICE_FUNC
     typename ConstSelfAdjointViewReturnType<UpLo>::Type selfadjointView() const;
+
+    constexpr auto upperSelfadjointView() { return selfadjointView<Upper>(); };
+    constexpr auto upperSelfadjointView() const { return selfadjointView<Upper>(); };
+    constexpr auto lowerSelfadjointView() { return selfadjointView<Lower>(); };
+    constexpr auto lowerSelfadjointView() const { return selfadjointView<Lower>(); };
 
     const SparseView<Derived> sparseView(const Scalar& m_reference = Scalar(0),
                                          const typename NumTraits<Scalar>::Real& m_epsilon = NumTraits<Scalar>::dummy_precision()) const;

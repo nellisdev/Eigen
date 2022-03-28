@@ -445,10 +445,10 @@ SelfAdjointEigenSolver<MatrixType>& SelfAdjointEigenSolver<MatrixType>
   EigenvectorsType& mat = m_eivec;
 
   // map the matrix coefficients to [-1:1] to avoid over- and underflow.
-  mat = matrix.template triangularView<Lower>();
+  mat = matrix.lowerTriangularView();
   RealScalar scale = mat.cwiseAbs().maxCoeff();
   if(numext::is_exactly_zero(scale)) scale = RealScalar(1);
-  mat.template triangularView<Lower>() /= scale;
+  mat.lowerTriangularView() /= scale;
   m_subdiag.resize(n-1);
   m_hcoeffs.resize(n-1);
   internal::tridiagonalization_inplace(mat, diag, m_subdiag, m_hcoeffs, computeEigenvectors);
@@ -662,7 +662,7 @@ template<typename SolverType> struct direct_selfadjoint_eigenvalues<SolverType,3
     // Shift the matrix to the mean eigenvalue and map the matrix coefficients to [-1:1] to avoid over- and underflow.
     Scalar shift = mat.trace() / Scalar(3);
     // TODO Avoid this copy. Currently it is necessary to suppress bogus values when determining maxCoeff and for computing the eigenvectors later
-    MatrixType scaledMat = mat.template selfadjointView<Lower>();
+    MatrixType scaledMat = mat.lowerSelfadjointView();
     scaledMat.diagonal().array() -= shift;
     Scalar scale = scaledMat.cwiseAbs().maxCoeff();
     if(scale > 0) scaledMat /= scale;   // TODO for scale==0 we could save the remaining operations

@@ -50,32 +50,32 @@ template<typename Scalar> void sparse_solvers(int rows, int cols)
 
     // lower - dense
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeLowerTriangular, &zeroCoords, &nonzeroCoords);
-    VERIFY_IS_APPROX(refMat2.template triangularView<Lower>().solve(vec2),
-                     m2.template triangularView<Lower>().solve(vec3));
+    VERIFY_IS_APPROX(refMat2.lowerTriangularView().solve(vec2),
+                     m2.lowerTriangularView().solve(vec3));
 
     // upper - dense
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeUpperTriangular, &zeroCoords, &nonzeroCoords);
-    VERIFY_IS_APPROX(refMat2.template triangularView<Upper>().solve(vec2),
-                     m2.template triangularView<Upper>().solve(vec3));
-    VERIFY_IS_APPROX(refMat2.conjugate().template triangularView<Upper>().solve(vec2),
-                     m2.conjugate().template triangularView<Upper>().solve(vec3));
+    VERIFY_IS_APPROX(refMat2.upperTriangularView().solve(vec2),
+                     m2.upperTriangularView().solve(vec3));
+    VERIFY_IS_APPROX(refMat2.conjugate().upperTriangularView().solve(vec2),
+                     m2.conjugate().upperTriangularView().solve(vec3));
     {
       SparseMatrix<Scalar> cm2(m2);
       //Index rows, Index cols, Index nnz, Index* outerIndexPtr, Index* innerIndexPtr, Scalar* valuePtr
       Map<SparseMatrix<Scalar> > mm2(rows, cols, cm2.nonZeros(), cm2.outerIndexPtr(), cm2.innerIndexPtr(), cm2.valuePtr());
-      VERIFY_IS_APPROX(refMat2.conjugate().template triangularView<Upper>().solve(vec2),
-                       mm2.conjugate().template triangularView<Upper>().solve(vec3));
+      VERIFY_IS_APPROX(refMat2.conjugate().upperTriangularView().solve(vec2),
+                       mm2.conjugate().upperTriangularView().solve(vec3));
     }
 
     // lower - transpose
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeLowerTriangular, &zeroCoords, &nonzeroCoords);
-    VERIFY_IS_APPROX(refMat2.transpose().template triangularView<Upper>().solve(vec2),
-                     m2.transpose().template triangularView<Upper>().solve(vec3));
+    VERIFY_IS_APPROX(refMat2.transpose().upperTriangularView().solve(vec2),
+                     m2.transpose().upperTriangularView().solve(vec3));
 
     // upper - transpose
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeUpperTriangular, &zeroCoords, &nonzeroCoords);
-    VERIFY_IS_APPROX(refMat2.transpose().template triangularView<Lower>().solve(vec2),
-                     m2.transpose().template triangularView<Lower>().solve(vec3));
+    VERIFY_IS_APPROX(refMat2.transpose().lowerTriangularView().solve(vec2),
+                     m2.transpose().lowerTriangularView().solve(vec3));
 
     SparseMatrix<Scalar> matB(rows, rows);
     DenseMatrix refMatB = DenseMatrix::Zero(rows, rows);
@@ -83,31 +83,31 @@ template<typename Scalar> void sparse_solvers(int rows, int cols)
     // lower - sparse
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeLowerTriangular);
     initSparse<Scalar>(density, refMatB, matB);
-    refMat2.template triangularView<Lower>().solveInPlace(refMatB);
-    m2.template triangularView<Lower>().solveInPlace(matB);
+    refMat2.lowerTriangularView().solveInPlace(refMatB);
+    m2.lowerTriangularView().solveInPlace(matB);
     VERIFY_IS_APPROX(matB.toDense(), refMatB);
 
     // upper - sparse
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeUpperTriangular);
     initSparse<Scalar>(density, refMatB, matB);
-    refMat2.template triangularView<Upper>().solveInPlace(refMatB);
-    m2.template triangularView<Upper>().solveInPlace(matB);
+    refMat2.upperTriangularView().solveInPlace(refMatB);
+    m2.upperTriangularView().solveInPlace(matB);
     VERIFY_IS_APPROX(matB, refMatB);
 
     // test deprecated API
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeLowerTriangular, &zeroCoords, &nonzeroCoords);
-    VERIFY_IS_APPROX(refMat2.template triangularView<Lower>().solve(vec2),
-                     m2.template triangularView<Lower>().solve(vec3));
+    VERIFY_IS_APPROX(refMat2.lowerTriangularView().solve(vec2),
+                     m2.lowerTriangularView().solve(vec3));
 
     // test empty triangular matrix
     {
       m2.resize(0,0);
       refMatB.resize(0,refMatB.cols());
-      DenseMatrix res = m2.template triangularView<Lower>().solve(refMatB);
+      DenseMatrix res = m2.lowerTriangularView().solve(refMatB);
       VERIFY_IS_EQUAL(res.rows(),0);
       VERIFY_IS_EQUAL(res.cols(),refMatB.cols());
       res = refMatB;
-      m2.template triangularView<Lower>().solveInPlace(res);
+      m2.lowerTriangularView().solveInPlace(res);
       VERIFY_IS_EQUAL(res.rows(),0);
       VERIFY_IS_EQUAL(res.cols(),refMatB.cols());
     }

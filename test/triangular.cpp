@@ -23,15 +23,15 @@ template<typename MatrixType> void triangular_deprecated(const MatrixType &m)
   m2.setRandom(rows,cols);
   m3 = m1; m4 = m2;
   // deprecated method:
-  m1.template triangularView<Eigen::Upper>().swap(m2);
+  m1.upperTriangularView().swap(m2);
   // use this method instead:
-  m3.template triangularView<Eigen::Upper>().swap(m4.template triangularView<Eigen::Upper>());
+  m3.upperTriangularView().swap(m4.upperTriangularView());
   VERIFY_IS_APPROX(m1,m3);
   VERIFY_IS_APPROX(m2,m4);
   // deprecated method:
-  m1.template triangularView<Eigen::Lower>().swap(m4);
+  m1.lowerTriangularView().swap(m4);
   // use this method instead:
-  m3.template triangularView<Eigen::Lower>().swap(m2.template triangularView<Eigen::Lower>());
+  m3.lowerTriangularView().swap(m2.lowerTriangularView());
   VERIFY_IS_APPROX(m1,m3);
   VERIFY_IS_APPROX(m2,m4);
 }
@@ -56,8 +56,8 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
              r2(rows, cols);
   VectorType v2 = VectorType::Random(rows);
 
-  MatrixType m1up = m1.template triangularView<Upper>();
-  MatrixType m2up = m2.template triangularView<Upper>();
+  MatrixType m1up = m1.upperTriangularView();
+  MatrixType m2up = m2.upperTriangularView();
 
   if (rows*cols>1)
   {
@@ -71,23 +71,23 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
   // test overloaded operator+=
   r1.setZero();
   r2.setZero();
-  r1.template triangularView<Upper>() +=  m1;
+  r1.upperTriangularView() +=  m1;
   r2 += m1up;
   VERIFY_IS_APPROX(r1,r2);
 
   // test overloaded operator=
   m1.setZero();
-  m1.template triangularView<Upper>() = m2.transpose() + m2;
+  m1.upperTriangularView() = m2.transpose() + m2;
   m3 = m2.transpose() + m2;
-  VERIFY_IS_APPROX(m3.template triangularView<Lower>().transpose().toDenseMatrix(), m1);
+  VERIFY_IS_APPROX(m3.lowerTriangularView().transpose().toDenseMatrix(), m1);
 
   // test overloaded operator=
   m1.setZero();
-  m1.template triangularView<Lower>() = m2.transpose() + m2;
-  VERIFY_IS_APPROX(m3.template triangularView<Lower>().toDenseMatrix(), m1);
+  m1.lowerTriangularView() = m2.transpose() + m2;
+  VERIFY_IS_APPROX(m3.lowerTriangularView().toDenseMatrix(), m1);
 
-  VERIFY_IS_APPROX(m3.template triangularView<Lower>().conjugate().toDenseMatrix(),
-                   m3.conjugate().template triangularView<Lower>().toDenseMatrix());
+  VERIFY_IS_APPROX(m3.lowerTriangularView().conjugate().toDenseMatrix(),
+                   m3.conjugate().lowerTriangularView().toDenseMatrix());
 
   m1 = MatrixType::Random(rows, cols);
   for (int i=0; i<rows; ++i)
@@ -95,81 +95,81 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
 
   Transpose<MatrixType> trm4(m4);
   // test back and forward substitution with a vector as the rhs
-  m3 = m1.template triangularView<Upper>();
-  VERIFY(v2.isApprox(m3.adjoint() * (m1.adjoint().template triangularView<Lower>().solve(v2)), largerEps));
-  m3 = m1.template triangularView<Lower>();
-  VERIFY(v2.isApprox(m3.transpose() * (m1.transpose().template triangularView<Upper>().solve(v2)), largerEps));
-  m3 = m1.template triangularView<Upper>();
-  VERIFY(v2.isApprox(m3 * (m1.template triangularView<Upper>().solve(v2)), largerEps));
-  m3 = m1.template triangularView<Lower>();
-  VERIFY(v2.isApprox(m3.conjugate() * (m1.conjugate().template triangularView<Lower>().solve(v2)), largerEps));
+  m3 = m1.upperTriangularView();
+  VERIFY(v2.isApprox(m3.adjoint() * (m1.adjoint().lowerTriangularView().solve(v2)), largerEps));
+  m3 = m1.lowerTriangularView();
+  VERIFY(v2.isApprox(m3.transpose() * (m1.transpose().upperTriangularView().solve(v2)), largerEps));
+  m3 = m1.upperTriangularView();
+  VERIFY(v2.isApprox(m3 * (m1.upperTriangularView().solve(v2)), largerEps));
+  m3 = m1.lowerTriangularView();
+  VERIFY(v2.isApprox(m3.conjugate() * (m1.conjugate().lowerTriangularView().solve(v2)), largerEps));
 
   // test back and forward substitution with a matrix as the rhs
-  m3 = m1.template triangularView<Upper>();
-  VERIFY(m2.isApprox(m3.adjoint() * (m1.adjoint().template triangularView<Lower>().solve(m2)), largerEps));
-  m3 = m1.template triangularView<Lower>();
-  VERIFY(m2.isApprox(m3.transpose() * (m1.transpose().template triangularView<Upper>().solve(m2)), largerEps));
-  m3 = m1.template triangularView<Upper>();
-  VERIFY(m2.isApprox(m3 * (m1.template triangularView<Upper>().solve(m2)), largerEps));
-  m3 = m1.template triangularView<Lower>();
-  VERIFY(m2.isApprox(m3.conjugate() * (m1.conjugate().template triangularView<Lower>().solve(m2)), largerEps));
+  m3 = m1.upperTriangularView();
+  VERIFY(m2.isApprox(m3.adjoint() * (m1.adjoint().lowerTriangularView().solve(m2)), largerEps));
+  m3 = m1.lowerTriangularView();
+  VERIFY(m2.isApprox(m3.transpose() * (m1.transpose().upperTriangularView().solve(m2)), largerEps));
+  m3 = m1.upperTriangularView();
+  VERIFY(m2.isApprox(m3 * (m1.upperTriangularView().solve(m2)), largerEps));
+  m3 = m1.lowerTriangularView();
+  VERIFY(m2.isApprox(m3.conjugate() * (m1.conjugate().lowerTriangularView().solve(m2)), largerEps));
 
   // check M * inv(L) using in place API
   m4 = m3;
-  m1.transpose().template triangularView<Eigen::Upper>().solveInPlace(trm4);
-  VERIFY_IS_APPROX(m4 * m1.template triangularView<Eigen::Lower>(), m3);
+  m1.transpose().upperTriangularView().solveInPlace(trm4);
+  VERIFY_IS_APPROX(m4 * m1.lowerTriangularView(), m3);
 
   // check M * inv(U) using in place API
-  m3 = m1.template triangularView<Upper>();
+  m3 = m1.upperTriangularView();
   m4 = m3;
-  m3.transpose().template triangularView<Eigen::Lower>().solveInPlace(trm4);
-  VERIFY_IS_APPROX(m4 * m1.template triangularView<Eigen::Upper>(), m3);
+  m3.transpose().lowerTriangularView().solveInPlace(trm4);
+  VERIFY_IS_APPROX(m4 * m1.upperTriangularView(), m3);
 
   // check solve with unit diagonal
-  m3 = m1.template triangularView<UnitUpper>();
-  VERIFY(m2.isApprox(m3 * (m1.template triangularView<UnitUpper>().solve(m2)), largerEps));
+  m3 = m1.unitUpperTriangularView();
+  VERIFY(m2.isApprox(m3 * (m1.unitUpperTriangularView().solve(m2)), largerEps));
 
-//   VERIFY((  m1.template triangularView<Upper>()
-//           * m2.template triangularView<Upper>()).isUpperTriangular());
+//   VERIFY((  m1.upperTriangularView()
+//           * m2.upperTriangularView()).isUpperTriangular());
 
   // test swap
   m1.setOnes();
   m2.setZero();
-  m2.template triangularView<Upper>().swap(m1.template triangularView<Eigen::Upper>());
+  m2.upperTriangularView().swap(m1.upperTriangularView());
   m3.setZero();
-  m3.template triangularView<Upper>().setOnes();
+  m3.upperTriangularView().setOnes();
   VERIFY_IS_APPROX(m2,m3);
 
   m1.setRandom();
-  m3 = m1.template triangularView<Upper>();
+  m3 = m1.upperTriangularView();
   Matrix<Scalar, MatrixType::ColsAtCompileTime, Dynamic> m5(cols, internal::random<int>(1,20));  m5.setRandom();
   Matrix<Scalar, Dynamic, MatrixType::RowsAtCompileTime> m6(internal::random<int>(1,20), rows);  m6.setRandom();
-  VERIFY_IS_APPROX(m1.template triangularView<Upper>() * m5, m3*m5);
-  VERIFY_IS_APPROX(m6*m1.template triangularView<Upper>(), m6*m3);
+  VERIFY_IS_APPROX(m1.upperTriangularView() * m5, m3*m5);
+  VERIFY_IS_APPROX(m6*m1.upperTriangularView(), m6*m3);
 
-  m1up = m1.template triangularView<Upper>();
-  VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().template triangularView<Upper>().toDenseMatrix(), m1up);
-  VERIFY_IS_APPROX(m1up.template selfadjointView<Upper>().template triangularView<Upper>().toDenseMatrix(), m1up);
-  VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().template triangularView<Lower>().toDenseMatrix(), m1up.adjoint());
-  VERIFY_IS_APPROX(m1up.template selfadjointView<Upper>().template triangularView<Lower>().toDenseMatrix(), m1up.adjoint());
+  m1up = m1.upperTriangularView();
+  VERIFY_IS_APPROX(m1.upperSelfadjointView().upperTriangularView().toDenseMatrix(), m1up);
+  VERIFY_IS_APPROX(m1up.upperSelfadjointView().upperTriangularView().toDenseMatrix(), m1up);
+  VERIFY_IS_APPROX(m1.upperSelfadjointView().lowerTriangularView().toDenseMatrix(), m1up.adjoint());
+  VERIFY_IS_APPROX(m1up.upperSelfadjointView().lowerTriangularView().toDenseMatrix(), m1up.adjoint());
 
-  VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().diagonal(), m1.diagonal());
+  VERIFY_IS_APPROX(m1.upperSelfadjointView().diagonal(), m1.diagonal());
 
   m3.setRandom();
   const MatrixType& m3c(m3);
-  VERIFY( is_same_type(m3c.template triangularView<Lower>(),m3.template triangularView<Lower>().template conjugateIf<false>()) );
-  VERIFY( is_same_type(m3c.template triangularView<Lower>().conjugate(),m3.template triangularView<Lower>().template conjugateIf<true>()) );
-  VERIFY_IS_APPROX(m3.template triangularView<Lower>().template conjugateIf<true>().toDenseMatrix(),
-                   m3.conjugate().template triangularView<Lower>().toDenseMatrix());
-  VERIFY_IS_APPROX(m3.template triangularView<Lower>().template conjugateIf<false>().toDenseMatrix(),
-                   m3.template triangularView<Lower>().toDenseMatrix());
+  VERIFY( is_same_type(m3c.lowerTriangularView(),m3.lowerTriangularView().template conjugateIf<false>()) );
+  VERIFY( is_same_type(m3c.lowerTriangularView().conjugate(),m3.lowerTriangularView().template conjugateIf<true>()) );
+  VERIFY_IS_APPROX(m3.lowerTriangularView().template conjugateIf<true>().toDenseMatrix(),
+                   m3.conjugate().lowerTriangularView().toDenseMatrix());
+  VERIFY_IS_APPROX(m3.lowerTriangularView().template conjugateIf<false>().toDenseMatrix(),
+                   m3.lowerTriangularView().toDenseMatrix());
 
-  VERIFY( is_same_type(m3c.template selfadjointView<Lower>(),m3.template selfadjointView<Lower>().template conjugateIf<false>()) );
-  VERIFY( is_same_type(m3c.template selfadjointView<Lower>().conjugate(),m3.template selfadjointView<Lower>().template conjugateIf<true>()) );
-  VERIFY_IS_APPROX(m3.template selfadjointView<Lower>().template conjugateIf<true>().toDenseMatrix(),
-                   m3.conjugate().template selfadjointView<Lower>().toDenseMatrix());
-  VERIFY_IS_APPROX(m3.template selfadjointView<Lower>().template conjugateIf<false>().toDenseMatrix(),
-                   m3.template selfadjointView<Lower>().toDenseMatrix());
+  VERIFY( is_same_type(m3c.lowerSelfadjointView(),m3.lowerSelfadjointView().template conjugateIf<false>()) );
+  VERIFY( is_same_type(m3c.lowerSelfadjointView().conjugate(),m3.lowerSelfadjointView().template conjugateIf<true>()) );
+  VERIFY_IS_APPROX(m3.lowerSelfadjointView().template conjugateIf<true>().toDenseMatrix(),
+                   m3.conjugate().lowerSelfadjointView().toDenseMatrix());
+  VERIFY_IS_APPROX(m3.lowerSelfadjointView().template conjugateIf<false>().toDenseMatrix(),
+                   m3.lowerSelfadjointView().toDenseMatrix());
 
 }
 
@@ -190,8 +190,8 @@ template<typename MatrixType> void triangular_rect(const MatrixType& m)
              r1(rows, cols),
              r2(rows, cols);
 
-  MatrixType m1up = m1.template triangularView<Upper>();
-  MatrixType m2up = m2.template triangularView<Upper>();
+  MatrixType m1up = m1.upperTriangularView();
+  MatrixType m2up = m2.upperTriangularView();
 
   if (rows>1 && cols>1)
   {
@@ -203,56 +203,56 @@ template<typename MatrixType> void triangular_rect(const MatrixType& m)
   // test overloaded operator+=
   r1.setZero();
   r2.setZero();
-  r1.template triangularView<Upper>() +=  m1;
+  r1.upperTriangularView() +=  m1;
   r2 += m1up;
   VERIFY_IS_APPROX(r1,r2);
 
   // test overloaded operator=
   m1.setZero();
-  m1.template triangularView<Upper>() = 3 * m2;
+  m1.upperTriangularView() = 3 * m2;
   m3 = 3 * m2;
-  VERIFY_IS_APPROX(m3.template triangularView<Upper>().toDenseMatrix(), m1);
+  VERIFY_IS_APPROX(m3.upperTriangularView().toDenseMatrix(), m1);
 
 
   m1.setZero();
-  m1.template triangularView<Lower>() = 3 * m2;
-  VERIFY_IS_APPROX(m3.template triangularView<Lower>().toDenseMatrix(), m1);
+  m1.lowerTriangularView() = 3 * m2;
+  VERIFY_IS_APPROX(m3.lowerTriangularView().toDenseMatrix(), m1);
 
   m1.setZero();
-  m1.template triangularView<StrictlyUpper>() = 3 * m2;
-  VERIFY_IS_APPROX(m3.template triangularView<StrictlyUpper>().toDenseMatrix(), m1);
+  m1.strictlyUpperTriangularView() = 3 * m2;
+  VERIFY_IS_APPROX(m3.strictlyUpperTriangularView().toDenseMatrix(), m1);
 
 
   m1.setZero();
-  m1.template triangularView<StrictlyLower>() = 3 * m2;
-  VERIFY_IS_APPROX(m3.template triangularView<StrictlyLower>().toDenseMatrix(), m1);
+  m1.strictlyLowerTriangularView() = 3 * m2;
+  VERIFY_IS_APPROX(m3.strictlyLowerTriangularView().toDenseMatrix(), m1);
   m1.setRandom();
-  m2 = m1.template triangularView<Upper>();
+  m2 = m1.upperTriangularView();
   VERIFY(m2.isUpperTriangular());
   VERIFY(!m2.isLowerTriangular());
-  m2 = m1.template triangularView<StrictlyUpper>();
+  m2 = m1.strictlyUpperTriangularView();
   VERIFY(m2.isUpperTriangular());
   VERIFY(m2.diagonal().isMuchSmallerThan(RealScalar(1)));
-  m2 = m1.template triangularView<UnitUpper>();
+  m2 = m1.unitUpperTriangularView();
   VERIFY(m2.isUpperTriangular());
   m2.diagonal().array() -= Scalar(1);
   VERIFY(m2.diagonal().isMuchSmallerThan(RealScalar(1)));
-  m2 = m1.template triangularView<Lower>();
+  m2 = m1.lowerTriangularView();
   VERIFY(m2.isLowerTriangular());
   VERIFY(!m2.isUpperTriangular());
-  m2 = m1.template triangularView<StrictlyLower>();
+  m2 = m1.strictlyLowerTriangularView();
   VERIFY(m2.isLowerTriangular());
   VERIFY(m2.diagonal().isMuchSmallerThan(RealScalar(1)));
-  m2 = m1.template triangularView<UnitLower>();
+  m2 = m1.unitLowerTriangularView();
   VERIFY(m2.isLowerTriangular());
   m2.diagonal().array() -= Scalar(1);
   VERIFY(m2.diagonal().isMuchSmallerThan(RealScalar(1)));
   // test swap
   m1.setOnes();
   m2.setZero();
-  m2.template triangularView<Upper>().swap(m1.template triangularView<Eigen::Upper>());
+  m2.upperTriangularView().swap(m1.upperTriangularView());
   m3.setZero();
-  m3.template triangularView<Upper>().setOnes();
+  m3.upperTriangularView().setOnes();
   VERIFY_IS_APPROX(m2,m3);
 }
 

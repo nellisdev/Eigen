@@ -60,27 +60,27 @@ template<typename Scalar> void mmtr(int size)
   CHECK_MMTR(matr, Lower, -= s*soc*soc.adjoint());
   CHECK_MMTR(matr, Upper, -= soc*(s*soc.adjoint()));
   
-  CHECK_MMTR(matc, Lower, -= s*sqr*sqc.template triangularView<Upper>());
-  CHECK_MMTR(matc, Upper, = s*sqc*sqr.template triangularView<Upper>());
-  CHECK_MMTR(matc, Lower, += s*sqr*sqc.template triangularView<Lower>());
-  CHECK_MMTR(matc, Upper, = s*sqc*sqc.template triangularView<Lower>());
+  CHECK_MMTR(matc, Lower, -= s*sqr*sqc.upperTriangularView());
+  CHECK_MMTR(matc, Upper, = s*sqc*sqr.upperTriangularView());
+  CHECK_MMTR(matc, Lower, += s*sqr*sqc.lowerTriangularView());
+  CHECK_MMTR(matc, Upper, = s*sqc*sqc.lowerTriangularView());
   
-  CHECK_MMTR(matc, Lower, = (s*sqr).template triangularView<Upper>()*sqc);
-  CHECK_MMTR(matc, Upper, -= (s*sqc).template triangularView<Upper>()*sqc);
-  CHECK_MMTR(matc, Lower, = (s*sqr).template triangularView<Lower>()*sqc);
-  CHECK_MMTR(matc, Upper, += (s*sqc).template triangularView<Lower>()*sqc);
+  CHECK_MMTR(matc, Lower, = (s*sqr).upperTriangularView()*sqc);
+  CHECK_MMTR(matc, Upper, -= (s*sqc).upperTriangularView()*sqc);
+  CHECK_MMTR(matc, Lower, = (s*sqr).lowerTriangularView()*sqc);
+  CHECK_MMTR(matc, Upper, += (s*sqc).lowerTriangularView()*sqc);
 
   // check aliasing
   ref2 = ref1 = matc;
   ref1 = sqc.adjoint() * matc * sqc;
-  ref2.template triangularView<Upper>() = ref1.template triangularView<Upper>();
-  matc.template triangularView<Upper>() = sqc.adjoint() * matc * sqc;
+  ref2.upperTriangularView() = ref1.upperTriangularView();
+  matc.upperTriangularView() = sqc.adjoint() * matc * sqc;
   VERIFY_IS_APPROX(matc, ref2);
 
   ref2 = ref1 = matc;
   ref1 = sqc * matc * sqc.adjoint();
-  ref2.template triangularView<Lower>() = ref1.template triangularView<Lower>();
-  matc.template triangularView<Lower>() = sqc * matc * sqc.adjoint();
+  ref2.lowerTriangularView() = ref1.lowerTriangularView();
+  matc.lowerTriangularView() = sqc * matc * sqc.adjoint();
   VERIFY_IS_APPROX(matc, ref2);
 
   // destination with a non-default inner-stride

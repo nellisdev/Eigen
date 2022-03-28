@@ -49,8 +49,8 @@ template<typename MatrixType> void bandmatrix(const MatrixType& _m)
   Index a = std::max<Index>(0,cols-d-supers);
   Index b = std::max<Index>(0,rows-d-subs);
   if(a>0) dm1.block(0,d+supers,rows,a).setZero();
-  dm1.block(0,supers+1,cols-supers-1-a,cols-supers-1-a).template triangularView<Upper>().setZero();
-  dm1.block(subs+1,0,rows-subs-1-b,rows-subs-1-b).template triangularView<Lower>().setZero();
+  dm1.block(0,supers+1,cols-supers-1-a,cols-supers-1-a).upperTriangularView().setZero();
+  dm1.block(subs+1,0,rows-subs-1-b,rows-subs-1-b).lowerTriangularView().setZero();
   if(b>0) dm1.block(d+subs,0,b,cols).setZero();
   //std::cerr << m.m_data << "\n\n" << m.toDense() << "\n\n" << dm1 << "\n\n";
   VERIFY_IS_APPROX(dm1,m.toDenseMatrix());

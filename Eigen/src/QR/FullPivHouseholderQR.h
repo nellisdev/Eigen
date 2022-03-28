@@ -563,7 +563,7 @@ void FullPivHouseholderQR<MatrixType_>::_solve_impl(const RhsType &rhs, DstType 
   }
 
   m_qr.topLeftCorner(l_rank, l_rank)
-      .template triangularView<Upper>()
+      .upperTriangularView()
       .solveInPlace(c.topRows(l_rank));
 
   for(Index i = 0; i < l_rank; ++i) dst.row(m_cols_permutation.indices().coeff(i)) = c.row(i);
@@ -585,7 +585,7 @@ void FullPivHouseholderQR<MatrixType_>::_solve_impl_transposed(const RhsType &rh
   typename RhsType::PlainObject c(m_cols_permutation.transpose()*rhs);
 
   m_qr.topLeftCorner(l_rank, l_rank)
-         .template triangularView<Upper>()
+         .upperTriangularView()
          .transpose().template conjugateIf<Conjugate>()
          .solveInPlace(c.topRows(l_rank));
 

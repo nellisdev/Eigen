@@ -167,7 +167,7 @@ Index SparseLUImpl<Scalar,StorageIndex>::column_bmod(const Index jcol, const Ind
     Index lda = glu.xlusup(jcol+1) - glu.xlusup(jcol);
     MappedMatrixBlock A( &(glu.lusup.data()[luptr]), nsupc, nsupc, OuterStride<>(lda) );
     VectorBlock<ScalarVector> u(glu.lusup, ufirst, nsupc); 
-    u = A.template triangularView<UnitLower>().solve(u); 
+    u = A.unitLowerTriangularView().solve(u); 
     
     new (&A) MappedMatrixBlock ( &(glu.lusup.data()[luptr+nsupc]), nrow, nsupc, OuterStride<>(lda) );
     VectorBlock<ScalarVector> l(glu.lusup, ufirst+nsupc, nrow); 

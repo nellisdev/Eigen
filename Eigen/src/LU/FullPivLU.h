@@ -594,9 +594,9 @@ MatrixType FullPivLU<MatrixType>::reconstructedMatrix() const
   MatrixType res(m_lu.rows(),m_lu.cols());
   // FIXME the .toDenseMatrix() should not be needed...
   res = m_lu.leftCols(smalldim)
-            .template triangularView<UnitLower>().toDenseMatrix()
+            .unitLowerTriangularView().toDenseMatrix()
       * m_lu.topRows(smalldim)
-            .template triangularView<Upper>().toDenseMatrix();
+            .upperTriangularView().toDenseMatrix();
 
   // P^{-1}(LU)
   res = m_p.inverse() * res;
@@ -679,7 +679,7 @@ struct kernel_retval<FullPivLU<MatrixType_> >
     // notice that the math behind this suggests that we should apply this to the
     // negative of the RHS, but for performance we just put the negative sign elsewhere, see below.
     m.topLeftCorner(rank(), rank())
-     .template triangularView<Upper>().solveInPlace(
+     .upperTriangularView().solveInPlace(
         m.topRightCorner(rank(), dimker)
       );
 
@@ -767,14 +767,14 @@ void FullPivLU<MatrixType_>::_solve_impl(const RhsType &rhs, DstType &dst) const
 
   // Step 2
   m_lu.topLeftCorner(smalldim,smalldim)
-      .template triangularView<UnitLower>()
+      .unitLowerTriangularView()
       .solveInPlace(c.topRows(smalldim));
   if(rows>cols)
     c.bottomRows(rows-cols) -= m_lu.bottomRows(rows-cols) * c.topRows(cols);
 
   // Step 3
   m_lu.topLeftCorner(nonzero_pivots, nonzero_pivots)
-      .template triangularView<Upper>()
+      .upperTriangularView()
       .solveInPlace(c.topRows(nonzero_pivots));
 
   // Step 4
@@ -816,14 +816,14 @@ void FullPivLU<MatrixType_>::_solve_impl_transposed(const RhsType &rhs, DstType 
 
   // Step 2
   m_lu.topLeftCorner(nonzero_pivots, nonzero_pivots)
-      .template triangularView<Upper>()
+      .upperTriangularView()
       .transpose()
       .template conjugateIf<Conjugate>()
       .solveInPlace(c.topRows(nonzero_pivots));
 
   // Step 3
   m_lu.topLeftCorner(smalldim, smalldim)
-      .template triangularView<UnitLower>()
+      .unitLowerTriangularView()
       .transpose()
       .template conjugateIf<Conjugate>()
       .solveInPlace(c.topRows(smalldim));

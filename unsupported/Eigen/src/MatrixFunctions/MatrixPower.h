@@ -165,7 +165,7 @@ void MatrixPowerAtomic<MatrixType>::computePade(int degree, const MatrixType& Im
   res = (m_p-RealScalar(degree)) / RealScalar(2*i-2) * IminusT;
 
   for (--i; i; --i) {
-    res = (MatrixType::Identity(IminusT.rows(), IminusT.cols()) + res).template triangularView<Upper>()
+    res = (MatrixType::Identity(IminusT.rows(), IminusT.cols()) + res).upperTriangularView()
 	.solve((i==1 ? -m_p : i&1 ? (-m_p-RealScalar(i/2))/RealScalar(2*i) : (m_p-RealScalar(i/2))/RealScalar(2*i-2)) * IminusT).eval();
   }
   res += MatrixType::Identity(IminusT.rows(), IminusT.cols());
@@ -202,7 +202,7 @@ void MatrixPowerAtomic<MatrixType>::computeBig(ResultType& res) const
                                   : digits <=  64? 2.4471944416607995472e-1L                // extended precision
                                   : digits <= 106? 1.1016843812851143391275867258512e-1L    // double-double
                                   :                9.134603732914548552537150753385375e-2L); // quadruple precision
-  MatrixType IminusT, sqrtT, T = m_A.template triangularView<Upper>();
+  MatrixType IminusT, sqrtT, T = m_A.upperTriangularView();
   RealScalar normIminusT;
   int degree, degree2, numberOfSquareRoots = 0;
   bool hasExtraSquareRoot = false;
@@ -221,14 +221,14 @@ void MatrixPowerAtomic<MatrixType>::computeBig(ResultType& res) const
       hasExtraSquareRoot = true;
     }
     matrix_sqrt_triangular(T, sqrtT);
-    T = sqrtT.template triangularView<Upper>();
+    T = sqrtT.upperTriangularView();
     ++numberOfSquareRoots;
   }
   computePade(degree, IminusT, res);
 
   for (; numberOfSquareRoots; --numberOfSquareRoots) {
     compute2x2(res, ldexp(m_p, -numberOfSquareRoots));
-    res = res.template triangularView<Upper>() * res;
+    res = res.upperTriangularView() * res;
   }
   compute2x2(res, m_p);
 }
@@ -558,7 +558,7 @@ void MatrixPower<MatrixType>::computeFracPower(ResultType& res, RealScalar p)
 
   MatrixPowerAtomic<ComplexMatrix>(m_T.topLeftCorner(m_rank, m_rank), p).compute(blockTp);
   if (m_nulls) {
-    m_fT.topRightCorner(m_rank, m_nulls) = m_T.topLeftCorner(m_rank, m_rank).template triangularView<Upper>()
+    m_fT.topRightCorner(m_rank, m_nulls) = m_T.topLeftCorner(m_rank, m_rank).upperTriangularView()
         .solve(blockTp * m_T.topRightCorner(m_rank, m_nulls));
   }
   revertSchur(m_tmp, m_fT, m_U);
@@ -571,7 +571,7 @@ inline void MatrixPower<MatrixType>::revertSchur(
     Matrix<ComplexScalar, Rows, Cols, Options, MaxRows, MaxCols>& res,
     const ComplexMatrix& T,
     const ComplexMatrix& U)
-{ res.noalias() = U * (T.template triangularView<Upper>() * U.adjoint()); }
+{ res.noalias() = U * (T.upperTriangularView() * U.adjoint()); }
 
 template<typename MatrixType>
 template<int Rows, int Cols, int Options, int MaxRows, int MaxCols>
@@ -579,7 +579,7 @@ inline void MatrixPower<MatrixType>::revertSchur(
     Matrix<RealScalar, Rows, Cols, Options, MaxRows, MaxCols>& res,
     const ComplexMatrix& T,
     const ComplexMatrix& U)
-{ res.noalias() = (U * (T.template triangularView<Upper>() * U.adjoint())).real(); }
+{ res.noalias() = (U * (T.upperTriangularView() * U.adjoint())).real(); }
 
 /**
  * \ingroup MatrixFunctions_Module

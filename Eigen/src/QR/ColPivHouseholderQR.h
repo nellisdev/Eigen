@@ -197,10 +197,10 @@ template<typename MatrixType_> class ColPivHouseholderQR
     /** \returns a reference to the matrix where the result Householder QR is stored
      * \warning The strict lower part of this matrix contains internal values.
      * Only the upper triangular part should be referenced. To get it, use
-     * \code matrixR().template triangularView<Upper>() \endcode
+     * \code matrixR().upperTriangularView() \endcode
      * For rank-deficient matrices, use
      * \code
-     * matrixR().topLeftCorner(rank(), rank()).template triangularView<Upper>()
+     * matrixR().topLeftCorner(rank(), rank()).upperTriangularView()
      * \endcode
      */
     const MatrixType& matrixR() const
@@ -596,7 +596,7 @@ void ColPivHouseholderQR<MatrixType_>::_solve_impl(const RhsType &rhs, DstType &
   c.applyOnTheLeft(householderQ().setLength(nonzero_pivots).adjoint() );
 
   m_qr.topLeftCorner(nonzero_pivots, nonzero_pivots)
-      .template triangularView<Upper>()
+      .upperTriangularView()
       .solveInPlace(c.topRows(nonzero_pivots));
 
   for(Index i = 0; i < nonzero_pivots; ++i) dst.row(m_colsPermutation.indices().coeff(i)) = c.row(i);
@@ -618,7 +618,7 @@ void ColPivHouseholderQR<MatrixType_>::_solve_impl_transposed(const RhsType &rhs
   typename RhsType::PlainObject c(m_colsPermutation.transpose()*rhs);
 
   m_qr.topLeftCorner(nonzero_pivots, nonzero_pivots)
-        .template triangularView<Upper>()
+        .upperTriangularView()
         .transpose().template conjugateIf<Conjugate>()
         .solveInPlace(c.topRows(nonzero_pivots));
 

@@ -154,8 +154,8 @@ class IncompleteCholesky : public SparseSolverBase<IncompleteCholesky<Scalar,UpL
       if (m_perm.rows() == b.rows())  x = m_perm * b;
       else                            x = b;
       x = m_scale.asDiagonal() * x;
-      x = m_L.template triangularView<Lower>().solve(x);
-      x = m_L.adjoint().template triangularView<Upper>().solve(x);
+      x = m_L.lowerTriangularView().solve(x);
+      x = m_L.adjoint().upperTriangularView().solve(x);
       x = m_scale.asDiagonal() * x;
       if (m_perm.rows() == b.rows())
         x = m_perm.inverse() * x;
@@ -202,11 +202,11 @@ void IncompleteCholesky<Scalar,UpLo_, OrderingType>::factorize(const MatrixType_
     // The temporary is needed to make sure that the diagonal entry is properly sorted
     FactorType tmp(mat.rows(), mat.cols());
     tmp = mat.template selfadjointView<UpLo_>().twistedBy(m_perm);
-    m_L.template selfadjointView<Lower>() = tmp.template selfadjointView<Lower>();
+    m_L.lowerSelfadjointView() = tmp.lowerSelfadjointView();
   }
   else
   {
-    m_L.template selfadjointView<Lower>() = mat.template selfadjointView<UpLo_>();
+    m_L.lowerSelfadjointView() = mat.template selfadjointView<UpLo_>();
   }
 
   Index n = m_L.cols();

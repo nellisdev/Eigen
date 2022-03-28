@@ -37,25 +37,25 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
   m1 = (m1.adjoint() + m1).eval();
 
   // rank2 update
-  m2 = m1.template triangularView<Lower>();
-  m2.template selfadjointView<Lower>().rankUpdate(v1,v2);
-  VERIFY_IS_APPROX(m2, (m1 + v1 * v2.adjoint()+ v2 * v1.adjoint()).template triangularView<Lower>().toDenseMatrix());
+  m2 = m1.lowerTriangularView();
+  m2.lowerSelfadjointView().rankUpdate(v1,v2);
+  VERIFY_IS_APPROX(m2, (m1 + v1 * v2.adjoint()+ v2 * v1.adjoint()).lowerTriangularView().toDenseMatrix());
 
-  m2 = m1.template triangularView<Upper>();
-  m2.template selfadjointView<Upper>().rankUpdate(-v1,s2*v2,s3);
-  VERIFY_IS_APPROX(m2, (m1 + (s3*(-v1)*(s2*v2).adjoint()+numext::conj(s3)*(s2*v2)*(-v1).adjoint())).template triangularView<Upper>().toDenseMatrix());
+  m2 = m1.upperTriangularView();
+  m2.upperSelfadjointView().rankUpdate(-v1,s2*v2,s3);
+  VERIFY_IS_APPROX(m2, (m1 + (s3*(-v1)*(s2*v2).adjoint()+numext::conj(s3)*(s2*v2)*(-v1).adjoint())).upperTriangularView().toDenseMatrix());
 
-  m2 = m1.template triangularView<Upper>();
-  m2.template selfadjointView<Upper>().rankUpdate(-s2*r1.adjoint(),r2.adjoint()*s3,s1);
-  VERIFY_IS_APPROX(m2, (m1 + s1*(-s2*r1.adjoint())*(r2.adjoint()*s3).adjoint() + numext::conj(s1)*(r2.adjoint()*s3) * (-s2*r1.adjoint()).adjoint()).template triangularView<Upper>().toDenseMatrix());
+  m2 = m1.upperTriangularView();
+  m2.upperSelfadjointView().rankUpdate(-s2*r1.adjoint(),r2.adjoint()*s3,s1);
+  VERIFY_IS_APPROX(m2, (m1 + s1*(-s2*r1.adjoint())*(r2.adjoint()*s3).adjoint() + numext::conj(s1)*(r2.adjoint()*s3) * (-s2*r1.adjoint()).adjoint()).upperTriangularView().toDenseMatrix());
 
   if (rows>1)
   {
-    m2 = m1.template triangularView<Lower>();
-    m2.block(1,1,rows-1,cols-1).template selfadjointView<Lower>().rankUpdate(v1.tail(rows-1),v2.head(cols-1));
+    m2 = m1.lowerTriangularView();
+    m2.block(1,1,rows-1,cols-1).lowerSelfadjointView().rankUpdate(v1.tail(rows-1),v2.head(cols-1));
     m3 = m1;
     m3.block(1,1,rows-1,cols-1) += v1.tail(rows-1) * v2.head(cols-1).adjoint()+ v2.head(cols-1) * v1.tail(rows-1).adjoint();
-    VERIFY_IS_APPROX(m2, m3.template triangularView<Lower>().toDenseMatrix());
+    VERIFY_IS_APPROX(m2, m3.lowerTriangularView().toDenseMatrix());
   }
 }
 

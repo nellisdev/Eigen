@@ -64,7 +64,7 @@ namespace internal {
     wa1 = qtb;
     wa1.tail(n-rank).setZero();
     //FIXME There is no solve in place for sparse triangularView
-    wa1.head(rank) = s.topLeftCorner(rank,rank).template triangularView<Upper>().solve(qtb.head(rank));
+    wa1.head(rank) = s.topLeftCorner(rank,rank).upperTriangularView().solve(qtb.head(rank));
 
     x = qr.colsPermutation()*wa1;
 
@@ -86,7 +86,7 @@ namespace internal {
     parl = 0.;
     if (rank==n) {
       wa1 = qr.colsPermutation().inverse() *  diag.cwiseProduct(wa2)/dxnorm;
-      s.topLeftCorner(n,n).transpose().template triangularView<Lower>().solveInPlace(wa1);
+      s.topLeftCorner(n,n).transpose().lowerTriangularView().solveInPlace(wa1);
       temp = wa1.blueNorm();
       parl = fp / m_delta / temp / temp;
     }
