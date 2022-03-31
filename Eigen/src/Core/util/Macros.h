@@ -173,8 +173,17 @@
 // 4.5   0x0405
 // 5.0   0x0500
 // 12.1  0x0C01
-#if defined(__IBMCPP__) || defined(__xlc__) || defined(__ibmxl__)
+// 13.1  0x0D01
+// 16.1  0x1001
+// \note For releases starting from IBM XL C/C++ for Linux, V13.1.6,
+// the default is -qnoxlcompatmacros which makes __IBMCPP__, __xlc__,
+// and __xlC__ legacy macros that are disabled by default. The macro
+// __ibmxl__ is always defined in all versions of XL C/C++ for Linux
+// for little endian distributions
+#if defined(__IBMCPP__) || defined(__xlc__)
   #define EIGEN_COMP_IBM __xlC__
+#elif defined(__ibmxl__)
+  #define EIGEN_COMP_IBM (__ibmxl_version__*100+__ibmxl_release__*10+__ibmxl_modification__)
 #else
   #define EIGEN_COMP_IBM 0
 #endif

@@ -133,12 +133,22 @@ EIGEN_STRONG_INLINE Packet2cf pload2(const std::complex<float>& from0, const std
 {
   Packet4f res0, res1;
 #ifdef __VSX__
+#ifdef EIGEN_COMP_IBM
+  __asm__ ("lxsdx %x0,%y1" : "=wy" (res0) : "Z" (from0));
+  __asm__ ("lxsdx %x0,%y1" : "=wy" (res1) : "Z" (from1));
+#ifdef _BIG_ENDIAN
+  __asm__ ("xxpermdi %x0, %x1, %x2, 0" : "=wy" (res0) : "wy" (res0), "wy" (res1));
+#else
+  __asm__ ("xxpermdi %x0, %x2, %x1, 0" : "=wy" (res0) : "wy" (res0), "wy" (res1));
+#endif
+#else
   __asm__ ("lxsdx %x0,%y1" : "=wa" (res0) : "Z" (from0));
   __asm__ ("lxsdx %x0,%y1" : "=wa" (res1) : "Z" (from1));
 #ifdef _BIG_ENDIAN
   __asm__ ("xxpermdi %x0, %x1, %x2, 0" : "=wa" (res0) : "wa" (res0), "wa" (res1));
 #else
   __asm__ ("xxpermdi %x0, %x2, %x1, 0" : "=wa" (res0) : "wa" (res0), "wa" (res1));
+#endif
 #endif
 #else
   *reinterpret_cast<std::complex<float> *>(&res0) = from0;
