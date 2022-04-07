@@ -100,6 +100,11 @@ public:
     return ploadt<PacketType, AlignmentType>(m_data + i);
   }
 
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketN(Index i, size_t N) const {
+    return ploadtN<PacketType, AlignmentType>(m_data + i, N);
+  }
+
   template<typename PacketType, int AlignmentT>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType load(Index i) const {
     return ploadt<PacketType, AlignmentT>(m_data + i);
@@ -108,6 +113,11 @@ public:
   template<typename PacketType>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, const PacketType &p) const {
     pstoret<Scalar, PacketType, AlignmentType>(m_data + i, p);
+  }
+
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketN(Index i, const PacketType &p, size_t N) const {
+    pstoretN<Scalar, PacketType, AlignmentType>(m_data + i, p, N);
   }
 
 protected:
@@ -208,6 +218,11 @@ public:
     return ploadt<PacketType, AlignmentType>(&operator()(i, j));
   }
 
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketN(Index i, Index j, size_t N) const {
+    return ploadtN<PacketType, AlignmentType>(&operator()(i, j), N);
+  }
+
   template <typename PacketT, int AlignmentT>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
     return ploadt<PacketT, AlignmentT>(&operator()(i, j));
@@ -216,6 +231,11 @@ public:
   template<typename PacketType>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, Index j, const PacketType &p) const {
     pstoret<Scalar, PacketType, AlignmentType>(&operator()(i, j), p);
+  }
+
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketN(Index i, Index j, const PacketType &p, size_t N) const {
+    pstoretN<Scalar, PacketType, AlignmentType>(&operator()(i, j), p, N);
   }
 
   template<typename SubPacket>
@@ -271,8 +291,18 @@ public:
   }
 
   template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketN(Index i, size_t N) const {
+    return pgatherN<Scalar,PacketType>(m_data + i*m_incr.value(), m_incr.value(), N);
+  }
+
+  template<typename PacketType>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, const PacketType &p) const {
     pscatter<Scalar, PacketType>(m_data + i*m_incr.value(), p, m_incr.value());
+  }
+
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketN(Index i, const PacketType &p, size_t N) const {
+    pscatterN<Scalar, PacketType>(m_data + i*m_incr.value(), p, m_incr.value(), N);
   }
 
 protected:
@@ -311,6 +341,11 @@ public:
     return pgather<Scalar,PacketType>(&operator()(i, j),m_incr.value());
   }
 
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketType loadPacketN(Index i, Index j, size_t N) const {
+    return pgatherN<Scalar,PacketType>(&operator()(i, j),m_incr.value(),N);
+  }
+
   template <typename PacketT, int AlignmentT>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
     return pgather<Scalar,PacketT>(&operator()(i, j),m_incr.value());
@@ -319,6 +354,11 @@ public:
   template<typename PacketType>
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, Index j, const PacketType &p) const {
     pscatter<Scalar, PacketType>(&operator()(i, j), p, m_incr.value());
+  }
+
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacketN(Index i, Index j, const PacketType &p, size_t N) const {
+    pscatterN<Scalar, PacketType>(&operator()(i, j), p, m_incr.value(), N);
   }
 
   template<typename SubPacket>

@@ -143,6 +143,12 @@ static Packet16uc p16uc_COMPLEX32_REV = vec_sld(p16uc_REVERSE32, p16uc_REVERSE32
   #define EIGEN_PPC_PREFETCH(ADDR) asm( "   dcbt [%[addr]]\n" :: [addr] "r" (ADDR) : "cc" );
 #endif
 
+#if EIGEN_COMP_LLVM
+#define LOAD_STORE_UNROLL_16 _Pragma("unroll 16")
+#else
+#define LOAD_STORE_UNROLL_16 _Pragma("GCC unroll(16)")
+#endif
+
 template <>
 struct packet_traits<float> : default_packet_traits {
   typedef Packet4f type;
@@ -472,6 +478,60 @@ template<> EIGEN_STRONG_INLINE Packet8bf pload<Packet8bf>(const bfloat16*     fr
 }
 
 template <typename Packet>
+EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N)
+{
+  // some versions of GCC throw "unused-but-set-parameter".
+  // ignoring these warnings for now.
+#ifdef _ARCH_PWR9
+  EIGEN_DEBUG_ALIGNED_LOAD
+  EIGEN_UNUSED_VARIABLE(from);
+  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
+#else
+  Packet load;
+  LOAD_STORE_UNROLL_16
+  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
+    load[M] = from[M];
+  }
+  return load;
+#endif
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet4f ploadN<Packet4f>(const float* from, const size_t N)
+{
+  return ploadN_common<Packet4f>(from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet4i ploadN<Packet4i>(const int* from, const size_t N)
+{
+  return ploadN_common<Packet4i>(from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet8s ploadN<Packet8s>(const short int* from, const size_t N)
+{
+  return ploadN_common<Packet8s>(from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet8us ploadN<Packet8us>(const unsigned short int* from, const size_t N)
+{
+  return ploadN_common<Packet8us>(from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet8bf ploadN<Packet8bf>(const bfloat16* from, const size_t N)
+{
+  return ploadN_common<Packet8us>(reinterpret_cast<const unsigned short int*>(from), N);
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet16c ploadN<Packet16c>(const signed char* from, const size_t N)
+{
+  return ploadN_common<Packet16c>(from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet16uc ploadN<Packet16uc>(const unsigned char* from, const size_t N)
+{
+  return ploadN_common<Packet16uc>(from, N);
+}
+
+template <typename Packet>
 EIGEN_STRONG_INLINE void pstore_common(__UNPACK_TYPE__(Packet)* to, const Packet& from){
   // some versions of GCC throw "unused-but-set-parameter" (float *to).
   // ignoring these warnings for now.
@@ -517,6 +577,57 @@ template<> EIGEN_STRONG_INLINE void pstore<signed char>(signed char*       to, c
 template<> EIGEN_STRONG_INLINE void pstore<unsigned char>(unsigned char*       to, const Packet16uc& from)
 {
   pstore_common<Packet16uc>(to, from);
+}
+
+template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const size_t N)
+{
+  // some versions of GCC throw "unused-but-set-parameter" (float *to).
+  // ignoring these warnings for now.
+#ifdef _ARCH_PWR9
+  EIGEN_UNUSED_VARIABLE(to);
+  EIGEN_DEBUG_ALIGNED_STORE
+  vec_xst_len(from, to, N);
+#else
+  LOAD_STORE_UNROLL_16
+  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
+    to[M] = from[M];
+  }
+#endif
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<float>(float*  to, const Packet4f& from, const size_t N)
+{
+  pstoreN_common<Packet4f>(to, from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<int>(int*  to, const Packet4i& from, const size_t N)
+{
+  pstoreN_common<Packet4i>(to, from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<short int>(short int*  to, const Packet8s& from, const size_t N)
+{
+  pstoreN_common<Packet8s>(to, from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<unsigned short int>(unsigned short int*  to, const Packet8us& from, const size_t N)
+{
+  pstoreN_common<Packet8us>(to, from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<bfloat16>(bfloat16*      to, const Packet8bf& from, const size_t N)
+{
+  pstoreN_common<Packet8us>(reinterpret_cast<unsigned short int*>(to), from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<signed char>(signed char*  to, const Packet16c& from, const size_t N)
+{
+  pstoreN_common<Packet16c>(to, from, N);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<unsigned char>(unsigned char*  to, const Packet16uc& from, const size_t N)
+{
+  pstoreN_common<Packet16uc>(to, from, N);
 }
 
 template<typename Packet>
@@ -596,168 +707,192 @@ pbroadcast4<Packet4i>(const int *a,
   pbroadcast4_common<Packet4i>(a, a0, a1, a2, a3);
 }
 
-template<typename Packet> EIGEN_DEVICE_FUNC inline Packet pgather_common(const __UNPACK_TYPE__(Packet)* from, Index stride)
+template <typename Packet>
+EIGEN_ALWAYS_INLINE Packet pload_ignore(const __UNPACK_TYPE__(Packet)* from)
 {
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[4];
-  a[0] = from[0*stride];
-  a[1] = from[1*stride];
-  a[2] = from[2*stride];
-  a[3] = from[3*stride];
-  return pload<Packet>(a);
+  // some versions of GCC throw "unused-but-set-parameter".
+  // ignoring these warnings for now.
+  EIGEN_UNUSED_VARIABLE(from);
+  EIGEN_DEBUG_ALIGNED_LOAD
+  // Ignore partial input memory initialized
+#if !EIGEN_COMP_LLVM
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+#ifdef __VSX__
+  return vec_xl(0, const_cast<__UNPACK_TYPE__(Packet)*>(from));
+#else
+  return vec_ld(0, from);
+#endif
+#if !EIGEN_COMP_LLVM
+  #pragma GCC diagnostic pop
+#endif
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet4f pgather<float, Packet4f>(const float* from, Index stride)
+template<> EIGEN_ALWAYS_INLINE Packet8bf pload_ignore<Packet8bf>(const bfloat16*     from)
+{
+  return pload_ignore<Packet8us>(reinterpret_cast<const unsigned short int*>(from));
+}
+
+template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pgather_common(const __UNPACK_TYPE__(Packet)* from, Index stride, const size_t N = unpacket_traits<Packet>::size)
+{
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
+  LOAD_STORE_UNROLL_16
+  for (size_t M = 0; M < N; M++) {
+    a[M] = from[M*stride];
+  }
+  // Leave rest of the array uninitialized
+  return pload_ignore<Packet>(a);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4f pgather<float, Packet4f>(const float* from, Index stride)
 {
   return pgather_common<Packet4f>(from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet4i pgather<int, Packet4i>(const int* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4i pgather<int, Packet4i>(const int* from, Index stride)
 {
   return pgather_common<Packet4i>(from, stride);
 }
 
-template<typename Packet> EIGEN_DEVICE_FUNC inline Packet pgather_size8(const __UNPACK_TYPE__(Packet)* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8s pgather<short int, Packet8s>(const short int* from, Index stride)
 {
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[8];
-  a[0] = from[0*stride];
-  a[1] = from[1*stride];
-  a[2] = from[2*stride];
-  a[3] = from[3*stride];
-  a[4] = from[4*stride];
-  a[5] = from[5*stride];
-  a[6] = from[6*stride];
-  a[7] = from[7*stride];
-  return pload<Packet>(a);
+  return pgather_common<Packet8s>(from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet8s pgather<short int, Packet8s>(const short int* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8us pgather<unsigned short int, Packet8us>(const unsigned short int* from, Index stride)
 {
-  return pgather_size8<Packet8s>(from, stride);
+  return pgather_common<Packet8us>(from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet8us pgather<unsigned short int, Packet8us>(const unsigned short int* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf pgather<bfloat16, Packet8bf>(const bfloat16* from, Index stride)
 {
-  return pgather_size8<Packet8us>(from, stride);
+  return pgather_common<Packet8bf>(from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet8bf pgather<bfloat16, Packet8bf>(const bfloat16* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16c pgather<signed char, Packet16c>(const signed char* from, Index stride)
 {
-  return pgather_size8<Packet8bf>(from, stride);
+  return pgather_common<Packet16c>(from, stride);
 }
 
-template<typename Packet> EIGEN_DEVICE_FUNC inline Packet pgather_size16(const __UNPACK_TYPE__(Packet)* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16uc pgather<unsigned char, Packet16uc>(const unsigned char* from, Index stride)
 {
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[16];
-  a[0] = from[0*stride];
-  a[1] = from[1*stride];
-  a[2] = from[2*stride];
-  a[3] = from[3*stride];
-  a[4] = from[4*stride];
-  a[5] = from[5*stride];
-  a[6] = from[6*stride];
-  a[7] = from[7*stride];
-  a[8] = from[8*stride];
-  a[9] = from[9*stride];
-  a[10] = from[10*stride];
-  a[11] = from[11*stride];
-  a[12] = from[12*stride];
-  a[13] = from[13*stride];
-  a[14] = from[14*stride];
-  a[15] = from[15*stride];
-  return pload<Packet>(a);
+  return pgather_common<Packet16uc>(from, stride);
 }
 
-
-template<> EIGEN_DEVICE_FUNC inline Packet16c pgather<signed char, Packet16c>(const signed char* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4f pgatherN<float, Packet4f>(const float* from, Index stride, const size_t N)
 {
-  return pgather_size16<Packet16c>(from, stride);
+  return pgather_common<Packet4f>(from, stride, N);
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet16uc pgather<unsigned char, Packet16uc>(const unsigned char* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet4i pgatherN<int, Packet4i>(const int* from, Index stride, const size_t N)
 {
-  return pgather_size16<Packet16uc>(from, stride);
+  return pgather_common<Packet4i>(from, stride, N);
 }
 
-template<typename Packet> EIGEN_DEVICE_FUNC inline void pscatter_size4(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8s pgatherN<short int, Packet8s>(const short int* from, Index stride, const size_t N)
 {
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[4];
+  return pgather_common<Packet8s>(from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8us pgatherN<unsigned short int, Packet8us>(const unsigned short int* from, Index stride, const size_t N)
+{
+  return pgather_common<Packet8us>(from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet8bf pgatherN<bfloat16, Packet8bf>(const bfloat16* from, Index stride, const size_t N)
+{
+  return pgather_common<Packet8bf>(from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16c pgatherN<signed char, Packet16c>(const signed char* from, Index stride, const size_t N)
+{
+  return pgather_common<Packet16c>(from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16uc pgatherN<unsigned char, Packet16uc>(const unsigned char* from, Index stride, const size_t N)
+{
+  return pgather_common<Packet16uc>(from, stride, N);
+}
+
+template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter_common(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride, const size_t N = unpacket_traits<Packet>::size)
+{
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
   pstore<__UNPACK_TYPE__(Packet)>(a, from);
-  to[0*stride] = a[0];
-  to[1*stride] = a[1];
-  to[2*stride] = a[2];
-  to[3*stride] = a[3];
+  LOAD_STORE_UNROLL_16
+  for (size_t M = 0; M < N; M++) {
+    to[M*stride] = a[M];
+  }
 }
 
-template<> EIGEN_DEVICE_FUNC inline void pscatter<float, Packet4f>(float* to, const Packet4f& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<float, Packet4f>(float* to, const Packet4f& from, Index stride)
 {
-  pscatter_size4<Packet4f>(to, from, stride);
+  pscatter_common<Packet4f>(to, from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline void pscatter<int, Packet4i>(int* to, const Packet4i& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<int, Packet4i>(int* to, const Packet4i& from, Index stride)
 {
-  pscatter_size4<Packet4i>(to, from, stride);
+  pscatter_common<Packet4i>(to, from, stride);
 }
 
-template<typename Packet> EIGEN_DEVICE_FUNC inline void pscatter_size8(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<short int, Packet8s>(short int* to, const Packet8s& from, Index stride)
 {
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[8];
-  pstore<__UNPACK_TYPE__(Packet)>(a, from);
-  to[0*stride] = a[0];
-  to[1*stride] = a[1];
-  to[2*stride] = a[2];
-  to[3*stride] = a[3];
-  to[4*stride] = a[4];
-  to[5*stride] = a[5];
-  to[6*stride] = a[6];
-  to[7*stride] = a[7];
+  pscatter_common<Packet8s>(to, from, stride);
 }
 
-
-template<> EIGEN_DEVICE_FUNC inline void pscatter<short int, Packet8s>(short int* to, const Packet8s& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<unsigned short int, Packet8us>(unsigned short int* to, const Packet8us& from, Index stride)
 {
-  pscatter_size8<Packet8s>(to, from, stride);
+  pscatter_common<Packet8us>(to, from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline void pscatter<unsigned short int, Packet8us>(unsigned short int* to, const Packet8us& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<bfloat16, Packet8bf>(bfloat16* to, const Packet8bf& from, Index stride)
 {
-  pscatter_size8<Packet8us>(to, from, stride);
+  pscatter_common<Packet8bf>(to, from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline void pscatter<bfloat16, Packet8bf>(bfloat16* to, const Packet8bf& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<signed char, Packet16c>(signed char* to, const Packet16c& from, Index stride)
 {
-  pscatter_size8<Packet8bf>(to, from, stride);
+  pscatter_common<Packet16c>(to, from, stride);
 }
 
-template<typename Packet> EIGEN_DEVICE_FUNC inline void pscatter_size16(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<unsigned char, Packet16uc>(unsigned char* to, const Packet16uc& from, Index stride)
 {
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[16];
-  pstore<__UNPACK_TYPE__(Packet)>(a, from);
-  to[0*stride] = a[0];
-  to[1*stride] = a[1];
-  to[2*stride] = a[2];
-  to[3*stride] = a[3];
-  to[4*stride] = a[4];
-  to[5*stride] = a[5];
-  to[6*stride] = a[6];
-  to[7*stride] = a[7];
-  to[8*stride] = a[8];
-  to[9*stride] = a[9];
-  to[10*stride] = a[10];
-  to[11*stride] = a[11];
-  to[12*stride] = a[12];
-  to[13*stride] = a[13];
-  to[14*stride] = a[14];
-  to[15*stride] = a[15];
+  pscatter_common<Packet16uc>(to, from, stride);
 }
 
-template<> EIGEN_DEVICE_FUNC inline void pscatter<signed char, Packet16c>(signed char* to, const Packet16c& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<float, Packet4f>(float* to, const Packet4f& from, Index stride, const size_t N)
 {
-  pscatter_size16<Packet16c>(to, from, stride);
+  pscatter_common<Packet4f>(to, from, stride, N);
 }
 
-template<> EIGEN_DEVICE_FUNC inline void pscatter<unsigned char, Packet16uc>(unsigned char* to, const Packet16uc& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<int, Packet4i>(int* to, const Packet4i& from, Index stride, const size_t N)
 {
-  pscatter_size16<Packet16uc>(to, from, stride);
+  pscatter_common<Packet4i>(to, from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<short int, Packet8s>(short int* to, const Packet8s& from, Index stride, const size_t N)
+{
+  pscatter_common<Packet8s>(to, from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<unsigned short int, Packet8us>(unsigned short int* to, const Packet8us& from, Index stride, const size_t N)
+{
+  pscatter_common<Packet8us>(to, from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<bfloat16, Packet8bf>(bfloat16* to, const Packet8bf& from, Index stride, const size_t N)
+{
+  pscatter_common<Packet8bf>(to, from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<signed char, Packet16c>(signed char* to, const Packet16c& from, Index stride, const size_t N)
+{
+  pscatter_common<Packet16c>(to, from, stride, N);
+}
+
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<unsigned char, Packet16uc>(unsigned char* to, const Packet16uc& from, Index stride, const size_t N)
+{
+  pscatter_common<Packet16uc>(to, from, stride, N);
 }
 
 template<> EIGEN_STRONG_INLINE Packet4f   plset<Packet4f>(const float&     a) { return pset1<Packet4f>(a) + p4f_COUNTDOWN;  }
@@ -1004,6 +1139,51 @@ template<> EIGEN_STRONG_INLINE Packet16uc ploadu<Packet16uc>(const unsigned char
   return ploadu_common<Packet16uc>(from);
 }
 
+template<typename Packet> EIGEN_ALWAYS_INLINE Packet ploaduN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N)
+{
+#ifdef _ARCH_PWR9
+  EIGEN_DEBUG_ALIGNED_LOAD
+  EIGEN_DEBUG_UNALIGNED_LOAD
+  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
+#else
+  Packet load;
+  LOAD_STORE_UNROLL_16
+  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
+    load[M] = from[M];
+  }
+  return load;
+#endif
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet4f ploaduN<Packet4f>(const float* from, const size_t N)
+{
+  return ploaduN_common<Packet4f>(from, N);
+}
+template<> EIGEN_ALWAYS_INLINE Packet4i ploaduN<Packet4i>(const int* from, const size_t N)
+{
+  return ploaduN_common<Packet4i>(from, N);
+}
+template<> EIGEN_ALWAYS_INLINE Packet8s ploaduN<Packet8s>(const short int* from, const size_t N)
+{
+  return ploaduN_common<Packet8s>(from, N);
+}
+template<> EIGEN_ALWAYS_INLINE Packet8us ploaduN<Packet8us>(const unsigned short int* from, const size_t N)
+{
+  return ploaduN_common<Packet8us>(from, N);
+}
+template<> EIGEN_ALWAYS_INLINE Packet8bf ploaduN<Packet8bf>(const bfloat16* from, const size_t N)
+{
+  return ploaduN_common<Packet8us>(reinterpret_cast<const unsigned short int*>(from), N);
+}
+template<> EIGEN_ALWAYS_INLINE Packet16c ploaduN<Packet16c>(const signed char* from, const size_t N)
+{
+  return ploaduN_common<Packet16c>(from, N);
+}
+template<> EIGEN_ALWAYS_INLINE Packet16uc ploaduN<Packet16uc>(const unsigned char* from, const size_t N)
+{
+  return ploaduN_common<Packet16uc>(from, N);
+}
+
 template<typename Packet> EIGEN_STRONG_INLINE Packet ploaddup_common(const __UNPACK_TYPE__(Packet)*   from)
 {
   Packet p;
@@ -1122,6 +1302,48 @@ template<> EIGEN_STRONG_INLINE void pstoreu<signed char>(signed char*      to, c
 template<> EIGEN_STRONG_INLINE void pstoreu<unsigned char>(unsigned char*      to, const Packet16uc& from)
 {
   pstoreu_common<Packet16uc>(to, from);
+}
+
+template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreuN_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const size_t N)
+{
+#ifdef _ARCH_PWR9
+  EIGEN_DEBUG_UNALIGNED_STORE
+  vec_xst_len(from, to, N);
+#else
+  LOAD_STORE_UNROLL_16
+  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
+    to[M] = from[M];
+  }
+#endif
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<float>(float*  to, const Packet4f& from, const size_t N)
+{
+  pstoreuN_common<Packet4f>(to, from, N);
+}
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<int>(int*  to, const Packet4i& from, const size_t N)
+{
+  pstoreuN_common<Packet4i>(to, from, N);
+}
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<short int>(short int*  to, const Packet8s& from, const size_t N)
+{
+  pstoreuN_common<Packet8s>(to, from, N);
+}
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<unsigned short int>(unsigned short int*  to, const Packet8us& from, const size_t N)
+{
+  pstoreuN_common<Packet8us>(to, from, N);
+}
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<bfloat16>(bfloat16*      to, const Packet8bf& from, const size_t N)
+{
+  pstoreuN_common<Packet8us>(reinterpret_cast<unsigned short int*>(to), from, N);
+}
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<signed char>(signed char*  to, const Packet16c& from, const size_t N)
+{
+  pstoreuN_common<Packet16c>(to, from, N);
+}
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<unsigned char>(unsigned char*  to, const Packet16uc& from, const size_t N)
+{
+  pstoreuN_common<Packet16uc>(to, from, N);
 }
 
 template<> EIGEN_STRONG_INLINE void prefetch<float>(const float* addr)    { EIGEN_PPC_PREFETCH(addr); }
@@ -2383,10 +2605,20 @@ template<> EIGEN_STRONG_INLINE Packet2d pload<Packet2d>(const double* from)
   return vec_xl(0, const_cast<double *>(from)); // cast needed by Clang
 }
 
+template<> EIGEN_ALWAYS_INLINE Packet2d ploadN<Packet2d>(const double* from, const size_t N)
+{
+  return ploadN_common<Packet2d>(from, N);
+}
+
 template<> EIGEN_STRONG_INLINE void pstore<double>(double*   to, const Packet2d& from)
 {
   EIGEN_DEBUG_ALIGNED_STORE
   vec_xst(from, 0, to);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreN<double>(double*  to, const Packet2d& from, const size_t N)
+{
+  pstoreN_common<Packet2d>(to, from, N);
 }
 
 template<> EIGEN_STRONG_INLINE Packet2d pset1<Packet2d>(const double&  from) {
@@ -2410,19 +2642,21 @@ pbroadcast4<Packet2d>(const double *a,
   a3 = pset1<Packet2d>(a[3]);
 }
 
-template<> EIGEN_DEVICE_FUNC inline Packet2d pgather<double, Packet2d>(const double* from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2d pgather<double, Packet2d>(const double* from, Index stride)
 {
-  EIGEN_ALIGN16 double af[2];
-  af[0] = from[0*stride];
-  af[1] = from[1*stride];
- return pload<Packet2d>(af);
+  return pgather_common<Packet2d>(from, stride);
 }
-template<> EIGEN_DEVICE_FUNC inline void pscatter<double, Packet2d>(double* to, const Packet2d& from, Index stride)
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2d pgatherN<double, Packet2d>(const double* from, Index stride, const size_t N)
 {
-  EIGEN_ALIGN16 double af[2];
-  pstore<double>(af, from);
-  to[0*stride] = af[0];
-  to[1*stride] = af[1];
+  return pgather_common<Packet2d>(from, stride, N);
+}
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter<double, Packet2d>(double* to, const Packet2d& from, Index stride)
+{
+  pscatter_common<Packet2d>(to, from, stride);
+}
+template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatterN<double, Packet2d>(double* to, const Packet2d& from, Index stride, const size_t N)
+{
+  pscatter_common<Packet2d>(to, from, stride, N);
 }
 
 template<> EIGEN_STRONG_INLINE Packet2d plset<Packet2d>(const double& a) { return pset1<Packet2d>(a) + p2d_COUNTDOWN; }
@@ -2510,6 +2744,11 @@ template<> EIGEN_STRONG_INLINE Packet2d ploadu<Packet2d>(const double* from)
   return vec_xl(0, const_cast<double*>(from));
 }
 
+template<> EIGEN_ALWAYS_INLINE Packet2d ploaduN<Packet2d>(const double* from, const size_t N)
+{
+  return ploaduN_common<Packet2d>(from, N);
+}
+
 template<> EIGEN_STRONG_INLINE Packet2d ploaddup<Packet2d>(const double*   from)
 {
   Packet2d p;
@@ -2522,6 +2761,11 @@ template<> EIGEN_STRONG_INLINE void pstoreu<double>(double*  to, const Packet2d&
 {
   EIGEN_DEBUG_UNALIGNED_STORE
   vec_xst(from, 0, to);
+}
+
+template<> EIGEN_ALWAYS_INLINE void pstoreuN<double>(double*  to, const Packet2d& from, const size_t N)
+{
+  pstoreuN_common<Packet2d>(to, from, N);
 }
 
 template<> EIGEN_STRONG_INLINE void prefetch<double>(const double* addr) { EIGEN_PPC_PREFETCH(addr); }

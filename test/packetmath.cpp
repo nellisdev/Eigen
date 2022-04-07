@@ -458,6 +458,28 @@ void packetmath() {
     VERIFY(test::areApprox(data1, data2 + offset, PacketSize) && "internal::pstoreu");
   }
 
+  for (int N = 0; N <= PacketSize; ++N) {
+    for (int j = 0; j < size; ++j) {
+      data1[j] = internal::random<Scalar>() / RealScalar(PacketSize);
+      data2[j] = internal::random<Scalar>() / RealScalar(PacketSize);
+      refvalue = (std::max)(refvalue, numext::abs(data1[j]));
+    }
+
+    const size_t sizeN = N * sizeof(Scalar);
+    internal::pstoreN(data2, internal::ploadN<Packet>(data1, sizeN), sizeN);
+    VERIFY(test::areApprox(data1, data2, N) && "aligned loadN/storeN");
+
+    for (int offset = 0; offset < PacketSize; ++offset) {
+      internal::pstoreN(data2, internal::ploaduN<Packet>(data1 + offset, sizeN), sizeN);
+      VERIFY(test::areApprox(data1 + offset, data2, N) && "internal::ploaduN");
+    }
+
+    for (int offset = 0; offset < PacketSize; ++offset) {
+      internal::pstoreuN(data2 + offset, internal::ploadN<Packet>(data1, sizeN), sizeN);
+      VERIFY(test::areApprox(data1, data2 + offset, N) && "internal::pstoreuN");
+    }
+  }
+
   if (internal::unpacket_traits<Packet>::masked_load_available) {
     test::packet_helper<internal::unpacket_traits<Packet>::masked_load_available, Packet> h;
     unsigned long long max_umask = (0x1ull << PacketSize);
@@ -1371,6 +1393,37 @@ void packetmath_scatter_gather() {
   internal::pstore(data1, packet);
   for (int i = 0; i < PacketSize; ++i) {
     VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgather");
+  }
+
+  for (size_t N = 0; N <= PacketSize; ++N) {
+    for (size_t i = 0; i < N; ++i) {
+      data1[i] = internal::random<Scalar>() / RealScalar(PacketSize);
+    }
+
+    for (size_t i = 0; i < N * 20; ++i) {
+      buffer[i] = Scalar(0);
+    }
+
+    const size_t sizeN = N * sizeof(Scalar);
+    packet = internal::ploadN<Packet>(data1, sizeN);
+    internal::pscatterN<Scalar, Packet>(buffer, packet, stride, N);
+
+    for (size_t i = 0; i < N * 20; ++i) {
+      if ((i % stride) == 0 && i < stride * N) {
+        VERIFY(test::isApproxAbs(buffer[i], data1[i / stride], refvalue) && "pscatterN");
+      } else {
+        VERIFY(test::isApproxAbs(buffer[i], Scalar(0), refvalue) && "pscatterN");
+      }
+    }
+
+    for (size_t i = 0; i < N * 7; ++i) {
+      buffer[i] = internal::random<Scalar>() / RealScalar(PacketSize);
+    }
+    packet = internal::pgatherN<Scalar, Packet>(buffer, 7, N);
+    internal::pstoreN(data1, packet, sizeN);
+    for (size_t i = 0; i < N; ++i) {
+      VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgatherN");
+    }
   }
 }
 
