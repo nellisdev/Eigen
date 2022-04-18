@@ -458,25 +458,36 @@ void packetmath() {
     VERIFY(test::areApprox(data1, data2 + offset, PacketSize) && "internal::pstoreu");
   }
 
-  for (int N = 0; N <= PacketSize; ++N) {
-    for (int j = 0; j < size; ++j) {
-      data1[j] = internal::random<Scalar>() / RealScalar(PacketSize);
-      data2[j] = internal::random<Scalar>() / RealScalar(PacketSize);
-      refvalue = (std::max)(refvalue, numext::abs(data1[j]));
-    }
+  for (int M = 0; M < PacketSize; ++M) {
+    const size_t offsetN = M * sizeof(Scalar);
+    for (int N = 0; N <= PacketSize; ++N) {
+      for (int j = 0; j < size; ++j) {
+        data1[j] = internal::random<Scalar>() / RealScalar(PacketSize);
+        data2[j] = internal::random<Scalar>() / RealScalar(PacketSize);
+        refvalue = (std::max)(refvalue, numext::abs(data1[j]));
+      }
 
-    const size_t sizeN = N * sizeof(Scalar);
-    internal::pstoreN(data2, internal::ploadN<Packet>(data1, sizeN), sizeN);
-    VERIFY(test::areApprox(data1, data2, N) && "aligned loadN/storeN");
+      const size_t sizeN = N * sizeof(Scalar);
 
-    for (int offset = 0; offset < PacketSize; ++offset) {
-      internal::pstoreN(data2, internal::ploaduN<Packet>(data1 + offset, sizeN), sizeN);
-      VERIFY(test::areApprox(data1 + offset, data2, N) && "internal::ploaduN");
-    }
+      if (offsetN == 0) {
+        internal::pstoreN(data2, internal::ploadN<Packet>(data1, sizeN), sizeN);
+        VERIFY(test::areApprox(data1, data2, N) && "aligned loadN/storeN");
 
-    for (int offset = 0; offset < PacketSize; ++offset) {
-      internal::pstoreuN(data2 + offset, internal::ploadN<Packet>(data1, sizeN), sizeN);
-      VERIFY(test::areApprox(data1, data2 + offset, N) && "internal::pstoreuN");
+        for (int offset = 0; offset < PacketSize; ++offset) {
+          internal::pstoreN(data2, internal::ploaduN<Packet>(data1 + offset, sizeN), sizeN);
+          VERIFY(test::areApprox(data1 + offset, data2, N) && "internal::ploaduN");
+        }
+
+        for (int offset = 0; offset < PacketSize; ++offset) {
+          internal::pstoreuN(data2 + offset, internal::ploadN<Packet>(data1, sizeN), sizeN);
+          VERIFY(test::areApprox(data1, data2 + offset, N) && "internal::pstoreuN");
+        }
+      }
+
+      if (sizeN + offsetN > sizeof(Packet)) continue;  // Don't read or write past end of Packet
+
+      internal::pstoreN(data2, internal::ploadN<Packet>(data1, sizeN, offsetN), sizeN, offsetN);
+      VERIFY(test::areApprox(data1, data2, N) && "aligned offset loadN/storeN");
     }
   }
 

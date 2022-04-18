@@ -610,9 +610,21 @@ pabsdiff(const Packet& a, const Packet& b) { return pselect(pcmp_lt(a, b), psub(
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pload(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
-/** \internal \returns N bytes of a packet version of \a *from, from must be 16 bytes aligned */
+/** \internal \returns N bytes (setoff by offset) of a packet version of \a *from, from must be 16 bytes aligned */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
-ploadN(const typename unpacket_traits<Packet>::type* from, const size_t /*N*/) { return pload<Packet>(from); }
+ploadN(const typename unpacket_traits<Packet>::type* from, const size_t N, const size_t offset = 0)
+{
+  typedef typename unpacket_traits<Packet>::type Scalar;
+  const size_t n = unpacket_traits<Packet>::size;
+  EIGEN_ALIGN_MAX Scalar elements[n];
+  for (size_t M = 0; M < n; M++) {
+    elements[M] = Scalar(0);  // Avoid accessing uninitialized data
+  }
+  for (size_t M = 0; M < (N / sizeof(Scalar)); M++) {
+    elements[M + (offset / sizeof(Scalar))] = from[M];
+  }
+  return pload<Packet>(elements);
+}
 
 /** \internal \returns a packet version of \a *from, (un-aligned load) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -716,14 +728,14 @@ peven_mask(const Packet& /*a*/) {
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore(Scalar* to, const Packet& from)
 { (*to) = from; }
 
-/** \internal copy N bytes of the packet \a from to \a *to, \a to must be 16 bytes aligned */
-template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreN(Scalar* to, const Packet& from, const size_t N)
+/** \internal copy N bytes (setoff by offset) of the packet \a from to \a *to, \a to must be 16 bytes aligned */
+template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreN(Scalar* to, const Packet& from, const size_t N, const size_t offset = 0)
 {
   const size_t n = unpacket_traits<Packet>::size;
   EIGEN_ALIGN_MAX Scalar elements[n];
   pstore<Scalar>(elements, from);
   for (size_t M = 0; M < (N / sizeof(Scalar)); M++) {
-    to[M] = elements[M];
+    to[M] = elements[M + (offset / sizeof(Scalar))];
   }
 }
 

@@ -478,57 +478,66 @@ template<> EIGEN_STRONG_INLINE Packet8bf pload<Packet8bf>(const bfloat16*     fr
 }
 
 template <typename Packet>
-EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N)
+EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N, const size_t offset)
 {
   // some versions of GCC throw "unused-but-set-parameter".
   // ignoring these warnings for now.
+  eigen_assert(N + offset <= sizeof(Packet) && "number of bytes plus offset will read past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_ALIGNED_LOAD
   EIGEN_UNUSED_VARIABLE(from);
-  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
+  Packet load = vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
+  if (offset) {
+#ifdef _BIG_ENDIAN
+    load = Packet(vec_sro(Packet16uc(load), pset1<Packet16uc>(offset * 8)));
+#else
+    load = Packet(vec_slo(Packet16uc(load), pset1<Packet16uc>(offset * 8)));
+#endif
+  }
+  return load;
 #else
   Packet load;
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
-    load[M] = from[M];
+    load[M + (offset / sizeof(__UNPACK_TYPE__(Packet))] = from[M];
   }
   return load;
 #endif
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet4f ploadN<Packet4f>(const float* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet4f ploadN<Packet4f>(const float* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet4f>(from, N);
+  return ploadN_common<Packet4f>(from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet4i ploadN<Packet4i>(const int* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet4i ploadN<Packet4i>(const int* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet4i>(from, N);
+  return ploadN_common<Packet4i>(from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet8s ploadN<Packet8s>(const short int* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet8s ploadN<Packet8s>(const short int* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet8s>(from, N);
+  return ploadN_common<Packet8s>(from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet8us ploadN<Packet8us>(const unsigned short int* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet8us ploadN<Packet8us>(const unsigned short int* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet8us>(from, N);
+  return ploadN_common<Packet8us>(from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet8bf ploadN<Packet8bf>(const bfloat16* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet8bf ploadN<Packet8bf>(const bfloat16* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet8us>(reinterpret_cast<const unsigned short int*>(from), N);
+  return ploadN_common<Packet8us>(reinterpret_cast<const unsigned short int*>(from), N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet16c ploadN<Packet16c>(const signed char* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet16c ploadN<Packet16c>(const signed char* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet16c>(from, N);
+  return ploadN_common<Packet16c>(from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet16uc ploadN<Packet16uc>(const unsigned char* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet16uc ploadN<Packet16uc>(const unsigned char* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet16uc>(from, N);
+  return ploadN_common<Packet16uc>(from, N, offset);
 }
 
 template <typename Packet>
@@ -579,55 +588,64 @@ template<> EIGEN_STRONG_INLINE void pstore<unsigned char>(unsigned char*       t
   pstore_common<Packet16uc>(to, from);
 }
 
-template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const size_t N)
+template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const size_t N, const size_t offset)
 {
   // some versions of GCC throw "unused-but-set-parameter" (float *to).
   // ignoring these warnings for now.
+  eigen_assert(N <= sizeof(Packet) && "number of bytes will write past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(to);
   EIGEN_DEBUG_ALIGNED_STORE
-  vec_xst_len(from, to, N);
+  Packet store = from;
+  if (offset) {
+#ifdef _BIG_ENDIAN
+    store = Packet(vec_slo(Packet16uc(store), pset1<Packet16uc>(offset * 8)));
+#else
+    store = Packet(vec_sro(Packet16uc(store), pset1<Packet16uc>(offset * 8)));
+#endif
+  }
+  vec_xst_len(store, to, N);
 #else
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
-    to[M] = from[M];
+    to[M] = from[M + (offset / sizeof(__UNPACK_TYPE__(Packet))];
   }
 #endif
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<float>(float*  to, const Packet4f& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<float>(float*  to, const Packet4f& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet4f>(to, from, N);
+  pstoreN_common<Packet4f>(to, from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<int>(int*  to, const Packet4i& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<int>(int*  to, const Packet4i& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet4i>(to, from, N);
+  pstoreN_common<Packet4i>(to, from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<short int>(short int*  to, const Packet8s& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<short int>(short int*  to, const Packet8s& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet8s>(to, from, N);
+  pstoreN_common<Packet8s>(to, from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<unsigned short int>(unsigned short int*  to, const Packet8us& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<unsigned short int>(unsigned short int*  to, const Packet8us& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet8us>(to, from, N);
+  pstoreN_common<Packet8us>(to, from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<bfloat16>(bfloat16*      to, const Packet8bf& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<bfloat16>(bfloat16*      to, const Packet8bf& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet8us>(reinterpret_cast<unsigned short int*>(to), from, N);
+  pstoreN_common<Packet8us>(reinterpret_cast<unsigned short int*>(to), from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<signed char>(signed char*  to, const Packet16c& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<signed char>(signed char*  to, const Packet16c& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet16c>(to, from, N);
+  pstoreN_common<Packet16c>(to, from, N, offset);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<unsigned char>(unsigned char*  to, const Packet16uc& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<unsigned char>(unsigned char*  to, const Packet16uc& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet16uc>(to, from, N);
+  pstoreN_common<Packet16uc>(to, from, N, offset);
 }
 
 template<typename Packet>
@@ -737,6 +755,7 @@ template<> EIGEN_ALWAYS_INLINE Packet8bf pload_ignore<Packet8bf>(const bfloat16*
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pgather_common(const __UNPACK_TYPE__(Packet)* from, Index stride, const size_t N = unpacket_traits<Packet>::size)
 {
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
+  eigen_assert(N <= sizeof(Packet) && "number of elements will gather past end of packet");
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < N; M++) {
     a[M] = from[M*stride];
@@ -818,6 +837,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16uc pgatherN<unsigned ch
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter_common(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride, const size_t N = unpacket_traits<Packet>::size)
 {
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
+  eigen_assert(N <= sizeof(Packet) && "number of elements will scatter past end of packet");
   pstore<__UNPACK_TYPE__(Packet)>(a, from);
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < N; M++) {
@@ -1141,6 +1161,7 @@ template<> EIGEN_STRONG_INLINE Packet16uc ploadu<Packet16uc>(const unsigned char
 
 template<typename Packet> EIGEN_ALWAYS_INLINE Packet ploaduN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N)
 {
+  eigen_assert(N <= sizeof(Packet) && "number of bytes will read past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_ALIGNED_LOAD
   EIGEN_DEBUG_UNALIGNED_LOAD
@@ -1306,6 +1327,7 @@ template<> EIGEN_STRONG_INLINE void pstoreu<unsigned char>(unsigned char*      t
 
 template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreuN_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const size_t N)
 {
+  eigen_assert(N <= sizeof(Packet) && "number of bytes will write past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_UNALIGNED_STORE
   vec_xst_len(from, to, N);
@@ -2605,9 +2627,9 @@ template<> EIGEN_STRONG_INLINE Packet2d pload<Packet2d>(const double* from)
   return vec_xl(0, const_cast<double *>(from)); // cast needed by Clang
 }
 
-template<> EIGEN_ALWAYS_INLINE Packet2d ploadN<Packet2d>(const double* from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE Packet2d ploadN<Packet2d>(const double* from, const size_t N, const size_t offset)
 {
-  return ploadN_common<Packet2d>(from, N);
+  return ploadN_common<Packet2d>(from, N, offset);
 }
 
 template<> EIGEN_STRONG_INLINE void pstore<double>(double*   to, const Packet2d& from)
@@ -2616,9 +2638,9 @@ template<> EIGEN_STRONG_INLINE void pstore<double>(double*   to, const Packet2d&
   vec_xst(from, 0, to);
 }
 
-template<> EIGEN_ALWAYS_INLINE void pstoreN<double>(double*  to, const Packet2d& from, const size_t N)
+template<> EIGEN_ALWAYS_INLINE void pstoreN<double>(double*  to, const Packet2d& from, const size_t N, const size_t offset)
 {
-  pstoreN_common<Packet2d>(to, from, N);
+  pstoreN_common<Packet2d>(to, from, N, offset);
 }
 
 template<> EIGEN_STRONG_INLINE Packet2d pset1<Packet2d>(const double&  from) {
