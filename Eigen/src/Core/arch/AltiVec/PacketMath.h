@@ -592,7 +592,7 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE_
 {
   // some versions of GCC throw "unused-but-set-parameter" (float *to).
   // ignoring these warnings for now.
-  eigen_assert(N + offset <= sizeof(Packet) && "number of bytes will write past end of packet");
+  eigen_assert(N + offset <= sizeof(Packet) && "number of bytes plus offset will write past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(to);
   EIGEN_DEBUG_ALIGNED_STORE
