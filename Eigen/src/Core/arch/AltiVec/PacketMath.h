@@ -478,6 +478,33 @@ template<> EIGEN_STRONG_INLINE Packet8bf pload<Packet8bf>(const bfloat16*     fr
 }
 
 template <typename Packet>
+EIGEN_ALWAYS_INLINE Packet pload_ignore(const __UNPACK_TYPE__(Packet)* from)
+{
+  // some versions of GCC throw "unused-but-set-parameter".
+  // ignoring these warnings for now.
+  EIGEN_UNUSED_VARIABLE(from);
+  EIGEN_DEBUG_ALIGNED_LOAD
+  // Ignore partial input memory initialized
+#if !EIGEN_COMP_LLVM
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+#ifdef __VSX__
+  return vec_xl(0, const_cast<__UNPACK_TYPE__(Packet)*>(from));
+#else
+  return vec_ld(0, from);
+#endif
+#if !EIGEN_COMP_LLVM
+  #pragma GCC diagnostic pop
+#endif
+}
+
+template<> EIGEN_ALWAYS_INLINE Packet8bf pload_ignore<Packet8bf>(const bfloat16*     from)
+{
+  return pload_ignore<Packet8us>(reinterpret_cast<const unsigned short int*>(from));
+}
+
+template <typename Packet>
 EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N, const size_t offset)
 {
   // some versions of GCC throw "unused-but-set-parameter".
@@ -496,12 +523,12 @@ EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, co
   }
   return load;
 #else
-  Packet load;
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[unpacket_traits<Packet>::size];
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
-    load[M + (offset / sizeof(__UNPACK_TYPE__(Packet))] = from[M];
+    load[M + (offset / sizeof(__UNPACK_TYPE__(Packet)))] = from[M];
   }
-  return load;
+  return pload_ignore<Packet>(load);
 #endif
 }
 
@@ -608,7 +635,7 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE_
 #else
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
-    to[M] = from[M + (offset / sizeof(__UNPACK_TYPE__(Packet))];
+    to[M] = from[M + (offset / sizeof(__UNPACK_TYPE__(Packet)))];
   }
 #endif
 }
@@ -723,33 +750,6 @@ pbroadcast4<Packet4i>(const int *a,
                       Packet4i& a0, Packet4i& a1, Packet4i& a2, Packet4i& a3)
 {
   pbroadcast4_common<Packet4i>(a, a0, a1, a2, a3);
-}
-
-template <typename Packet>
-EIGEN_ALWAYS_INLINE Packet pload_ignore(const __UNPACK_TYPE__(Packet)* from)
-{
-  // some versions of GCC throw "unused-but-set-parameter".
-  // ignoring these warnings for now.
-  EIGEN_UNUSED_VARIABLE(from);
-  EIGEN_DEBUG_ALIGNED_LOAD
-  // Ignore partial input memory initialized
-#if !EIGEN_COMP_LLVM
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#ifdef __VSX__
-  return vec_xl(0, const_cast<__UNPACK_TYPE__(Packet)*>(from));
-#else
-  return vec_ld(0, from);
-#endif
-#if !EIGEN_COMP_LLVM
-  #pragma GCC diagnostic pop
-#endif
-}
-
-template<> EIGEN_ALWAYS_INLINE Packet8bf pload_ignore<Packet8bf>(const bfloat16*     from)
-{
-  return pload_ignore<Packet8us>(reinterpret_cast<const unsigned short int*>(from));
 }
 
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pgather_common(const __UNPACK_TYPE__(Packet)* from, Index stride, const size_t N = unpacket_traits<Packet>::size)
@@ -1171,12 +1171,12 @@ template<typename Packet> EIGEN_ALWAYS_INLINE Packet ploaduN_common(const __UNPA
   EIGEN_DEBUG_UNALIGNED_LOAD
   return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
 #else
-  Packet load;
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[unpacket_traits<Packet>::size];
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
     load[M] = from[M];
   }
-  return load;
+  return pload_ignore<Packet>(load);
 #endif
 }
 
