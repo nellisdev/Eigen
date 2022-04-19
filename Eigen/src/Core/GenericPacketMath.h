@@ -622,8 +622,8 @@ ploadN(const typename unpacket_traits<Packet>::type* from, const Index N, const 
   for (; M < numext::mini(offset,n); M++) {
     elements[M] = Scalar(0);
   }
-  for (; M < N; M++) {
-    elements[M + offset] = from[M];
+  for (; M < numext::mini(N+offset,n); M++) {
+    elements[M] = from[M-offset];
   }
   for (; M < n; M++) {
     elements[M] = Scalar(0);
@@ -637,7 +637,20 @@ ploadu(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
 /** \internal \returns N elements of a packet version of \a *from, (un-aligned load) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
-ploaduN(const typename unpacket_traits<Packet>::type* from, const Index /*N*/) { return ploadu<Packet>(from); }
+ploaduN(const typename unpacket_traits<Packet>::type* from, const Index N) {
+  const Index n = unpacket_traits<Packet>::size;
+  eigen_assert(N <= n && "number of elements will read past end of packet");
+  typedef typename unpacket_traits<Packet>::type Scalar;
+  EIGEN_ALIGN_MAX Scalar elements[n];
+  Index M = 0;
+  for (; M < numext::mini(N,n); M++) {
+    elements[M] = from[M];
+  }
+  for (; M < n; M++) {
+    elements[M] = Scalar(0);
+  }
+  return pload<Packet>(elements);
+}
 
 /** \internal \returns a packet version of \a *from, (un-aligned masked load)
  * There is no generic implementation. We only have implementations for specialized
@@ -751,7 +764,15 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreu
 
 /** \internal copy N elements of the packet \a from to \a *to, (un-aligned store) */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreuN(Scalar* to, const Packet& from, const Index N)
-{ pstoreN(to, from, N); }
+{
+  const Index n = unpacket_traits<Packet>::size;
+  eigen_assert(N <= n && "number of elements will write past end of packet");
+  EIGEN_ALIGN_MAX Scalar elements[n];
+  pstore<Scalar>(elements, from);
+  for (Index M = 0; M < numext::mini(N,n); M++) {
+    to[M] = elements[M];
+  }
+}
 
 /** \internal copy the packet \a from to \a *to, (un-aligned store with a mask)
  * There is no generic implementation. We only have implementations for specialized
@@ -777,10 +798,9 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline Packet pgath
   const Index n = unpacket_traits<Packet>::size;
   EIGEN_ALIGN_MAX Scalar elements[n];
   Index M;
-  for (M = 0; M < N; M++) {
+  for (M = 0; M < numext::mini(N,n); M++) {
     elements[M] = from[M*stride];
   }
-  // Just to get rid of compiler warnings
   for (; M < n; M++) {
     elements[M] = Scalar(0);
   }
@@ -802,7 +822,7 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pscatte
   const Index n = unpacket_traits<Packet>::size;
   EIGEN_ALIGN_MAX Scalar elements[n];
   pstore<Scalar>(elements, from);
-  for (Index M = 0; M < N; M++) {
+  for (Index M = 0; M < numext::mini(N,n); M++) {
     to[M*stride] = elements[M];
   }
 }
