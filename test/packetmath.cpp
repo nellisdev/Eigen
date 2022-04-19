@@ -1403,19 +1403,19 @@ void packetmath_scatter_gather() {
     VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgather");
   }
 
-  for (size_t N = 0; N <= PacketSize; ++N) {
-    for (size_t i = 0; i < N; ++i) {
+  for (Index N = 0; N <= PacketSize; ++N) {
+    for (Index i = 0; i < N; ++i) {
       data1[i] = internal::random<Scalar>() / RealScalar(PacketSize);
     }
 
-    for (size_t i = 0; i < N * 20; ++i) {
+    for (Index i = 0; i < N * 20; ++i) {
       buffer[i] = Scalar(0);
     }
 
     packet = internal::ploadN<Packet>(data1, N);
     internal::pscatterN<Scalar, Packet>(buffer, packet, stride, N);
 
-    for (size_t i = 0; i < N * 20; ++i) {
+    for (Index i = 0; i < N * 20; ++i) {
       if ((i % stride) == 0 && i < stride * N) {
         VERIFY(test::isApproxAbs(buffer[i], data1[i / stride], refvalue) && "pscatterN");
       } else {
@@ -1423,12 +1423,12 @@ void packetmath_scatter_gather() {
       }
     }
 
-    for (size_t i = 0; i < N * 7; ++i) {
+    for (Index i = 0; i < N * 7; ++i) {
       buffer[i] = internal::random<Scalar>() / RealScalar(PacketSize);
     }
     packet = internal::pgatherN<Scalar, Packet>(buffer, 7, N);
     internal::pstoreN(data1, packet, N);
-    for (size_t i = 0; i < N; ++i) {
+    for (Index i = 0; i < N; ++i) {
       VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgatherN");
     }
   }
