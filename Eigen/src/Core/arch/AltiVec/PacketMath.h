@@ -509,24 +509,27 @@ EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, co
 {
   // some versions of GCC throw "unused-but-set-parameter".
   // ignoring these warnings for now.
-  eigen_assert(N + offset <= sizeof(Packet) && "number of bytes plus offset will read past end of packet");
+  const size_t n = unpacket_traits<Packet>::size;
+  eigen_assert(N + offset <= n && "number of elements plus offset will read past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_ALIGNED_LOAD
   EIGEN_UNUSED_VARIABLE(from);
-  Packet load = vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
+  const size_t size = sizeof(__UNPACK_TYPE__(Packet));
+  Packet load = vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N * size);
   if (offset) {
+    Packet16uc shift = pset1<Packet16uc>(offset * 8 * size);
 #ifdef _BIG_ENDIAN
-    load = Packet(vec_sro(Packet16uc(load), pset1<Packet16uc>(offset * 8)));
+    load = Packet(vec_sro(Packet16uc(load), shift));
 #else
-    load = Packet(vec_slo(Packet16uc(load), pset1<Packet16uc>(offset * 8)));
+    load = Packet(vec_slo(Packet16uc(load), shift));
 #endif
   }
   return load;
 #else
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[unpacket_traits<Packet>::size];
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[n];
   LOAD_STORE_UNROLL_16
-  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
-    load[M + (offset / sizeof(__UNPACK_TYPE__(Packet)))] = from[M];
+  for (size_t M = 0; M < N; M++) {
+    load[M + offset] = from[M];
   }
   return pload_ignore<Packet>(load);
 #endif
@@ -619,23 +622,25 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE_
 {
   // some versions of GCC throw "unused-but-set-parameter" (float *to).
   // ignoring these warnings for now.
-  eigen_assert(N + offset <= sizeof(Packet) && "number of bytes plus offset will write past end of packet");
+  eigen_assert(N + offset <= unpacket_traits<Packet>::size && "number of elements plus offset will write past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(to);
   EIGEN_DEBUG_ALIGNED_STORE
   Packet store = from;
+  const size_t size = sizeof(__UNPACK_TYPE__(Packet));
   if (offset) {
+    Packet16uc shift = pset1<Packet16uc>(offset * 8 * size);
 #ifdef _BIG_ENDIAN
-    store = Packet(vec_slo(Packet16uc(store), pset1<Packet16uc>(offset * 8)));
+    store = Packet(vec_slo(Packet16uc(store), shift));
 #else
-    store = Packet(vec_sro(Packet16uc(store), pset1<Packet16uc>(offset * 8)));
+    store = Packet(vec_sro(Packet16uc(store), shift));
 #endif
   }
-  vec_xst_len(store, to, N);
+  vec_xst_len(store, to, N * size);
 #else
   LOAD_STORE_UNROLL_16
-  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
-    to[M] = from[M + (offset / sizeof(__UNPACK_TYPE__(Packet)))];
+  for (size_t M = 0; M < N; M++) {
+    to[M] = from[M + offset];
   }
 #endif
 }
@@ -755,7 +760,7 @@ pbroadcast4<Packet4i>(const int *a,
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pgather_common(const __UNPACK_TYPE__(Packet)* from, Index stride, const size_t N = unpacket_traits<Packet>::size)
 {
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
-  eigen_assert(N <= sizeof(Packet) && "number of elements will gather past end of packet");
+  eigen_assert(N <= unpacket_traits<Packet>::size && "number of elements will gather past end of packet");
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < N; M++) {
     a[M] = from[M*stride];
@@ -837,7 +842,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16uc pgatherN<unsigned ch
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter_common(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride, const size_t N = unpacket_traits<Packet>::size)
 {
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
-  eigen_assert(N <= sizeof(Packet) && "number of elements will scatter past end of packet");
+  eigen_assert(N <= unpacket_traits<Packet>::size && "number of elements will scatter past end of packet");
   pstore<__UNPACK_TYPE__(Packet)>(a, from);
   LOAD_STORE_UNROLL_16
   for (size_t M = 0; M < N; M++) {
@@ -1165,15 +1170,15 @@ template<> EIGEN_STRONG_INLINE Packet16uc ploadu<Packet16uc>(const unsigned char
 
 template<typename Packet> EIGEN_ALWAYS_INLINE Packet ploaduN_common(const __UNPACK_TYPE__(Packet)* from, const size_t N)
 {
-  eigen_assert(N <= sizeof(Packet) && "number of bytes will read past end of packet");
+  eigen_assert(N <= unpacket_traits<Packet>::size && "number of elements will read past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_ALIGNED_LOAD
   EIGEN_DEBUG_UNALIGNED_LOAD
-  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N);
+  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N * sizeof(__UNPACK_TYPE__(Packet)));
 #else
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[unpacket_traits<Packet>::size];
   LOAD_STORE_UNROLL_16
-  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
+  for (size_t M = 0; M < N; M++) {
     load[M] = from[M];
   }
   return pload_ignore<Packet>(load);
@@ -1331,13 +1336,13 @@ template<> EIGEN_STRONG_INLINE void pstoreu<unsigned char>(unsigned char*      t
 
 template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreuN_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const size_t N)
 {
-  eigen_assert(N <= sizeof(Packet) && "number of bytes will write past end of packet");
+  eigen_assert(N <= unpacket_traits<Packet>::size && "number of elements will write past end of packet");
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_UNALIGNED_STORE
-  vec_xst_len(from, to, N);
+  vec_xst_len(from, to, N * sizeof(__UNPACK_TYPE__(Packet)));
 #else
   LOAD_STORE_UNROLL_16
-  for (size_t M = 0; M < (N / sizeof(__UNPACK_TYPE__(Packet))); M++) {
+  for (size_t M = 0; M < N; M++) {
     to[M] = from[M];
   }
 #endif

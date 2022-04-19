@@ -459,7 +459,6 @@ void packetmath() {
   }
 
   for (int M = 0; M < PacketSize; ++M) {
-    const size_t offsetN = M * sizeof(Scalar);
     for (int N = 0; N <= PacketSize; ++N) {
       for (int j = 0; j < size; ++j) {
         data1[j] = internal::random<Scalar>() / RealScalar(PacketSize);
@@ -467,26 +466,24 @@ void packetmath() {
         refvalue = (std::max)(refvalue, numext::abs(data1[j]));
       }
 
-      const size_t sizeN = N * sizeof(Scalar);
-
-      if (offsetN == 0) {
-        internal::pstoreN(data2, internal::ploadN<Packet>(data1, sizeN), sizeN);
+      if (M == 0) {
+        internal::pstoreN(data2, internal::ploadN<Packet>(data1, N), N);
         VERIFY(test::areApprox(data1, data2, N) && "aligned loadN/storeN");
 
         for (int offset = 0; offset < PacketSize; ++offset) {
-          internal::pstoreN(data2, internal::ploaduN<Packet>(data1 + offset, sizeN), sizeN);
+          internal::pstoreN(data2, internal::ploaduN<Packet>(data1 + offset, N), N);
           VERIFY(test::areApprox(data1 + offset, data2, N) && "internal::ploaduN");
         }
 
         for (int offset = 0; offset < PacketSize; ++offset) {
-          internal::pstoreuN(data2 + offset, internal::ploadN<Packet>(data1, sizeN), sizeN);
+          internal::pstoreuN(data2 + offset, internal::ploadN<Packet>(data1, N), N);
           VERIFY(test::areApprox(data1, data2 + offset, N) && "internal::pstoreuN");
         }
       }
 
-      if (sizeN + offsetN > sizeof(Packet)) continue;  // Don't read or write past end of Packet
+      if (N + M > PacketSize) continue;  // Don't read or write past end of Packet
 
-      internal::pstoreN(data2, internal::ploadN<Packet>(data1, sizeN, offsetN), sizeN, offsetN);
+      internal::pstoreN(data2, internal::ploadN<Packet>(data1, N, M), N, M);
       VERIFY(test::areApprox(data1, data2, N) && "aligned offset loadN/storeN");
     }
   }
@@ -1415,8 +1412,7 @@ void packetmath_scatter_gather() {
       buffer[i] = Scalar(0);
     }
 
-    const size_t sizeN = N * sizeof(Scalar);
-    packet = internal::ploadN<Packet>(data1, sizeN);
+    packet = internal::ploadN<Packet>(data1, N);
     internal::pscatterN<Scalar, Packet>(buffer, packet, stride, N);
 
     for (size_t i = 0; i < N * 20; ++i) {
@@ -1431,7 +1427,7 @@ void packetmath_scatter_gather() {
       buffer[i] = internal::random<Scalar>() / RealScalar(PacketSize);
     }
     packet = internal::pgatherN<Scalar, Packet>(buffer, 7, N);
-    internal::pstoreN(data1, packet, sizeN);
+    internal::pstoreN(data1, packet, N);
     for (size_t i = 0; i < N; ++i) {
       VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgatherN");
     }

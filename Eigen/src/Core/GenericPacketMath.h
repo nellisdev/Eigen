@@ -610,18 +610,23 @@ pabsdiff(const Packet& a, const Packet& b) { return pselect(pcmp_lt(a, b), psub(
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pload(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
-/** \internal \returns N bytes (setoff by offset) of a packet version of \a *from, from must be 16 bytes aligned */
+/** \internal \returns N elements (setoff by offset) of a packet version of \a *from, from must be 16 bytes aligned */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 ploadN(const typename unpacket_traits<Packet>::type* from, const size_t N, const size_t offset = 0)
 {
-  typedef typename unpacket_traits<Packet>::type Scalar;
   const size_t n = unpacket_traits<Packet>::size;
+  eigen_assert(N + offset <= n && "number of elements plus offset will read past end of packet");
+  typedef typename unpacket_traits<Packet>::type Scalar;
   EIGEN_ALIGN_MAX Scalar elements[n];
-  for (size_t M = 0; M < n; M++) {
-    elements[M] = Scalar(0);  // Avoid accessing uninitialized data
+  size_t M = 0;
+  for (; M < numext::mini(offset,n); M++) {
+    elements[M] = Scalar(0);
   }
-  for (size_t M = 0; M < (N / sizeof(Scalar)); M++) {
-    elements[M + (offset / sizeof(Scalar))] = from[M];
+  for (; M < N; M++) {
+    elements[M + offset] = from[M];
+  }
+  for (; M < n; M++) {
+    elements[M] = Scalar(0);
   }
   return pload<Packet>(elements);
 }
@@ -630,7 +635,7 @@ ploadN(const typename unpacket_traits<Packet>::type* from, const size_t N, const
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 ploadu(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
-/** \internal \returns N bytes of a packet version of \a *from, (un-aligned load) */
+/** \internal \returns N elements of a packet version of \a *from, (un-aligned load) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 ploaduN(const typename unpacket_traits<Packet>::type* from, const size_t /*N*/) { return ploadu<Packet>(from); }
 
@@ -728,14 +733,15 @@ peven_mask(const Packet& /*a*/) {
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore(Scalar* to, const Packet& from)
 { (*to) = from; }
 
-/** \internal copy N bytes (setoff by offset) of the packet \a from to \a *to, \a to must be 16 bytes aligned */
+/** \internal copy N elements (setoff by offset) of the packet \a from to \a *to, \a to must be 16 bytes aligned */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreN(Scalar* to, const Packet& from, const size_t N, const size_t offset = 0)
 {
   const size_t n = unpacket_traits<Packet>::size;
+  eigen_assert(N + offset <= n && "number of elements plus offset will write past end of packet");
   EIGEN_ALIGN_MAX Scalar elements[n];
   pstore<Scalar>(elements, from);
-  for (size_t M = 0; M < (N / sizeof(Scalar)); M++) {
-    to[M] = elements[M + (offset / sizeof(Scalar))];
+  for (size_t M = 0; M < numext::mini(N,n-offset); M++) {
+    to[M] = elements[M + offset];
   }
 }
 
@@ -743,7 +749,7 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreN
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreu(Scalar* to, const Packet& from)
 {  (*to) = from; }
 
-/** \internal copy N bytes of the packet \a from to \a *to, (un-aligned store) */
+/** \internal copy N elements of the packet \a from to \a *to, (un-aligned store) */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreuN(Scalar* to, const Packet& from, const size_t N)
 { pstoreN(to, from, N); }
 
