@@ -176,6 +176,7 @@ template<> EIGEN_ALWAYS_INLINE Packet2cf pload_ignore<Packet2cf>(const std::comp
 
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pgather_complex_size2(const Scalar* from, Index stride, const Index N = 2)
 {
+  eigen_assert(N <= unpacket_traits<Packet>::size && "number of elements will gather past end of packet");
   EIGEN_ALIGN16 Scalar af[2];
   for (Index M = 0; M < N; M++) {
     af[M] = from[M*stride];
@@ -192,6 +193,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet2cf pgatherN<std::complex
 }
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter_complex_size2(Scalar* to, const Packet& from, Index stride, const Index N = 2)
 {
+  eigen_assert(N <= unpacket_traits<Packet>::size && "number of elements will scatter past end of packet");
   EIGEN_ALIGN16 Scalar af[2];
   pstore<Scalar>((Scalar *) af, from);
   for (Index M = 0; M < N; M++) {
