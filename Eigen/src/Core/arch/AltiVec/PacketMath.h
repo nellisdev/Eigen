@@ -511,10 +511,10 @@ EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, co
   // ignoring these warnings for now.
   const Index n = unpacket_traits<Packet>::size;
   eigen_assert(N + offset <= n && "number of elements plus offset will read past end of packet");
+  const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_ALIGNED_LOAD
   EIGEN_UNUSED_VARIABLE(from);
-  const Index size = sizeof(__UNPACK_TYPE__(Packet));
   Packet load = vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), N * size);
   if (offset) {
     Packet16uc shift = pset1<Packet16uc>(offset * 8 * size);
@@ -527,9 +527,28 @@ EIGEN_ALWAYS_INLINE Packet ploadN_common(const __UNPACK_TYPE__(Packet)* from, co
   return load;
 #else
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[n];
-  LOAD_STORE_UNROLL_16
-  for (Index M = 0; M < N; M++) {
-    load[M + offset] = from[M];
+  unsigned char* load2 = reinterpret_cast<unsigned char *>(load + offset);
+  unsigned char* from2 = reinterpret_cast<unsigned char *>(const_cast<__UNPACK_TYPE__(Packet)*>(from));
+  Index N2 = N * size;
+  Index M = 0;
+  if (16 <= N2) {
+    pstoreu(load2, ploadu<Packet16uc>(from2));
+    M += 16;
+  }
+  if (M + 8 <= N2) {
+    *reinterpret_cast<uint64_t *>(load2 + M) = *reinterpret_cast<uint64_t *>(from2 + M);
+    M += 8;
+  }
+  if (M + 4 <= N2) {
+    *reinterpret_cast<uint32_t *>(load2 + M) = *reinterpret_cast<uint32_t *>(from2 + M);
+    M += 4;
+  }
+  if (M + 2 <= N2) {
+    *reinterpret_cast<uint16_t *>(load2 + M) = *reinterpret_cast<uint16_t *>(from2 + M);
+    M += 2;
+  }
+  if (M < N2) {
+    *reinterpret_cast<uint8_t *>(load2 + M) = *reinterpret_cast<uint8_t *>(from2 + M);
   }
   return pload_ignore<Packet>(load);
 #endif
@@ -622,12 +641,13 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE_
 {
   // some versions of GCC throw "unused-but-set-parameter" (float *to).
   // ignoring these warnings for now.
-  eigen_assert(N + offset <= unpacket_traits<Packet>::size && "number of elements plus offset will write past end of packet");
+  const Index n = unpacket_traits<Packet>::size;
+  eigen_assert(N + offset <= n && "number of elements plus offset will write past end of packet");
+  const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(to);
   EIGEN_DEBUG_ALIGNED_STORE
   Packet store = from;
-  const Index size = sizeof(__UNPACK_TYPE__(Packet));
   if (offset) {
     Packet16uc shift = pset1<Packet16uc>(offset * 8 * size);
 #ifdef _BIG_ENDIAN
@@ -638,9 +658,30 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreN_common(__UNPACK_TYPE_
   }
   vec_xst_len(store, to, N * size);
 #else
-  LOAD_STORE_UNROLL_16
-  for (Index M = 0; M < N; M++) {
-    to[M] = from[M + offset];
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) store[n];
+  pstore(store, from);
+  unsigned char* store2 = reinterpret_cast<unsigned char *>(store + offset);
+  unsigned char* to2 = reinterpret_cast<unsigned char *>(to);
+  Index N2 = N * size;
+  Index M = 0;
+  if (16 <= N2) {
+    pstore(to2, ploadu<Packet16uc>(store2));
+    M += 16;
+  }
+  if (M + 8 <= N2) {
+    *reinterpret_cast<uint64_t *>(to2 + M) = *reinterpret_cast<uint64_t *>(store2 + M);
+    M += 8;
+  }
+  if (M + 4 <= N2) {
+    *reinterpret_cast<uint32_t *>(to2 + M) = *reinterpret_cast<uint32_t *>(store2 + M);
+    M += 4;
+  }
+  if (M + 2 <= N2) {
+    *reinterpret_cast<uint16_t *>(to2 + M) = *reinterpret_cast<uint16_t *>(store2 + M);
+    M += 2;
+  }
+  if (M < N2) {
+    *reinterpret_cast<uint8_t *>(to2 + M) = *reinterpret_cast<uint8_t *>(store2 + M);
   }
 #endif
 }
