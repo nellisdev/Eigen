@@ -1097,8 +1097,7 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadt(const typename unpacket_trai
 }
 
 /** \internal \returns a packet version of \a *from.
-  * The pointer \a from must be aligned on a \a Alignment bytes boundary.
-  * Fast allows the system to read a packet faster even if it is more than N bytes. */
+  * The pointer \a from must be aligned on a \a Alignment bytes boundary. */
 template<typename Packet, int Alignment>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadtN(const typename unpacket_traits<Packet>::type* from, const Index N)
 {
