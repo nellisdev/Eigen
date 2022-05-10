@@ -254,12 +254,9 @@ private:
   bool m_isTranspose, m_compU, m_compV, m_useQrStep;
   JacobiSVD<MatrixType, Options> smallSvd;
   HouseholderQR<MatrixX> qrStep;
+  internal::UpperBidiagonalization<MatrixX> bid;
   MatrixX copyWorkspace;
-
-  // this ratio is taken from LAPACK's dgesdd routine.
-  // It defines an approximate crossover point at which it should be faster to perform R-Bidiagonalization,
-  // instead of bidiagonalizing the input matrix directly.
-  const double qrPerfRatio = 11.0 / 6.0;
+  MatrixX reducedTriangle;
 
   using Base::m_computationOptions;
   using Base::m_computeThinU;
@@ -285,11 +282,6 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   if (cols < m_algoswap)
     internal::allocate_small_svd<MatrixType, Options>::run(smallSvd, rows, cols, computationOptions);
 
-  double useQrThreshold = (std::min)(rows, cols) * qrPerfRatio;
-  m_useQrStep = rows > useQrThreshold || cols > useQrThreshold;
-  if (m_useQrStep)
-    qrStep = HouseholderQR<MatrixX>((std::max)(rows, cols), (std::min)(rows, cols));
-
   m_computed = MatrixXr::Zero(m_diagSize + 1, m_diagSize );
   m_compU = computeV();
   m_compV = computeU();
@@ -297,7 +289,20 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   if (m_isTranspose)
     std::swap(m_compU, m_compV);
 
+  // useQrThreshold is the crossover point that determines if we perform R-Bidiagonalization
+  // or bidiagonalize the input matrix directly.
+  // It is based off of LAPACK's dgesdd routine, which uses min(rows, cols) * 11.0/6.0
+  // we use a larger scalar to prevent a regression for relatively square matrices.
+  double useQrThreshold = (std::min)(rows, cols) * 4.0;
+  m_useQrStep = rows > useQrThreshold || cols > useQrThreshold;
+  if (m_useQrStep) {
+    qrStep = HouseholderQR<MatrixX>((std::max)(rows, cols), (std::min)(rows, cols));
+    reducedTriangle = MatrixX(m_diagSize, m_diagSize);
+  }
+
   copyWorkspace = MatrixX(m_isTranspose ? cols : rows, m_isTranspose ? rows : cols);
+  bid = internal::UpperBidiagonalization<MatrixX>(m_useQrStep ? m_diagSize : copyWorkspace.rows(),
+                                                  m_useQrStep ? m_diagSize : copyWorkspace.cols());
 
   if (m_compU) m_naiveU = MatrixXr::Zero(m_diagSize + 1, m_diagSize + 1 );
   else         m_naiveU = MatrixXr::Zero(2, m_diagSize + 1 );
@@ -348,21 +353,20 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
   if (m_isTranspose) copyWorkspace = matrix.adjoint() / scale;
   else copyWorkspace = matrix / scale;
 
-  //**** step 1 - If the problem is sufficiently tall, we first compute A = Q(R/0)
-  // and then find the SVD of R. giving the full SVD of A = Q(R/0) = Q(U/0)SV^T
+  //**** step 1 - Bidiagonalization.
+  // If the problem is sufficiently tall, we perform R-Bidiagonalization: compute A = Q(R/0)
+  // and then only bidiagonalize R. 
+  // Otherwise, if the problem is relatively square, we bidiagonalize the matrix directly. 
   if (m_useQrStep) {
     qrStep.compute(copyWorkspace);
-    copyWorkspace.topRows(m_diagSize) = qrStep.matrixQR().topRows(m_diagSize);
-    copyWorkspace.template triangularView<StrictlyLower>().setZero();
+    reducedTriangle = qrStep.matrixQR().topRows(m_diagSize);
+    reducedTriangle.template triangularView<StrictlyLower>().setZero();
+    bid.compute(reducedTriangle);
+  } else {
+    bid.compute(copyWorkspace);
   }
 
-  //**** step 2 - Bidiagonalization. If using the QR Step, we only bidiagonalize R,
-  // which is stored in the top rows of the copyWorkspace
-  Ref<MatrixX> copyTopRows = copyWorkspace.topRows(m_useQrStep ? m_diagSize : copyWorkspace.rows());
-  // FIXME this line involves temporaries
-  internal::UpperBidiagonalization<MatrixX> bid(copyTopRows);
-
-  //**** step 3 - Divide & Conquer
+  //**** step 2 - Divide & Conquer
   m_naiveU.setZero();
   m_naiveV.setZero();
   // FIXME this line involves a temporary matrix
@@ -374,7 +378,7 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
     return *this;
   }
 
-  //**** step 4 - Copy singular values and vectors
+  //**** step 3 - Copy singular values and vectors
   for (int i=0; i<m_diagSize; i++)
   {
     RealScalar a = abs(m_computed.coeff(i, i));
@@ -392,6 +396,7 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
     }
   }
 
+  //**** step 4 - Finalize unitaries U and V
   if(m_isTranspose) copyUV(bid.householderV(), bid.householderU(), m_naiveV, m_naiveU);
   else              copyUV(bid.householderU(), bid.householderV(), m_naiveU, m_naiveV);
 
