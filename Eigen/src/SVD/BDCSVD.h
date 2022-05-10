@@ -251,8 +251,15 @@ private:
   ArrayXr m_workspace;
   ArrayXi m_workspaceI;
   int m_algoswap;
-  bool m_isTranspose, m_compU, m_compV;
+  bool m_isTranspose, m_compU, m_compV, m_useQrStep;
   JacobiSVD<MatrixType, Options> smallSvd;
+  HouseholderQR<MatrixX> qrStep;
+  MatrixX copyWorkspace;
+
+  // this ratio is taken from LAPACK's dgesdd routine.
+  // It defines an approximate crossover point at which it should be faster to perform R-Bidiagonalization,
+  // instead of bidiagonalizing the input matrix directly.
+  const double qrPerfRatio = 11.0 / 6.0;
 
   using Base::m_computationOptions;
   using Base::m_computeThinU;
@@ -278,12 +285,19 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   if (cols < m_algoswap)
     internal::allocate_small_svd<MatrixType, Options>::run(smallSvd, rows, cols, computationOptions);
 
+  double useQrThreshold = (std::min)(rows, cols) * qrPerfRatio;
+  m_useQrStep = rows > useQrThreshold || cols > useQrThreshold;
+  if (m_useQrStep)
+    qrStep = HouseholderQR<MatrixX>((std::max)(rows, cols), (std::min)(rows, cols));
+
   m_computed = MatrixXr::Zero(m_diagSize + 1, m_diagSize );
   m_compU = computeV();
   m_compV = computeU();
   m_isTranspose = (cols > rows);
   if (m_isTranspose)
     std::swap(m_compU, m_compV);
+
+  copyWorkspace = MatrixX(m_isTranspose ? cols : rows, m_isTranspose ? rows : cols);
 
   if (m_compU) m_naiveU = MatrixXr::Zero(m_diagSize + 1, m_diagSize + 1 );
   else         m_naiveU = MatrixXr::Zero(2, m_diagSize + 1 );
@@ -330,15 +344,25 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
   }
 
   if(numext::is_exactly_zero(scale)) scale = Literal(1);
-  MatrixX copy;
-  if (m_isTranspose) copy = matrix.adjoint()/scale;
-  else               copy = matrix/scale;
 
-  //**** step 1 - Bidiagonalization
+  if (m_isTranspose) copyWorkspace = matrix.adjoint() / scale;
+  else copyWorkspace = matrix / scale;
+
+  //**** step 1 - If the problem is sufficiently tall, we first compute A = Q(R/0)
+  // and then find the SVD of R. giving the full SVD of A = Q(R/0) = Q(U/0)SV^T
+  if (m_useQrStep) {
+    qrStep.compute(copyWorkspace);
+    copyWorkspace.topRows(m_diagSize) = qrStep.matrixQR().topRows(m_diagSize);
+    copyWorkspace.template triangularView<StrictlyLower>().setZero();
+  }
+
+  //**** step 2 - Bidiagonalization. If using the QR Step, we only bidiagonalize R,
+  // which is stored in the top rows of the copyWorkspace
+  Ref<MatrixX> copyTopRows = copyWorkspace.topRows(m_useQrStep ? m_diagSize : copyWorkspace.rows());
   // FIXME this line involves temporaries
-  internal::UpperBidiagonalization<MatrixX> bid(copy);
+  internal::UpperBidiagonalization<MatrixX> bid(copyTopRows);
 
-  //**** step 2 - Divide & Conquer
+  //**** step 3 - Divide & Conquer
   m_naiveU.setZero();
   m_naiveV.setZero();
   // FIXME this line involves a temporary matrix
@@ -350,7 +374,7 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
     return *this;
   }
 
-  //**** step 3 - Copy singular values and vectors
+  //**** step 4 - Copy singular values and vectors
   for (int i=0; i<m_diagSize; i++)
   {
     RealScalar a = abs(m_computed.coeff(i, i));
@@ -368,12 +392,13 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
     }
   }
 
-#ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
-//   std::cout << "m_naiveU\n" << m_naiveU << "\n\n";
-//   std::cout << "m_naiveV\n" << m_naiveV << "\n\n";
-#endif
   if(m_isTranspose) copyUV(bid.householderV(), bid.householderU(), m_naiveV, m_naiveU);
   else              copyUV(bid.householderU(), bid.householderV(), m_naiveU, m_naiveV);
+
+  if (m_useQrStep) {
+    if (m_isTranspose && computeV()) m_matrixV.applyOnTheLeft(qrStep.householderQ());
+    else if (!m_isTranspose && computeU()) m_matrixU.applyOnTheLeft(qrStep.householderQ());
+  }
 
   m_isInitialized = true;
   return *this;
@@ -386,17 +411,21 @@ void BDCSVD<MatrixType, Options>::copyUV(const HouseholderU& householderU, const
   // Note exchange of U and V: m_matrixU is set from m_naiveV and vice versa
   if (computeU())
   {
-    Index Ucols = m_computeThinU ? m_diagSize : householderU.cols();
-    m_matrixU = MatrixX::Identity(householderU.cols(), Ucols);
+    Index Ucols = m_computeThinU ? m_diagSize : rows();
+    m_matrixU = MatrixX::Identity(rows(), Ucols);
     m_matrixU.topLeftCorner(m_diagSize, m_diagSize) = naiveV.template cast<Scalar>().topLeftCorner(m_diagSize, m_diagSize);
-    householderU.applyThisOnTheLeft(m_matrixU); // FIXME this line involves a temporary buffer
+    // FIXME the following conditionals involve temporary buffers
+    if (m_useQrStep) m_matrixU.topLeftCorner(householderU.cols(), m_diagSize).applyOnTheLeft(householderU);
+    else m_matrixU.applyOnTheLeft(householderU);
   }
   if (computeV())
   {
-    Index Vcols = m_computeThinV ? m_diagSize : householderV.cols();
-    m_matrixV = MatrixX::Identity(householderV.cols(), Vcols);
+    Index Vcols = m_computeThinV ? m_diagSize : cols();
+    m_matrixV = MatrixX::Identity(cols(), Vcols);
     m_matrixV.topLeftCorner(m_diagSize, m_diagSize) = naiveU.template cast<Scalar>().topLeftCorner(m_diagSize, m_diagSize);
-    householderV.applyThisOnTheLeft(m_matrixV); // FIXME this line involves a temporary buffer
+    // FIXME the following conditionals involve temporary buffers
+    if (m_useQrStep) m_matrixV.topLeftCorner(householderV.cols(), m_diagSize).applyOnTheLeft(householderV);
+    else m_matrixV.applyOnTheLeft(householderV);
   }
 }
 
