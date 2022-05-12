@@ -251,7 +251,7 @@ private:
   ArrayXr m_workspace;
   ArrayXi m_workspaceI;
   int m_algoswap;
-  bool m_isTranspose, m_compU, m_compV, m_useQrStep;
+  bool m_isTranspose, m_compU, m_compV, m_useQrDecomp;
   JacobiSVD<MatrixType, Options> smallSvd;
   HouseholderQR<MatrixX> qrStep;
   internal::UpperBidiagonalization<MatrixX> bid;
@@ -289,20 +289,20 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   if (m_isTranspose)
     std::swap(m_compU, m_compV);
 
-  // useQrThreshold is the crossover point that determines if we perform R-Bidiagonalization
+  // kMinAspectRatio is the crossover point that determines if we perform R-Bidiagonalization
   // or bidiagonalize the input matrix directly.
-  // It is based off of LAPACK's dgesdd routine, which uses min(rows, cols) * 11.0/6.0
+  // It is based off of LAPACK's dgesdd routine, which uses 11.0/6.0
   // we use a larger scalar to prevent a regression for relatively square matrices.
-  double useQrThreshold = (std::min)(rows, cols) * 4.0;
-  m_useQrStep = rows > useQrThreshold || cols > useQrThreshold;
-  if (m_useQrStep) {
+  constexpr Index kMinAspectRatio = 4;
+  m_useQrDecomp = (rows / kMinAspectRatio > cols) || (cols / kMinAspectRatio > rows);
+  if (m_useQrDecomp) {
     qrStep = HouseholderQR<MatrixX>((std::max)(rows, cols), (std::min)(rows, cols));
     reducedTriangle = MatrixX(m_diagSize, m_diagSize);
   }
 
   copyWorkspace = MatrixX(m_isTranspose ? cols : rows, m_isTranspose ? rows : cols);
-  bid = internal::UpperBidiagonalization<MatrixX>(m_useQrStep ? m_diagSize : copyWorkspace.rows(),
-                                                  m_useQrStep ? m_diagSize : copyWorkspace.cols());
+  bid = internal::UpperBidiagonalization<MatrixX>(m_useQrDecomp ? m_diagSize : copyWorkspace.rows(),
+                                                  m_useQrDecomp ? m_diagSize : copyWorkspace.cols());
 
   if (m_compU) m_naiveU = MatrixXr::Zero(m_diagSize + 1, m_diagSize + 1 );
   else         m_naiveU = MatrixXr::Zero(2, m_diagSize + 1 );
@@ -357,7 +357,7 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
   // If the problem is sufficiently tall, we perform R-Bidiagonalization: compute A = Q(R/0)
   // and then only bidiagonalize R. 
   // Otherwise, if the problem is relatively square, we bidiagonalize the matrix directly. 
-  if (m_useQrStep) {
+  if (m_useQrDecomp) {
     qrStep.compute(copyWorkspace);
     reducedTriangle = qrStep.matrixQR().topRows(m_diagSize);
     reducedTriangle.template triangularView<StrictlyLower>().setZero();
@@ -400,7 +400,7 @@ BDCSVD<MatrixType, Options>& BDCSVD<MatrixType, Options>::compute_impl(const Mat
   if(m_isTranspose) copyUV(bid.householderV(), bid.householderU(), m_naiveV, m_naiveU);
   else              copyUV(bid.householderU(), bid.householderV(), m_naiveU, m_naiveV);
 
-  if (m_useQrStep) {
+  if (m_useQrDecomp) {
     if (m_isTranspose && computeV()) m_matrixV.applyOnTheLeft(qrStep.householderQ());
     else if (!m_isTranspose && computeU()) m_matrixU.applyOnTheLeft(qrStep.householderQ());
   }
@@ -420,7 +420,7 @@ void BDCSVD<MatrixType, Options>::copyUV(const HouseholderU& householderU, const
     m_matrixU = MatrixX::Identity(rows(), Ucols);
     m_matrixU.topLeftCorner(m_diagSize, m_diagSize) = naiveV.template cast<Scalar>().topLeftCorner(m_diagSize, m_diagSize);
     // FIXME the following conditionals involve temporary buffers
-    if (m_useQrStep) m_matrixU.topLeftCorner(householderU.cols(), m_diagSize).applyOnTheLeft(householderU);
+    if (m_useQrDecomp) m_matrixU.topLeftCorner(householderU.cols(), m_diagSize).applyOnTheLeft(householderU);
     else m_matrixU.applyOnTheLeft(householderU);
   }
   if (computeV())
@@ -429,7 +429,7 @@ void BDCSVD<MatrixType, Options>::copyUV(const HouseholderU& householderU, const
     m_matrixV = MatrixX::Identity(cols(), Vcols);
     m_matrixV.topLeftCorner(m_diagSize, m_diagSize) = naiveU.template cast<Scalar>().topLeftCorner(m_diagSize, m_diagSize);
     // FIXME the following conditionals involve temporary buffers
-    if (m_useQrStep) m_matrixV.topLeftCorner(householderV.cols(), m_diagSize).applyOnTheLeft(householderV);
+    if (m_useQrDecomp) m_matrixV.topLeftCorner(householderV.cols(), m_diagSize).applyOnTheLeft(householderV);
     else m_matrixV.applyOnTheLeft(householderV);
   }
 }
