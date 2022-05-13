@@ -76,9 +76,11 @@ struct allocate_small_svd<MatrixType, 0> {
  * \tparam MatrixType_ the type of the matrix of which we are computing the SVD decomposition
  *
  * \tparam Options_ this optional parameter allows one to specify options for computing unitaries \a U and \a V.
- *                  Possible values are #ComputeThinU, #ComputeThinV, #ComputeFullU, #ComputeFullV.
- *                  It is not possible to request both the thin and full version of \a U or \a V.
- *                  By default, unitaries are not computed.
+ *                  Possible values are #ComputeThinU, #ComputeThinV, #ComputeFullU, #ComputeFullV, and 
+ *                  #DisableQRDecomp. It is not possible to request both the thin and full version of \a U or \a V.
+ *                  By default, unitaries are not computed. BDCSVD uses R-Bidiagonalization to improve performance
+ *                  on tall and wide matrices. For backwards compatility, the option #DisableQRDecomp can
+ *                  be used to disable this optimization.
  *
  * This class first reduces the input matrix to bi-diagonal form using class UpperBidiagonalization,
  * and then performs a divide-and-conquer diagonalization. Small blocks are diagonalized using class JacobiSVD.
@@ -110,6 +112,7 @@ public:
   typedef typename Base::Index Index;
   enum {
     Options = Options_,
+    ComputationOptions = Options & internal::ComputationOptionsBits,
     RowsAtCompileTime = Base::RowsAtCompileTime,
     ColsAtCompileTime = Base::ColsAtCompileTime,
     DiagSizeAtCompileTime = Base::DiagSizeAtCompileTime,
@@ -252,7 +255,7 @@ private:
   ArrayXi m_workspaceI;
   int m_algoswap;
   bool m_isTranspose, m_compU, m_compV, m_useQrDecomp;
-  JacobiSVD<MatrixType, Options> smallSvd;
+  JacobiSVD<MatrixType, ComputationOptions> smallSvd;
   HouseholderQR<MatrixX> qrStep;
   internal::UpperBidiagonalization<MatrixX> bid;
   MatrixX copyWorkspace;
@@ -280,7 +283,7 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
     return;
 
   if (cols < m_algoswap)
-    internal::allocate_small_svd<MatrixType, Options>::run(smallSvd, rows, cols, computationOptions);
+    internal::allocate_small_svd<MatrixType, ComputationOptions>::run(smallSvd, rows, cols, computationOptions);
 
   m_computed = MatrixXr::Zero(m_diagSize + 1, m_diagSize );
   m_compU = computeV();
@@ -294,7 +297,8 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   // It is based off of LAPACK's dgesdd routine, which uses 11.0/6.0
   // we use a larger scalar to prevent a regression for relatively square matrices.
   constexpr Index kMinAspectRatio = 4;
-  m_useQrDecomp = (rows / kMinAspectRatio > cols) || (cols / kMinAspectRatio > rows);
+  constexpr bool disableQrDecomp = (Options & DisableQRDecomp) != 0;
+  m_useQrDecomp = !disableQrDecomp && ((rows / kMinAspectRatio > cols) || (cols / kMinAspectRatio > rows));
   if (m_useQrDecomp) {
     qrStep = HouseholderQR<MatrixX>((std::max)(rows, cols), (std::min)(rows, cols));
     reducedTriangle = MatrixX(m_diagSize, m_diagSize);

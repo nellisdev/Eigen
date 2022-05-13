@@ -417,7 +417,10 @@ enum DecompositionOptions {
     * solve the generalized eigenproblem \f$ BAx = \lambda x \f$. */
   BAx_lx              = 0x400,
   /** \internal */
-  GenEigMask = Ax_lBx | ABx_lx | BAx_lx
+  GenEigMask = Ax_lBx | ABx_lx | BAx_lx,
+  /**
+   * Used in BDCSVD to disable R-Bidiagonalization */
+  DisableQRDecomp     = 0x800
 };
 
 /** \ingroup enums
