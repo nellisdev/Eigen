@@ -467,23 +467,23 @@ void packetmath() {
       }
 
       if (M == 0) {
-        internal::pstoreN(data2, internal::ploadN<Packet>(data1, N), N);
+        internal::pstore_partial(data2, internal::pload_partial<Packet>(data1, N), N);
         VERIFY(test::areApprox(data1, data2, N) && "aligned loadN/storeN");
 
         for (int offset = 0; offset < PacketSize; ++offset) {
-          internal::pstoreN(data2, internal::ploaduN<Packet>(data1 + offset, N), N);
-          VERIFY(test::areApprox(data1 + offset, data2, N) && "internal::ploaduN");
+          internal::pstore_partial(data2, internal::ploadu_partial<Packet>(data1 + offset, N), N);
+          VERIFY(test::areApprox(data1 + offset, data2, N) && "internal::ploadu_partial");
         }
 
         for (int offset = 0; offset < PacketSize; ++offset) {
-          internal::pstoreuN(data2 + offset, internal::ploadN<Packet>(data1, N), N);
-          VERIFY(test::areApprox(data1, data2 + offset, N) && "internal::pstoreuN");
+          internal::pstoreu_partial(data2 + offset, internal::pload_partial<Packet>(data1, N), N);
+          VERIFY(test::areApprox(data1, data2 + offset, N) && "internal::pstoreu_partial");
         }
       }
 
       if (N + M > PacketSize) continue;  // Don't read or write past end of Packet
 
-      internal::pstoreN(data2, internal::ploadN<Packet>(data1, N, M), N, M);
+      internal::pstore_partial(data2, internal::pload_partial<Packet>(data1, N, M), N, M);
       VERIFY(test::areApprox(data1, data2, N) && "aligned offset loadN/storeN");
     }
   }
@@ -1412,24 +1412,24 @@ void packetmath_scatter_gather() {
       buffer[i] = Scalar(0);
     }
 
-    packet = internal::ploadN<Packet>(data1, N);
-    internal::pscatterN<Scalar, Packet>(buffer, packet, stride, N);
+    packet = internal::pload_partial<Packet>(data1, N);
+    internal::pscatter_partial<Scalar, Packet>(buffer, packet, stride, N);
 
     for (Index i = 0; i < N * 20; ++i) {
       if ((i % stride) == 0 && i < stride * N) {
-        VERIFY(test::isApproxAbs(buffer[i], data1[i / stride], refvalue) && "pscatterN");
+        VERIFY(test::isApproxAbs(buffer[i], data1[i / stride], refvalue) && "pscatter_partial");
       } else {
-        VERIFY(test::isApproxAbs(buffer[i], Scalar(0), refvalue) && "pscatterN");
+        VERIFY(test::isApproxAbs(buffer[i], Scalar(0), refvalue) && "pscatter_partial");
       }
     }
 
     for (Index i = 0; i < N * 7; ++i) {
       buffer[i] = internal::random<Scalar>() / RealScalar(PacketSize);
     }
-    packet = internal::pgatherN<Scalar, Packet>(buffer, 7, N);
-    internal::pstoreN(data1, packet, N);
+    packet = internal::pgather_partial<Scalar, Packet>(buffer, 7, N);
+    internal::pstore_partial(data1, packet, N);
     for (Index i = 0; i < N; ++i) {
-      VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgatherN");
+      VERIFY(test::isApproxAbs(data1[i], buffer[i * 7], refvalue) && "pgather_partial");
     }
   }
 }
