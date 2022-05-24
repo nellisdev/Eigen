@@ -743,14 +743,14 @@ pstoreu(Scalar* to, const Packet& from, typename unpacket_traits<Packet>::mask_t
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline Packet pgather(const Scalar* from, Index /*stride*/)
 { return ploadu<Packet>(from); }
 
-template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline Packet pgather_partial(const Scalar* from, Index /*stride*/, const Index /*N*/)
-{ return ploadu<Packet>(from); }
+template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline Packet pgather_partial(const Scalar* from, Index stride, const Index /*N*/)
+{ return pgather<Scalar, Packet>(from, stride); }
 
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pscatter(Scalar* to, const Packet& from, Index /*stride*/)
 { pstore(to, from); }
 
-template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pscatter_partial(Scalar* to, const Packet& from, Index /*stride*/, const Index /*N*/)
-{ pstore(to, from); }
+template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pscatter_partial(Scalar* to, const Packet& from, Index stride, const Index /*N*/)
+{ pscatter(to, from, stride); }
 
 /** \internal tries to do cache prefetching of \a addr */
 template<typename Scalar> EIGEN_DEVICE_FUNC inline void prefetch(const Scalar* addr)
