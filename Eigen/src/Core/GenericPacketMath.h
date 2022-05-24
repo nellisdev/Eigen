@@ -614,7 +614,7 @@ pload(const typename unpacket_traits<Packet>::type* from) { return *from; }
   * offset indicates the starting element in which to load
   * All elements before offset and after the last element loaded will initialized with zero */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
-pload_partial(const typename unpacket_traits<Packet>::type* from, const Index /*N*/, const Index /*offset*/ = 0) { return *from; }
+pload_partial(const typename unpacket_traits<Packet>::type* from, const Index /*N*/, const Index /*offset*/ = 0) { return pload<Packet>(from); }
 
 /** \internal \returns a packet version of \a *from, (un-aligned load) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -622,7 +622,7 @@ ploadu(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
 /** \internal \returns N elements of a packet version of \a *from, (un-aligned load) */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
-ploadu_partial(const typename unpacket_traits<Packet>::type* from, const Index /*N*/) { return *from; }
+ploadu_partial(const typename unpacket_traits<Packet>::type* from, const Index /*N*/) { return ploadu<Packet>(from); }
 
 /** \internal \returns a packet version of \a *from, (un-aligned masked load)
  * There is no generic implementation. We only have implementations for specialized
@@ -721,7 +721,7 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore(
 /** \internal copy N elements of the packet \a from to \a *to, \a to must be 16 bytes aligned
  * offset indicates the starting element in which to store */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore_partial(Scalar* to, const Packet& from, const Index /*N*/, const Index /*offset*/ = 0)
-{ (*to) = from; }
+{ pstore(to, from); }
 
 /** \internal copy the packet \a from to \a *to, (un-aligned store) */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreu(Scalar* to, const Packet& from)
@@ -729,7 +729,7 @@ template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreu
 
 /** \internal copy N elements of the packet \a from to \a *to, (un-aligned store) */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstoreu_partial(Scalar* to, const Packet& from, const Index /*N*/)
-{ (*to) = from; }
+{ pstoreu(to, from); }
 
 /** \internal copy the packet \a from to \a *to, (un-aligned store with a mask)
  * There is no generic implementation. We only have implementations for specialized
