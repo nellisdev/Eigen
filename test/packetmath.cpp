@@ -1416,7 +1416,7 @@ void packetmath_scatter_gather() {
     internal::pscatter_partial<Scalar, Packet>(buffer, packet, stride, N);
 
     for (Index i = 0; i < N * 20; ++i) {
-      if ((i % stride) == 0 && i < stride * PacketSize) {
+      if ((i % stride) == 0 && i < stride * N) {
         VERIFY(test::isApproxAbs(buffer[i], data1[i / stride], refvalue) && "pscatter_partial");
       } else {
         VERIFY(test::isApproxAbs(buffer[i], Scalar(0), refvalue) && "pscatter_partial");
