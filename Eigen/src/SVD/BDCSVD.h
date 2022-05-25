@@ -297,7 +297,7 @@ void BDCSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int 
   // It is based off of LAPACK's dgesdd routine, which uses 11.0/6.0
   // we use a larger scalar to prevent a regression for relatively square matrices.
   constexpr Index kMinAspectRatio = 4;
-  constexpr bool disableQrDecomp = (Options & DisableQRDecomp) != 0;
+  constexpr bool disableQrDecomp = (Options & DisableQRPreconditioner) != 0;
   m_useQrDecomp = !disableQrDecomp && ((rows / kMinAspectRatio > cols) || (cols / kMinAspectRatio > rows));
   if (m_useQrDecomp) {
     qrStep = HouseholderQR<MatrixX>((std::max)(rows, cols), (std::min)(rows, cols));

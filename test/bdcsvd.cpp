@@ -46,18 +46,17 @@ void bdcsvd_method()
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).solve(m), m);
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).transpose().solve(m), m);
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
-  // should be able to disable R-Bidiagonalization, even using deprecated runtime api.
-  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomp>(ComputeFullU|ComputeFullV).solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomp>(ComputeFullU|ComputeFullV).transpose().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomp>(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRPreconditioner>(ComputeFullU|ComputeFullV).solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRPreconditioner>(ComputeFullU|ComputeFullV).transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRPreconditioner>(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
 
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().solve(m), m);
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().transpose().solve(m), m);
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().adjoint().solve(m), m);
 
-  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomp>().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomp>().transpose().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomp>().adjoint().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRPreconditioner>().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRPreconditioner>().transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRPreconditioner>().adjoint().solve(m), m);
 }
 
 // compare the Singular values returned with Jacobi and Bdc
@@ -96,7 +95,7 @@ void compare_bdc_jacobi_instance(bool structure_as_m, int algoswap = 16)
 
 template <typename MatrixType>
 void bdcsvd_all_options(const MatrixType& input = MatrixType()) {
-  MatrixType m = input;
+  MatrixType m(input.rows(), input.cols());
   svd_fill_random(m);
   svd_option_checks<MatrixType, 0>(m);
 }

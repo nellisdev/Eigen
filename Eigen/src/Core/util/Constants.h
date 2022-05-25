@@ -417,10 +417,7 @@ enum DecompositionOptions {
     * solve the generalized eigenproblem \f$ BAx = \lambda x \f$. */
   BAx_lx              = 0x400,
   /** \internal */
-  GenEigMask = Ax_lBx | ABx_lx | BAx_lx,
-  /**
-   * Used in BDCSVD to disable R-Bidiagonalization */
-  DisableQRDecomp     = 0x800
+  GenEigMask = Ax_lBx | ABx_lx | BAx_lx
 };
 
 /** \ingroup enums
@@ -433,7 +430,9 @@ enum QRPreconditioners {
   /** Use a QR decomposition without pivoting as the first step. */
   HouseholderQRPreconditioner = 0x80,
   /** Use a QR decomposition with full pivoting as the first step. */
-  FullPivHouseholderQRPreconditioner = 0xC0
+  FullPivHouseholderQRPreconditioner = 0xC0,
+  /** Used to disable the QR Preconditioner in BDCSVD. */
+  DisableQRPreconditioner = NoQRPreconditioner
 };
 
 #ifdef Success
