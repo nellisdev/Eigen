@@ -606,11 +606,11 @@ pldexp(const Packet &a, const Packet &exponent) {
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pabsdiff(const Packet& a, const Packet& b) { return pselect(pcmp_lt(a, b), psub(b, a), psub(a, b)); }
 
-/** \internal \returns a packet version of \a *from, from must be aligned to size of Packet */
+/** \internal \returns a packet version of \a *from, from must be properly aligned */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pload(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
-/** \internal \returns N elements of a packet version of \a *from, from must be aligned to size of Packet
+/** \internal \returns N elements of a packet version of \a *from, from must be properly aligned
   * offset indicates the starting element in which to load
   * All elements before offset and after the last element loaded will initialized with zero */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -745,11 +745,11 @@ peven_mask(const Packet& /*a*/) {
 }
 
 
-/** \internal copy the packet \a from to \a *to, \a to must be aligned to size of Packet */
+/** \internal copy the packet \a from to \a *to, \a to must be properly aligned */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore(Scalar* to, const Packet& from)
 { (*to) = from; }
 
-/** \internal copy N elements of the packet \a from to \a *to, \a to must be aligned to size of Packet
+/** \internal copy N elements of the packet \a from to \a *to, \a to must be properly aligned
  * offset indicates the starting element in which to store */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore_partial(Scalar* to, const Packet& from, const Index N, const Index offset = 0)
 {
