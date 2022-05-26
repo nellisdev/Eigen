@@ -606,11 +606,11 @@ pldexp(const Packet &a, const Packet &exponent) {
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pabsdiff(const Packet& a, const Packet& b) { return pselect(pcmp_lt(a, b), psub(b, a), psub(a, b)); }
 
-/** \internal \returns a packet version of \a *from, from must be 16 bytes aligned */
+/** \internal \returns a packet version of \a *from, from must be aligned to size of Packet */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pload(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
-/** \internal \returns N elements of a packet version of \a *from, from must be 16 bytes aligned
+/** \internal \returns N elements of a packet version of \a *from, from must be aligned to size of Packet
   * offset indicates the starting element in which to load
   * All elements before offset and after the last element loaded will initialized with zero */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
@@ -745,11 +745,11 @@ peven_mask(const Packet& /*a*/) {
 }
 
 
-/** \internal copy the packet \a from to \a *to, \a to must be 16 bytes aligned */
+/** \internal copy the packet \a from to \a *to, \a to must be aligned to size of Packet */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore(Scalar* to, const Packet& from)
 { (*to) = from; }
 
-/** \internal copy N elements of the packet \a from to \a *to, \a to must be 16 bytes aligned
+/** \internal copy N elements of the packet \a from to \a *to, \a to must be aligned to size of Packet
  * offset indicates the starting element in which to store */
 template<typename Scalar, typename Packet> EIGEN_DEVICE_FUNC inline void pstore_partial(Scalar* to, const Packet& from, const Index N, const Index offset = 0)
 {
@@ -1089,7 +1089,7 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadt(const typename unpacket_trai
 /** \internal \returns a packet version of \a *from.
   * The pointer \a from must be aligned on a \a Alignment bytes boundary. */
 template<typename Packet, int Alignment>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadtN(const typename unpacket_traits<Packet>::type* from, const Index N)
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadt_partial(const typename unpacket_traits<Packet>::type* from, const Index N)
 {
   if(Alignment >= unpacket_traits<Packet>::alignment)
     return pload_partial<Packet>(from, N);
@@ -1111,7 +1111,7 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pstoret(Scalar* to, const Packet& fro
 /** \internal copy the packet \a from to \a *to.
   * The pointer \a from must be aligned on a \a Alignment bytes boundary. */
 template<typename Scalar, typename Packet, int Alignment>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pstoretN(Scalar* to, const Packet& from, const Index N)
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pstoret_partial(Scalar* to, const Packet& from, const Index N)
 {
   if(Alignment >= unpacket_traits<Packet>::alignment)
     pstore_partial(to, from, N);
