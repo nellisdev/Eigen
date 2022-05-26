@@ -46,17 +46,17 @@ void bdcsvd_method()
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).solve(m), m);
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).transpose().solve(m), m);
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRPreconditioner>(ComputeFullU|ComputeFullV).solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRPreconditioner>(ComputeFullU|ComputeFullV).transpose().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRPreconditioner>(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomposition>(ComputeFullU|ComputeFullV).solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomposition>(ComputeFullU|ComputeFullV).transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomposition>(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
 
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().solve(m), m);
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().transpose().solve(m), m);
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().adjoint().solve(m), m);
 
-  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRPreconditioner>().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRPreconditioner>().transpose().solve(m), m);
-  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRPreconditioner>().adjoint().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomposition>().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomposition>().transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomposition>().adjoint().solve(m), m);
 }
 
 // compare the Singular values returned with Jacobi and Bdc

@@ -432,7 +432,7 @@ enum QRPreconditioners {
   /** Use a QR decomposition with full pivoting as the first step. */
   FullPivHouseholderQRPreconditioner = 0xC0,
   /** Used to disable the QR Preconditioner in BDCSVD. */
-  DisableQRPreconditioner = NoQRPreconditioner
+  DisableQRDecomposition = NoQRPreconditioner
 };
 
 #ifdef Success
