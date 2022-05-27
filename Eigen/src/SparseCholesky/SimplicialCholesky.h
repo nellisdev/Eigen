@@ -227,7 +227,7 @@ class SimplicialCholeskyBase : public SparseSolverBase<Derived>
       }
       else
       {
-        tmp.template selfadjointView<Upper>() = a.template selfadjointView<UpLo>().twistedBy(m_P);
+        tmp.upperSelfadjointView() = a.template selfadjointView<UpLo>().twistedBy(m_P);
         pmat = &tmp;
       }
       
@@ -677,7 +677,7 @@ void SimplicialCholeskyBase<Derived>::ordering(const MatrixType& a, ConstCholMat
     else                m_P.resize(0);
     
     ap.resize(size,size);
-    ap.template selfadjointView<Upper>() = a.template selfadjointView<UpLo>().twistedBy(m_P);
+    ap.upperSelfadjointView() = a.template selfadjointView<UpLo>().twistedBy(m_P);
   }
   else
   {
@@ -687,7 +687,7 @@ void SimplicialCholeskyBase<Derived>::ordering(const MatrixType& a, ConstCholMat
     {
       // we have to transpose the lower part to to the upper one
       ap.resize(size,size);
-      ap.template selfadjointView<Upper>() = a.template selfadjointView<UpLo>();
+      ap.upperSelfadjointView() = a.template selfadjointView<UpLo>();
     }
     else
       internal::simplicial_cholesky_grab_input<CholMatrixType,MatrixType>::run(a, pmat, ap);

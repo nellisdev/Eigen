@@ -77,9 +77,9 @@ template<typename MatrixType> void lu_non_invertible()
   lu.compute(m1);
 
   MatrixType u(rows,cols);
-  u = lu.matrixLU().template triangularView<Upper>();
+  u = lu.matrixLU().upperTriangularView();
   RMatrixType l = RMatrixType::Identity(rows,rows);
-  l.block(0,0,rows,(std::min)(rows,cols)).template triangularView<StrictlyLower>()
+  l.block(0,0,rows,(std::min)(rows,cols)).strictlyLowerTriangularView()
     = lu.matrixLU().block(0,0,rows,(std::min)(rows,cols));
 
   VERIFY_IS_APPROX(lu.permutationP() * m1 * lu.permutationQ(), l*u);

@@ -175,7 +175,7 @@ bool gmres(const MatrixType & mat, const Rhs & rhs, Dest & x, const Precondition
     {
       // solve upper triangular system
       Ref<VectorType> y = w.head(k);
-      H.topLeftCorner(k, k).template triangularView <Upper>().solveInPlace(y);
+      H.topLeftCorner(k, k).upperTriangularView().solveInPlace(y);
 
       // use Horner-like scheme to calculate solution vector
       x_new.setZero();

@@ -218,7 +218,7 @@ class SparseQR : public SparseSolverBase<SparseQR<MatrixType_,OrderingType_> >
       
       // Solve with the triangular matrix R
       y.resize((std::max<Index>)(cols(),y.rows()),y.cols());
-      y.topRows(rank) = this->matrixR().topLeftCorner(rank, rank).template triangularView<Upper>().solve(b.topRows(rank));
+      y.topRows(rank) = this->matrixR().topLeftCorner(rank, rank).upperTriangularView().solve(b.topRows(rank));
       y.bottomRows(y.rows()-rank).setZero();
       
       // Apply the column permutation

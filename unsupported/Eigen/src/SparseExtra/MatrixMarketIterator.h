@@ -91,19 +91,19 @@ class MatrixMarketIterator
       {
         // Check whether we need to restore a full matrix:
         RealScalar diag_norm  = m_mat.diagonal().norm();
-        RealScalar lower_norm = m_mat.template triangularView<Lower>().norm();
-        RealScalar upper_norm = m_mat.template triangularView<Upper>().norm();
+        RealScalar lower_norm = m_mat.lowerTriangularView().norm();
+        RealScalar upper_norm = m_mat.upperTriangularView().norm();
         if(lower_norm>diag_norm && upper_norm==diag_norm)
         {
           // only the lower part is stored
           MatrixType tmp(m_mat);
-          m_mat = tmp.template selfadjointView<Lower>();
+          m_mat = tmp.lowerSelfadjointView();
         }
         else if(upper_norm>diag_norm && lower_norm==diag_norm)
         {
           // only the upper part is stored
           MatrixType tmp(m_mat);
-          m_mat = tmp.template selfadjointView<Upper>();
+          m_mat = tmp.upperSelfadjointView();
         }
       }
       return m_mat; 

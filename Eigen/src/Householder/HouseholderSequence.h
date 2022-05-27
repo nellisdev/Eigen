@@ -297,7 +297,7 @@ template<typename VectorsType, typename CoeffsType, int Side> class HouseholderS
       {
         // in-place
         dst.diagonal().setOnes();
-        dst.template triangularView<StrictlyUpper>().setZero();
+        dst.strictlyUpperTriangularView().setZero();
         for(Index k = vecs-1; k >= 0; --k)
         {
           Index cornerSize = rows() - k - m_shift;

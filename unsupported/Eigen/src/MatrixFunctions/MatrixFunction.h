@@ -58,7 +58,7 @@ typename NumTraits<typename MatrixType::Scalar>::Real matrix_function_compute_mu
   Index rows = A.rows();
   const MatrixType N = MatrixType::Identity(rows, rows) - A;
   VectorType e = VectorType::Ones(rows);
-  N.template triangularView<Upper>().solveInPlace(e);
+  N.upperTriangularView().solveInPlace(e);
   return e.cwiseAbs().maxCoeff();
 }
 
@@ -453,7 +453,7 @@ struct matrix_function_compute<MatrixType, 1>
     MatrixType fT; // matrix function applied to T
     matrix_function_compute_block_atomic(T, atomic, blockStart, clusterSize, fT);
     matrix_function_compute_above_diagonal(T, blockStart, clusterSize, fT);
-    result = U * (fT.template triangularView<Upper>() * U.adjoint());
+    result = U * (fT.upperTriangularView() * U.adjoint());
   }
 };
 

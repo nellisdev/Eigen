@@ -183,7 +183,7 @@ compute(const MatrixType& matA, const MatrixType& matB, int options)
   if(type==Ax_lBx)
   {
     // compute C = inv(L) A inv(L')
-    MatrixType matC = matA.template selfadjointView<Lower>();
+    MatrixType matC = matA.lowerSelfadjointView();
     cholB.matrixL().template solveInPlace<OnTheLeft>(matC);
     cholB.matrixU().template solveInPlace<OnTheRight>(matC);
 
@@ -196,7 +196,7 @@ compute(const MatrixType& matA, const MatrixType& matB, int options)
   else if(type==ABx_lx)
   {
     // compute C = L' A L
-    MatrixType matC = matA.template selfadjointView<Lower>();
+    MatrixType matC = matA.lowerSelfadjointView();
     matC = matC * cholB.matrixL();
     matC = cholB.matrixU() * matC;
 
@@ -209,7 +209,7 @@ compute(const MatrixType& matA, const MatrixType& matB, int options)
   else if(type==BAx_lx)
   {
     // compute C = L' A L
-    MatrixType matC = matA.template selfadjointView<Lower>();
+    MatrixType matC = matA.lowerSelfadjointView();
     matC = matC * cholB.matrixL();
     matC = cholB.matrixU() * matC;
 

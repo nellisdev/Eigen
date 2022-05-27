@@ -259,7 +259,7 @@ HybridNonLinearSolver<FunctorType,Scalar>::solveOneStep(FVectorType  &x)
             actred = 1. - numext::abs2(fnorm1 / fnorm);
 
         /* compute the scaled predicted reduction. */
-        wa3 = R.template triangularView<Upper>()*wa1 + qtf;
+        wa3 = R.upperTriangularView()*wa1 + qtf;
         temp = wa3.stableNorm();
         prered = 0.;
         if (temp < fnorm) /* Computing 2nd power */
@@ -502,7 +502,7 @@ HybridNonLinearSolver<FunctorType,Scalar>::solveNumericalDiffOneStep(FVectorType
             actred = 1. - numext::abs2(fnorm1 / fnorm);
 
         /* compute the scaled predicted reduction. */
-        wa3 = R.template triangularView<Upper>()*wa1 + qtf;
+        wa3 = R.upperTriangularView()*wa1 + qtf;
         temp = wa3.stableNorm();
         prered = 0.;
         if (temp < fnorm) /* Computing 2nd power */

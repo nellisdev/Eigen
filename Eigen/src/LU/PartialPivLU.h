@@ -236,10 +236,10 @@ template<typename MatrixType_> class PartialPivLU
       dst = permutationP() * rhs;
 
       // Step 2
-      m_lu.template triangularView<UnitLower>().solveInPlace(dst);
+      m_lu.unitLowerTriangularView().solveInPlace(dst);
 
       // Step 3
-      m_lu.template triangularView<Upper>().solveInPlace(dst);
+      m_lu.upperTriangularView().solveInPlace(dst);
     }
 
     template<bool Conjugate, typename RhsType, typename DstType>
@@ -255,10 +255,10 @@ template<typename MatrixType_> class PartialPivLU
       eigen_assert(rhs.rows() == m_lu.cols());
 
       // Step 1
-      dst = m_lu.template triangularView<Upper>().transpose()
+      dst = m_lu.upperTriangularView().transpose()
                 .template conjugateIf<Conjugate>().solve(rhs);
       // Step 2
-      m_lu.template triangularView<UnitLower>().transpose()
+      m_lu.unitLowerTriangularView().transpose()
           .template conjugateIf<Conjugate>().solveInPlace(dst);
       // Step 3
       dst = permutationP().transpose() * dst;
@@ -489,7 +489,7 @@ struct partial_lu_impl
           A_2.row(i).swap(A_2.row(row_transpositions[i]));
 
         // A12 = A11^-1 A12
-        A11.template triangularView<UnitLower>().solveInPlace(A12);
+        A11.unitLowerTriangularView().solveInPlace(A12);
 
         A22.noalias() -= A21 * A12;
       }
@@ -560,8 +560,8 @@ MatrixType PartialPivLU<MatrixType>::reconstructedMatrix() const
 {
   eigen_assert(m_isInitialized && "LU is not initialized.");
   // LU
-  MatrixType res = m_lu.template triangularView<UnitLower>().toDenseMatrix()
-                 * m_lu.template triangularView<Upper>();
+  MatrixType res = m_lu.unitLowerTriangularView().toDenseMatrix()
+                 * m_lu.upperTriangularView();
 
   // P^{-1}(LU)
   res = m_p.inverse() * res;

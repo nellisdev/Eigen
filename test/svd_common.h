@@ -191,7 +191,7 @@ void svd_min_norm(const MatrixType& m) {
   RhsType2 rhs2 = RhsType2::Random(rank);
   // use QR to find a reference minimal norm solution
   HouseholderQR<MatrixType2T> qr(m2.adjoint());
-  Matrix<Scalar,Dynamic,1> tmp = qr.matrixQR().topLeftCorner(rank,rank).template triangularView<Upper>().adjoint().solve(rhs2);
+  Matrix<Scalar,Dynamic,1> tmp = qr.matrixQR().topLeftCorner(rank,rank).upperTriangularView().adjoint().solve(rhs2);
   tmp.conservativeResize(cols);
   tmp.tail(cols-rank).setZero();
   SolutionType x21 = qr.householderQ() * tmp;

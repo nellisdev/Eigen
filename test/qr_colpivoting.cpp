@@ -44,7 +44,7 @@ void cod() {
   MatrixType t;
   t.setZero(rows, cols);
   t.topLeftCorner(rank, rank) =
-      cod.matrixT().topLeftCorner(rank, rank).template triangularView<Upper>();
+      cod.matrixT().topLeftCorner(rank, rank).upperTriangularView();
 
   MatrixType c = q * t * z * cod.colsPermutation().inverse();
   VERIFY_IS_APPROX(matrix, c);
@@ -120,7 +120,7 @@ template<typename MatrixType> void qr()
   MatrixQType q = qr.householderQ();
   VERIFY_IS_UNITARY(q);
 
-  MatrixType r = qr.matrixQR().template triangularView<Upper>();
+  MatrixType r = qr.matrixQR().upperTriangularView();
   MatrixType c = q * r * qr.colsPermutation().inverse();
   VERIFY_IS_APPROX(m1, c);
 
@@ -175,7 +175,7 @@ template<typename MatrixType, int Cols2> void qr_fixedsize()
   VERIFY_IS_EQUAL(qr.isSurjective(), (rank == Cols));
   VERIFY_IS_EQUAL(qr.isInvertible(), (qr.isInjective() && qr.isSurjective()));
 
-  Matrix<Scalar,Rows,Cols> r = qr.matrixQR().template triangularView<Upper>();
+  Matrix<Scalar,Rows,Cols> r = qr.matrixQR().upperTriangularView();
   Matrix<Scalar,Rows,Cols> c = qr.householderQ() * r * qr.colsPermutation().inverse();
   VERIFY_IS_APPROX(m1, c);
 
@@ -228,7 +228,7 @@ template<typename MatrixType> void qr_kahan_matrix()
   }
   m1 = (m1 + m1.transpose()).eval();
   ColPivHouseholderQR<MatrixType> qr(m1);
-  MatrixType r = qr.matrixQR().template triangularView<Upper>();
+  MatrixType r = qr.matrixQR().upperTriangularView();
 
   RealScalar threshold =
       std::sqrt(RealScalar(rows)) * numext::abs(r(0, 0)) * NumTraits<Scalar>::epsilon();

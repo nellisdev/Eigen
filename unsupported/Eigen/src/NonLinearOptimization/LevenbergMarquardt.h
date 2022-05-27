@@ -298,7 +298,7 @@ LevenbergMarquardt<FunctorType,Scalar>::minimizeOneStep(FVectorType  &x)
 
         /* compute the scaled predicted reduction and */
         /* the scaled directional derivative. */
-        wa3 = fjac.template triangularView<Upper>() * (qrfac.colsPermutation().inverse() *wa1);
+        wa3 = fjac.upperTriangularView() * (qrfac.colsPermutation().inverse() *wa1);
         temp1 = numext::abs2(wa3.stableNorm() / fnorm);
         temp2 = numext::abs2(sqrt(par) * pnorm / fnorm);
         prered = temp1 + temp2 / Scalar(.5);
@@ -548,7 +548,7 @@ LevenbergMarquardt<FunctorType,Scalar>::minimizeOptimumStorageOneStep(FVectorTyp
 
         /* compute the scaled predicted reduction and */
         /* the scaled directional derivative. */
-        wa3 = fjac.topLeftCorner(n,n).template triangularView<Upper>() * (permutation.inverse() * wa1);
+        wa3 = fjac.topLeftCorner(n,n).upperTriangularView() * (permutation.inverse() * wa1);
         temp1 = numext::abs2(wa3.stableNorm() / fnorm);
         temp2 = numext::abs2(sqrt(par) * pnorm / fnorm);
         prered = temp1 + temp2 / Scalar(.5);

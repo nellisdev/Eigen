@@ -192,6 +192,13 @@ template<typename MatrixType_, unsigned int UpLo> class SelfAdjointView
                           TriangularView<typename MatrixType::AdjointReturnType,TriMode> >(tmp2);
     }
 
+    constexpr auto upperTriangularView() const { return triangularView<Upper>(); }
+    constexpr auto lowerTriangularView() const { return triangularView<Lower>(); }
+    constexpr auto strictlyUpperTriangularView() const { return triangularView<StrictlyUpper>(); }
+    constexpr auto strictlyLowerTriangularView() const { return triangularView<StrictlyLower>(); }
+    constexpr auto unitUpperTriangularView() const { return triangularView<UnitUpper>(); }
+    constexpr auto unitLowerTriangularView() const { return triangularView<UnitLower>(); }
+
     typedef SelfAdjointView<const MatrixConjugateReturnType,UpLo> ConjugateReturnType;
     /** \sa MatrixBase::conjugate() const */
     EIGEN_DEVICE_FUNC

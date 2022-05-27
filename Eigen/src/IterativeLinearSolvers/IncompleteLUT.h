@@ -173,8 +173,8 @@ class IncompleteLUT : public SparseSolverBase<IncompleteLUT<Scalar_, StorageInde
     void _solve_impl(const Rhs& b, Dest& x) const
     {
       x = m_Pinv * b;
-      x = m_lu.template triangularView<UnitLower>().solve(x);
-      x = m_lu.template triangularView<Upper>().solve(x);
+      x = m_lu.unitLowerTriangularView().solve(x);
+      x = m_lu.upperTriangularView().solve(x);
       x = m_P * x;
     }
 

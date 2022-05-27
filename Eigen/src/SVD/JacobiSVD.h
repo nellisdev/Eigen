@@ -83,7 +83,7 @@ class qr_preconditioner_impl<MatrixType, Options, FullPivHouseholderQRPreconditi
     if(matrix.rows() > matrix.cols())
     {
       m_qr.compute(matrix);
-      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.cols(),matrix.cols()).template triangularView<Upper>();
+      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.cols(),matrix.cols()).upperTriangularView();
       if(svd.m_computeFullU) m_qr.matrixQ().evalTo(svd.m_matrixU, m_workspace);
       if(svd.computeV()) svd.m_matrixV = m_qr.colsPermutation();
       return true;
@@ -131,7 +131,7 @@ class qr_preconditioner_impl<MatrixType, Options, FullPivHouseholderQRPreconditi
     {
       m_adjoint = matrix.adjoint();
       m_qr.compute(m_adjoint);
-      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.rows(),matrix.rows()).template triangularView<Upper>().adjoint();
+      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.rows(),matrix.rows()).upperTriangularView().adjoint();
       if(svd.m_computeFullV) m_qr.matrixQ().evalTo(svd.m_matrixV, m_workspace);
       if(svd.computeU()) svd.m_matrixU = m_qr.colsPermutation();
       return true;
@@ -176,7 +176,7 @@ class qr_preconditioner_impl<MatrixType, Options, ColPivHouseholderQRPreconditio
     if(matrix.rows() > matrix.cols())
     {
       m_qr.compute(matrix);
-      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.cols(),matrix.cols()).template triangularView<Upper>();
+      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.cols(),matrix.cols()).upperTriangularView();
       if(svd.m_computeFullU) m_qr.householderQ().evalTo(svd.m_matrixU, m_workspace);
       else if(svd.m_computeThinU)
       {
@@ -235,7 +235,7 @@ class qr_preconditioner_impl<MatrixType, Options, ColPivHouseholderQRPreconditio
       m_adjoint = matrix.adjoint();
       m_qr.compute(m_adjoint);
 
-      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.rows(),matrix.rows()).template triangularView<Upper>().adjoint();
+      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.rows(),matrix.rows()).upperTriangularView().adjoint();
       if(svd.m_computeFullV) m_qr.householderQ().evalTo(svd.m_matrixV, m_workspace);
       else if(svd.m_computeThinV)
       {
@@ -284,7 +284,7 @@ class qr_preconditioner_impl<MatrixType, Options, HouseholderQRPreconditioner, P
     if(matrix.rows() > matrix.cols())
     {
       m_qr.compute(matrix);
-      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.cols(),matrix.cols()).template triangularView<Upper>();
+      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.cols(),matrix.cols()).upperTriangularView();
       if(svd.m_computeFullU) m_qr.householderQ().evalTo(svd.m_matrixU, m_workspace);
       else if(svd.m_computeThinU)
       {
@@ -342,7 +342,7 @@ class qr_preconditioner_impl<MatrixType, Options, HouseholderQRPreconditioner, P
       m_adjoint = matrix.adjoint();
       m_qr.compute(m_adjoint);
 
-      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.rows(),matrix.rows()).template triangularView<Upper>().adjoint();
+      svd.m_workMatrix = m_qr.matrixQR().block(0,0,matrix.rows(),matrix.rows()).upperTriangularView().adjoint();
       if(svd.m_computeFullV) m_qr.householderQ().evalTo(svd.m_matrixV, m_workspace);
       else if(svd.m_computeThinV)
       {

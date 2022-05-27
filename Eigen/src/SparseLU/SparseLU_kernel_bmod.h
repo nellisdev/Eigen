@@ -60,7 +60,7 @@ EIGEN_DONT_INLINE void LU_kernel_bmod<SegSizeAtCompileTime>::run(const Index seg
   Map<Matrix<Scalar,SegSizeAtCompileTime,SegSizeAtCompileTime, ColMajor>, 0, OuterStride<> > A( &(lusup.data()[luptr]), segsize, segsize, OuterStride<>(lda) );
   Map<Matrix<Scalar,SegSizeAtCompileTime,1> > u(tempv.data(), segsize);
   
-  u = A.template triangularView<UnitLower>().solve(u); 
+  u = A.unitLowerTriangularView().solve(u); 
   
   // Dense matrix-vector product y <-- B*x 
   luptr += segsize;

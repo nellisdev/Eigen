@@ -139,7 +139,7 @@ void SparseLUImpl<Scalar,StorageIndex>::panel_bmod(const Index m, const Index w,
       no_zeros = (krep - u_rows + 1) - fsupc;
       luptr += lda * no_zeros + no_zeros;
       MappedMatrixBlock A(glu.lusup.data()+luptr, u_rows, u_rows, OuterStride<>(lda) );
-      U = A.template triangularView<UnitLower>().solve(U);
+      U = A.unitLowerTriangularView().solve(U);
       
       // update
       luptr += u_rows;

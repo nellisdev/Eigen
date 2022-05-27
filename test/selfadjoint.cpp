@@ -28,22 +28,22 @@ template<typename MatrixType> void selfadjoint(const MatrixType& m)
   m1.diagonal() = m1.diagonal().real().template cast<Scalar>();
 
   // check selfadjoint to dense
-  m3 = m1.template selfadjointView<Upper>();
-  VERIFY_IS_APPROX(MatrixType(m3.template triangularView<Upper>()), MatrixType(m1.template triangularView<Upper>()));
+  m3 = m1.upperSelfadjointView();
+  VERIFY_IS_APPROX(MatrixType(m3.upperTriangularView()), MatrixType(m1.upperTriangularView()));
   VERIFY_IS_APPROX(m3, m3.adjoint());
 
-  m3 = m1.template selfadjointView<Lower>();
-  VERIFY_IS_APPROX(MatrixType(m3.template triangularView<Lower>()), MatrixType(m1.template triangularView<Lower>()));
+  m3 = m1.lowerSelfadjointView();
+  VERIFY_IS_APPROX(MatrixType(m3.lowerTriangularView()), MatrixType(m1.lowerTriangularView()));
   VERIFY_IS_APPROX(m3, m3.adjoint());
 
-  m3 = m1.template selfadjointView<Upper>();
+  m3 = m1.upperSelfadjointView();
   m4 = m2;
-  m4 += m1.template selfadjointView<Upper>();
+  m4 += m1.upperSelfadjointView();
   VERIFY_IS_APPROX(m4, m2+m3);
 
-  m3 = m1.template selfadjointView<Lower>();
+  m3 = m1.lowerSelfadjointView();
   m4 = m2;
-  m4 -= m1.template selfadjointView<Lower>();
+  m4 -= m1.lowerSelfadjointView();
   VERIFY_IS_APPROX(m4, m2-m3);
 }
 

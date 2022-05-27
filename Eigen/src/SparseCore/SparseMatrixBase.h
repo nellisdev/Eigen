@@ -336,7 +336,14 @@ template<typename Derived> class SparseMatrixBase
 
     template<int Mode>
     inline const TriangularView<const Derived, Mode> triangularView() const;
-    
+
+    constexpr auto upperTriangularView() const { return triangularView<Upper>(); }
+    constexpr auto lowerTriangularView() const { return triangularView<Lower>(); }
+    constexpr auto strictlyUpperTriangularView() const { return triangularView<StrictlyUpper>(); }
+    constexpr auto strictlyLowerTriangularView() const { return triangularView<StrictlyLower>(); }
+    constexpr auto unitUpperTriangularView() const { return triangularView<UnitUpper>(); }
+    constexpr auto unitLowerTriangularView() const { return triangularView<UnitLower>(); }
+
     template<unsigned int UpLo> struct SelfAdjointViewReturnType { typedef SparseSelfAdjointView<Derived, UpLo> Type; };
     template<unsigned int UpLo> struct ConstSelfAdjointViewReturnType { typedef const SparseSelfAdjointView<const Derived, UpLo> Type; };
 
@@ -344,6 +351,11 @@ template<typename Derived> class SparseMatrixBase
     typename ConstSelfAdjointViewReturnType<UpLo>::Type selfadjointView() const;
     template<unsigned int UpLo> inline
     typename SelfAdjointViewReturnType<UpLo>::Type selfadjointView();
+
+    constexpr auto upperSelfadjointView() const { return selfadjointView<Upper>(); }
+    constexpr auto upperSelfadjointView() { return selfadjointView<Upper>(); }
+    constexpr auto lowerSelfadjointView() const { return selfadjointView<Lower>(); }
+    constexpr auto lowerSelfadjointView() { return selfadjointView<Lower>(); }
 
     template<typename OtherDerived> Scalar dot(const MatrixBase<OtherDerived>& other) const;
     template<typename OtherDerived> Scalar dot(const SparseMatrixBase<OtherDerived>& other) const;

@@ -59,7 +59,7 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
   VERIFY_IS_EQUAL(cs3.getMaxIterations(), 1);
 
   MatrixType Atriangular = A;
-  Atriangular.template triangularView<StrictlyLower>().setZero(); 
+  Atriangular.strictlyLowerTriangularView().setZero(); 
   cs3.setMaxIterations(1).compute(Atriangular); // triangular matrices do not need any iterations
   VERIFY_IS_EQUAL(cs3.info(), Success);
   VERIFY_IS_EQUAL(cs3.matrixT(), Atriangular.template cast<ComplexScalar>());

@@ -127,7 +127,7 @@ MatrixBase<Derived>::operatorNorm() const
   // then we don't need to compute a maxCoeff() here, comparing the 1st and last ones is enough.
   return sqrt((m_eval*m_eval.adjoint())
                  .eval()
-		 .template selfadjointView<Lower>()
+		 .lowerSelfadjointView()
 		 .eigenvalues()
 		 .maxCoeff()
 		 );

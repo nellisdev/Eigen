@@ -176,10 +176,10 @@ template <typename MatrixType_> class CompleteOrthogonalDecomposition
    * \warning The strict lower part and \code cols() - rank() \endcode right
    * columns of this matrix contains internal values.
    * Only the upper triangular part should be referenced. To get it, use
-   * \code matrixT().template triangularView<Upper>() \endcode
+   * \code matrixT().upperTriangularView() \endcode
    * For rank-deficient matrices, use
    * \code
-   * matrixT().topLeftCorner(rank(), rank()).template triangularView<Upper>()
+   * matrixT().topLeftCorner(rank(), rank()).upperTriangularView()
    * \endcode
    */
   const MatrixType& matrixT() const { return m_cpqr.matrixQR(); }
@@ -544,7 +544,7 @@ void CompleteOrthogonalDecomposition<MatrixType_>::_solve_impl(
   // Solve T z = c(1:rank, :)
   dst.topRows(rank) = matrixT()
                           .topLeftCorner(rank, rank)
-                          .template triangularView<Upper>()
+                          .upperTriangularView()
                           .solve(c.topRows(rank));
 
   const Index cols = this->cols();
@@ -577,7 +577,7 @@ void CompleteOrthogonalDecomposition<MatrixType_>::_solve_impl_transposed(const 
   }
 
   matrixT().topLeftCorner(rank, rank)
-           .template triangularView<Upper>()
+           .upperTriangularView()
            .transpose().template conjugateIf<Conjugate>()
            .solveInPlace(c.topRows(rank));
 

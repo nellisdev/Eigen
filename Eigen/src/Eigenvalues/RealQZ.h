@@ -227,7 +227,7 @@ namespace Eigen {
       // perform QR decomposition of T, overwrite T with R, save Q
       HouseholderQR<MatrixType> qrT(m_T);
       m_T = qrT.matrixQR();
-      m_T.template triangularView<StrictlyLower>().setZero();
+      m_T.strictlyLowerTriangularView().setZero();
       m_Q = qrT.householderQ();
       // overwrite S with Q* S
       m_S.applyOnTheLeft(m_Q.adjoint());

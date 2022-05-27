@@ -359,7 +359,7 @@ template<typename MatrixType> struct HessenbergDecompositionMatrixHReturnType
       result = m_hess.packedMatrix();
       Index n = result.rows();
       if (n>2)
-        result.bottomLeftCorner(n-2, n-2).template triangularView<Lower>().setZero();
+        result.bottomLeftCorner(n-2, n-2).lowerTriangularView().setZero();
     }
 
     Index rows() const { return m_hess.packedMatrix().rows(); }
