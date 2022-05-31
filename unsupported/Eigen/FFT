@@ -29,7 +29,7 @@
   * The default implementation is based on kissfft. It is a small, free, and
   * reasonably efficient default.
   *
-  * There are currently six implementation backend:
+  * There are currently four implementation backend:
   *
   * - kissfft(https://github.com/mborgerding/kissfft) : Simple and not so fast, BSD-3-Clause.
   *   It is a mixed-radix Fast Fourier Transform based up on the principle, "Keep It Simple, Stupid."
@@ -91,7 +91,7 @@
 // intel Math Kernel Library: fastest, free -- may be incompatible with Eigen in GPL form
 #  include "src/FFT/ei_imklfft_impl.h"
    namespace Eigen {
-     template <typename T> struct default_fft_impl : public internal::imklfft_impl<T> {};
+     template <typename T> struct default_fft_impl : public internal::imklfft::imklfft_impl<T> {};
    }
 #elif defined EIGEN_POCKETFFT_DEFAULT
 // internal::pocketfft_impl: a heavily modified implementation of FFTPack, with many advantages.
