@@ -51,6 +51,10 @@ inline void configure_descriptor(DFTI_DESCRIPTOR_HANDLE* handl,
                dimension == 2 &&
                    "Transformation dimension must be less than 3.");
 
+#ifndef IMKLFFT_SINGLE_THREAD
+  std::lock_guard<std::mutex> guard(mutex);
+#endif
+
   if (dimension == 1) {
     RUN_OR_ASSERT(DftiCreateDescriptor(handl, precision, forward_domain,
                                        dimension, *sizes),
@@ -91,9 +95,6 @@ struct plan<float> {
 
   inline void forward(complex_type* dst, complex_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeForward(m_plan, src, dst),
@@ -102,9 +103,6 @@ struct plan<float> {
 
   inline void inverse(complex_type* dst, complex_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeBackward(m_plan, src, dst),
@@ -113,9 +111,6 @@ struct plan<float> {
 
   inline void forward(complex_type* dst, scalar_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_REAL, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeForward(m_plan, src, dst),
@@ -124,9 +119,6 @@ struct plan<float> {
 
   inline void inverse(scalar_type* dst, complex_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_REAL, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeBackward(m_plan, src, dst),
@@ -135,9 +127,6 @@ struct plan<float> {
 
   inline void forward2(complex_type* dst, complex_type* src, int n0, int n1) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       MKL_LONG sizes[2] = {n0, n1};
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 2, sizes);
     }
@@ -147,9 +136,6 @@ struct plan<float> {
 
   inline void inverse2(complex_type* dst, complex_type* src, int n0, int n1) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       MKL_LONG sizes[2] = {n0, n1};
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 2, sizes);
     }
@@ -177,9 +163,6 @@ struct plan<double> {
 
   inline void forward(complex_type* dst, complex_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeForward(m_plan, src, dst),
@@ -188,9 +171,6 @@ struct plan<double> {
 
   inline void inverse(complex_type* dst, complex_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeBackward(m_plan, src, dst),
@@ -199,9 +179,6 @@ struct plan<double> {
 
   inline void forward(complex_type* dst, scalar_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_REAL, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeForward(m_plan, src, dst),
@@ -210,9 +187,6 @@ struct plan<double> {
 
   inline void inverse(scalar_type* dst, complex_type* src, MKL_LONG nfft) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       configure_descriptor(&m_plan, precision, DFTI_REAL, 1, &nfft);
     }
     RUN_OR_ASSERT(DftiComputeBackward(m_plan, src, dst),
@@ -221,9 +195,6 @@ struct plan<double> {
 
   inline void forward2(complex_type* dst, complex_type* src, int n0, int n1) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       MKL_LONG sizes[2] = {n0, n1};
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 2, sizes);
     }
@@ -233,9 +204,6 @@ struct plan<double> {
 
   inline void inverse2(complex_type* dst, complex_type* src, int n0, int n1) {
     if (m_plan == 0) {
-#ifndef IMKLFFT_SINGLE_THREAD
-      std::lock_guard<std::mutex> guard(mutex);
-#endif
       MKL_LONG sizes[2] = {n0, n1};
       configure_descriptor(&m_plan, precision, DFTI_COMPLEX, 2, sizes);
     }
@@ -334,6 +302,8 @@ struct imklfft_impl {
   std::mutex mutex;
 #endif
 };
+
+#undef RUN_OR_ASSERT
 
 }  // namespace imklfft
 }  // namespace internal
