@@ -9,12 +9,7 @@
 
 #include "./InternalHeaderCheck.h"
 
-#define IMKLFFT_SINGLE_THREAD
-
 #include <complex>
-#ifndef IMKLFFT_SINGLE_THREAD
-#include <mutex>
-#endif
 
 namespace Eigen {
 namespace internal {
@@ -50,10 +45,6 @@ inline void configure_descriptor(DFTI_DESCRIPTOR_HANDLE* handl,
   eigen_assert(dimension == 1 ||
                dimension == 2 &&
                    "Transformation dimension must be less than 3.");
-
-#ifndef IMKLFFT_SINGLE_THREAD
-  std::lock_guard<std::mutex> guard(mutex);
-#endif
 
   if (dimension == 1) {
     RUN_OR_ASSERT(DftiCreateDescriptor(handl, precision, forward_domain,
@@ -142,9 +133,6 @@ struct plan<float> {
     RUN_OR_ASSERT(DftiComputeBackward(m_plan, src, dst),
                   "DftiComputeBackward failed.")
   }
-#ifndef IMKLFFT_SINGLE_THREAD
-  std::mutex mutex;
-#endif
 };
 
 template <>
@@ -210,9 +198,6 @@ struct plan<double> {
     RUN_OR_ASSERT(DftiComputeBackward(m_plan, src, dst),
                   "DftiComputeBackward failed.")
   }
-#ifndef IMKLFFT_SINGLE_THREAD
-  std::mutex mutex;
-#endif
 };
 
 template <typename Scalar_>
@@ -274,9 +259,7 @@ struct imklfft_impl {
                       : 0;
     int64_t key = ((nfft << 2) | (inplace << 1) | aligned)
                   << 1;
-#ifndef IMKLFFT_SINGLE_THREAD
-    std::lock_guard<std::mutex> guard(mutex);
-#endif
+
     // Create element if key does not exist.
     return m_plans[key];
   }
@@ -292,15 +275,10 @@ struct imklfft_impl {
                     (inplace << 1) | aligned)
                    << 1) +
                   1;
-#ifndef IMKLFFT_SINGLE_THREAD
-    std::lock_guard<std::mutex> guard(mutex);
-#endif
+
     // Create element if key does not exist.
     return m_plans[key];
   }
-#ifndef IMKLFFT_SINGLE_THREAD
-  std::mutex mutex;
-#endif
 };
 
 #undef RUN_OR_ASSERT
