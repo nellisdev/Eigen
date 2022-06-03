@@ -135,9 +135,9 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   // Zero and Identity
   LeftDiagonalMatrix zero = LeftDiagonalMatrix::Zero(rows);
   LeftDiagonalMatrix identity = LeftDiagonalMatrix::Identity(rows);
-  VERIFY(identity.diagonal().sum() == Scalar(rows));
-  VERIFY(zero.diagonal().sum() == Scalar(0));
-  VERIFY((zero + 2 * LeftDiagonalMatrix::Identity(rows)).diagonal().sum() == Scalar(2 * rows));
+  VERIFY_IS_APPROX(identity.diagonal().sum(), Scalar(rows));
+  VERIFY_IS_APPROX(zero.diagonal().sum(), Scalar(0));
+  VERIFY_IS_APPROX((zero + 2 * LeftDiagonalMatrix::Identity(rows)).diagonal().sum(), Scalar(2 * rows));
 }
 
 template<typename MatrixType> void as_scalar_product(const MatrixType& m)
