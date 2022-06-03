@@ -99,6 +99,7 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   res.noalias() = ldm1 * m1;
   res.noalias() = m1 * rdm1;
   res.noalias() = ldm1 * m1 * rdm1;
+  res.noalias() = LeftDiagonalMatrix::Identity(rows) * m1 * RightDiagonalMatrix::Zero(cols);
   internal::set_is_malloc_allowed(true);  
   
   // scalar multiple
@@ -127,6 +128,13 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   VERIFY_IS_APPROX( sq_m3 = v1.asDiagonal() + v2.asDiagonal(), sq_m1 + sq_m2);
   VERIFY_IS_APPROX( sq_m3 = v1.asDiagonal() - v2.asDiagonal(), sq_m1 - sq_m2);
   VERIFY_IS_APPROX( sq_m3 = v1.asDiagonal() - 2*v2.asDiagonal() + v1.asDiagonal(), sq_m1 - 2*sq_m2 + sq_m1);
+
+  // Zero and Identity
+  LeftDiagonalMatrix zero = LeftDiagonalMatrix::Zero(rows);
+  LeftDiagonalMatrix identity = LeftDiagonalMatrix::Identity(rows);
+  VERIFY(identity.diagonal().sum() == Scalar(rows));
+  VERIFY(zero.diagonal().sum() == Scalar(0));
+  VERIFY((zero + 2 * LeftDiagonalMatrix::Identity(rows)).diagonal().sum() == Scalar(2 * rows));
 }
 
 template<typename MatrixType> void as_scalar_product(const MatrixType& m)

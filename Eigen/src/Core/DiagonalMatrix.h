@@ -241,6 +241,19 @@ class DiagonalMatrix
     }
     #endif
 
+    typedef DiagonalWrapper<const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, DiagonalVectorType>>
+        ConstantReturnType;
+
+    EIGEN_DEVICE_FUNC
+    static const ConstantReturnType Zero() { return DiagonalVectorType::Zero().asDiagonal(); }
+    EIGEN_DEVICE_FUNC
+    static const ConstantReturnType Zero(Index dim) { return DiagonalVectorType::Zero(dim).asDiagonal(); }
+
+    EIGEN_DEVICE_FUNC
+    static const ConstantReturnType Identity() { return DiagonalVectorType::Ones().asDiagonal(); }
+    EIGEN_DEVICE_FUNC 
+    static const ConstantReturnType Identity(Index dim) { return DiagonalVectorType::Ones(dim).asDiagonal(); }
+
     /** Resizes to given size. */
     EIGEN_DEVICE_FUNC
     inline void resize(Index size) { m_diagonal.resize(size); }
