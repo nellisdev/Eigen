@@ -72,6 +72,9 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   VERIFY_IS_APPROX( (((v1+v2).asDiagonal() * (m1+m2))(i,j))  , (v1+v2)(i) * (m1+m2)(i,j) );
   VERIFY_IS_APPROX( ((m1 * (rv1+rv2).asDiagonal())(i,j))  , (rv1+rv2)(j) * m1(i,j) );
   VERIFY_IS_APPROX( (((m1+m2) * (rv1+rv2).asDiagonal())(i,j))  , (rv1+rv2)(j) * (m1+m2)(i,j) );
+  VERIFY_IS_APPROX( (ldm1 * ldm1).diagonal()(i), ldm1.diagonal()(i) * ldm1.diagonal()(i) );
+  VERIFY_IS_APPROX( (ldm1 * ldm1 * m1)(i, j), ldm1.diagonal()(i) * ldm1.diagonal()(i) * m1(i, j) );
+  VERIFY_IS_APPROX( ((v1.asDiagonal() * v1.asDiagonal()).diagonal()(i)), v1(i) * v1(i) );
   internal::set_is_malloc_allowed(true);
   
   if(rows>1)
