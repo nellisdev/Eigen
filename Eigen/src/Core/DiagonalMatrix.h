@@ -65,15 +65,13 @@ class DiagonalBase : public EigenBase<Derived>
       return Product<Derived, MatrixDerived, LazyProduct>(derived(),matrix.derived());
     }
 
-    template<typename OtherDerived>
-    using DiagonalProductReturnType = DiagonalWrapper<
-      const EIGEN_CWISE_BINARY_RETURN_TYPE(DiagonalVectorType,typename OtherDerived::DiagonalVectorType,product)>;
+    template <typename OtherDerived>
+    using DiagonalProductReturnType = DiagonalWrapper<const EIGEN_CWISE_BINARY_RETURN_TYPE(
+        DiagonalVectorType, typename OtherDerived::DiagonalVectorType, product)>;
 
-    template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
-    const DiagonalProductReturnType<OtherDerived>
-    operator*(const DiagonalBase<OtherDerived> &other) const
-    {
+    template <typename OtherDerived>
+    EIGEN_DEVICE_FUNC const DiagonalProductReturnType<OtherDerived> operator*(
+        const DiagonalBase<OtherDerived>& other) const {
       return (diagonal().cwiseProduct(other.diagonal())).asDiagonal();
     }
 
@@ -256,17 +254,17 @@ class DiagonalMatrix
     typedef DiagonalWrapper<const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, DiagonalVectorType>>
         InitializeReturnType;
 
-    /** Initializes a diagonal matrix of size SizeAtCompileTime with coefficients set to zero */ 
+    /** Initializes a diagonal matrix of size SizeAtCompileTime with coefficients set to zero */
     EIGEN_DEVICE_FUNC
     static const InitializeReturnType Zero() { return DiagonalVectorType::Zero().asDiagonal(); }
-    /** Initializes a diagonal matrix of size dim with coefficients set to zero */ 
+    /** Initializes a diagonal matrix of size dim with coefficients set to zero */
     EIGEN_DEVICE_FUNC
     static const InitializeReturnType Zero(Index size) { return DiagonalVectorType::Zero(size).asDiagonal(); }
-    /** Initializes a identity matrix of size SizeAtCompileTime */ 
+    /** Initializes a identity matrix of size SizeAtCompileTime */
     EIGEN_DEVICE_FUNC
     static const InitializeReturnType Identity() { return DiagonalVectorType::Ones().asDiagonal(); }
-    /** Initializes a identity matrix of size dim */ 
-    EIGEN_DEVICE_FUNC 
+    /** Initializes a identity matrix of size dim */
+    EIGEN_DEVICE_FUNC
     static const InitializeReturnType Identity(Index size) { return DiagonalVectorType::Ones(size).asDiagonal(); }
 
     /** Resizes to given size. */
