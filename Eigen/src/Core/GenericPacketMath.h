@@ -1089,10 +1089,10 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadt(const typename unpacket_trai
 /** \internal \returns a packet version of \a *from.
   * The pointer \a from must be aligned on a \a Alignment bytes boundary. */
 template<typename Packet, int Alignment>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadt_partial(const typename unpacket_traits<Packet>::type* from, const Index N)
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet ploadt_partial(const typename unpacket_traits<Packet>::type* from, const Index N, const Index offset = 0)
 {
   if(Alignment >= unpacket_traits<Packet>::alignment)
-    return pload_partial<Packet>(from, N);
+    return pload_partial<Packet>(from, N, offset);
   else
     return ploadu_partial<Packet>(from, N);
 }
@@ -1111,10 +1111,10 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pstoret(Scalar* to, const Packet& fro
 /** \internal copy the packet \a from to \a *to.
   * The pointer \a from must be aligned on a \a Alignment bytes boundary. */
 template<typename Scalar, typename Packet, int Alignment>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pstoret_partial(Scalar* to, const Packet& from, const Index N)
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pstoret_partial(Scalar* to, const Packet& from, const Index N, const Index offset = 0)
 {
   if(Alignment >= unpacket_traits<Packet>::alignment)
-    pstore_partial(to, from, N);
+    pstore_partial(to, from, N, offset);
   else
     pstoreu_partial(to, from, N);
 }
