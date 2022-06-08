@@ -118,7 +118,7 @@ class DiagonalBase : public EigenBase<Derived>
     using ScaleDiagonalReturnType =
         DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar, DiagonalVectorType, product)>;
 
-    /** \returns the product of \c *this by the scalar \a scalar */
+    /** \returns the product of a scalar by the diagonal matrix \a other */
     EIGEN_DEVICE_FUNC
     friend inline const ScaleDiagonalReturnType operator*(const Scalar& scalar, const DiagonalBase& other) {
       return (scalar * other.diagonal()).asDiagonal();
