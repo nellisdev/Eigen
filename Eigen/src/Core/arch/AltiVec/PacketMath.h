@@ -1211,16 +1211,37 @@ template<> EIGEN_STRONG_INLINE Packet16uc ploadu<Packet16uc>(const unsigned char
 
 template<typename Packet> EIGEN_ALWAYS_INLINE Packet ploadu_partial_common(const __UNPACK_TYPE__(Packet)* from, const Index n)
 {
-  eigen_assert(n <= unpacket_traits<Packet>::size && "number of elements will read past end of packet");
+  const Index packet_size = unpacket_traits<Packet>::size;
+  eigen_assert(n <= packet_size && "number of elements will read past end of packet");
+  const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_ALIGNED_LOAD
   EIGEN_DEBUG_UNALIGNED_LOAD
-  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), n * sizeof(__UNPACK_TYPE__(Packet)));
+  return vec_xl_len(const_cast<__UNPACK_TYPE__(Packet)*>(from), n * size);
 #else
-  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[unpacket_traits<Packet>::size];
-  LOAD_STORE_UNROLL_16
-  for (Index i = 0; i < n; i++) {
-    load[i] = from[i];
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) load[packet_size];
+  unsigned char* load2 = reinterpret_cast<unsigned char *>(load);
+  unsigned char* from2 = reinterpret_cast<unsigned char *>(const_cast<__UNPACK_TYPE__(Packet)*>(from));
+  Index n2 = n * size;
+  Index i = 0;
+  if (16 <= n2) {
+    pstore(load2, ploadu<Packet16uc>(from2));
+    i += 16;
+  }
+  if (i + 8 <= n2) {
+    *reinterpret_cast<uint64_t *>(load2 + i) = *reinterpret_cast<uint64_t *>(from2 + i);
+    i += 8;
+  }
+  if (i + 4 <= n2) {
+    *reinterpret_cast<uint32_t *>(load2 + i) = *reinterpret_cast<uint32_t *>(from2 + i);
+    i += 4;
+  }
+  if (i + 2 <= n2) {
+    *reinterpret_cast<uint16_t *>(load2 + i) = *reinterpret_cast<uint16_t *>(from2 + i);
+    i += 2;
+  }
+  if (i < n2) {
+    *reinterpret_cast<uint8_t *>(load2 + i) = *reinterpret_cast<uint8_t *>(from2 + i);
   }
   return pload_ignore<Packet>(load);
 #endif
@@ -1377,11 +1398,39 @@ template<> EIGEN_STRONG_INLINE void pstoreu<unsigned char>(unsigned char*      t
 
 template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreu_partial_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const Index n)
 {
-  eigen_assert(n <= unpacket_traits<Packet>::size && "number of elements will write past end of packet");
+  const Index packet_size = unpacket_traits<Packet>::size;
+  eigen_assert(n <= packet_size && "number of elements will write past end of packet");
+  const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_DEBUG_UNALIGNED_STORE
-  vec_xst_len(from, to, n * sizeof(__UNPACK_TYPE__(Packet)));
+  vec_xst_len(from, to, n * size);
 #else
+  EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) store[packet_size];
+  pstore(store, from);
+  unsigned char* store2 = reinterpret_cast<unsigned char *>(store);
+  unsigned char* to2 = reinterpret_cast<unsigned char *>(to);
+  Index n2 = n * size;
+  Index i = 0;
+  if (16 <= n2) {
+    pstoreu(to2, pload<Packet16uc>(store2));
+    i += 16;
+  }
+  if (i + 8 <= n2) {
+    *reinterpret_cast<uint64_t *>(to2 + i) = *reinterpret_cast<uint64_t *>(store2 + i);
+    i += 8;
+  }
+  if (i + 4 <= n2) {
+    *reinterpret_cast<uint32_t *>(to2 + i) = *reinterpret_cast<uint32_t *>(store2 + i);
+    i += 4;
+  }
+  if (i + 2 <= n2) {
+    *reinterpret_cast<uint16_t *>(to2 + i) = *reinterpret_cast<uint16_t *>(store2 + i);
+    i += 2;
+  }
+  if (i < n2) {
+    *reinterpret_cast<uint8_t *>(to2 + i) = *reinterpret_cast<uint8_t *>(store2 + i);
+  }
+
   LOAD_STORE_UNROLL_16
   for (Index i = 0; i < n; i++) {
     to[i] = from[i];
