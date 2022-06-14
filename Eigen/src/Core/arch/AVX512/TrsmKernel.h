@@ -12,13 +12,20 @@
 
 #include "../../InternalHeaderCheck.h"
 
-#define EIGEN_USE_AVX512_TRSM_KERNELS  // Comment out to prevent using optimized trsm kernels.
+#if !defined(EIGEN_USE_AVX512_TRSM_KERNELS)
+#define EIGEN_USE_AVX512_TRSM_KERNELS 1
+#endif
 
-#if defined(EIGEN_USE_AVX512_TRSM_KERNELS)
-// Comment out to disable rhs kernel
-#define EIGEN_USE_AVX512_TRSM_R_KERNELS
-// Separate MACRO since these kernels require a temporary workspace, comment out to disable lhs kernels
-#define EIGEN_USE_AVX512_TRSM_L_KERNELS
+#if EIGEN_USE_AVX512_TRSM_KERNELS
+#if !defined(EIGEN_USE_AVX512_TRSM_R_KERNELS)
+#define EIGEN_USE_AVX512_TRSM_R_KERNELS 1
+#endif
+#if !defined(EIGEN_USE_AVX512_TRSM_L_KERNELS)
+#define EIGEN_USE_AVX512_TRSM_L_KERNELS 1
+#endif
+#else  // EIGEN_USE_AVX512_TRSM_KERNELS == 0
+#define EIGEN_USE_AVX512_TRSM_R_KERNELS 0
+#define EIGEN_USE_AVX512_TRSM_L_KERNELS 0
 #endif
 
 #if defined(EIGEN_HAS_CXX17_IFCONSTEXPR)
@@ -49,7 +56,7 @@ typedef Packet4d vecHalfDouble;
 // Note: this depends on macros and typedefs above.
 #include "TrsmUnrolls.inc"
 
-#if defined(EIGEN_USE_AVX512_TRSM_KERNELS) && (EIGEN_COMP_CLANG != 0)
+#if (EIGEN_USE_AVX512_TRSM_KERNELS) && (EIGEN_COMP_CLANG != 0)
 /**
  * For smaller problem sizes, and certain compilers, using the optimized kernels trsmKernelL/R directly
  * is faster than the packed versions in TriangularSolverMatrix.h.
@@ -66,14 +73,28 @@ typedef Packet4d vecHalfDouble;
  *  M = Dimension of triangular matrix
  *
  */
-#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS  // Comment out to disable no-copy dispatch
+#if !defined(EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS)
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS 1
+#endif
 
-#if defined(EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS)
-#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS
-#if defined(EIGEN_USE_AVX512_TRSM_L_KERNELS)
-#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_L_CUTOFFS
+#if EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS
+
+#if EIGEN_USE_AVX512_TRSM_R_KERNELS
+#if !defined(EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS)
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS 1
+#endif  // !defined(EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS)
 #endif
+
+#if EIGEN_USE_AVX512_TRSM_L_KERNELS
+#if !defined(EIGEN_ENABLE_AVX512_NOCOPY_TRSM_L_CUTOFFS)
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_L_CUTOFFS 1
 #endif
+#endif  // EIGEN_USE_AVX512_TRSM_L_KERNELS
+
+#else  // EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS == 0
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS 0
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_L_CUTOFFS 0
+#endif  // EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS
 
 template <typename Scalar>
 int64_t avx512_trsm_cutoff(int64_t L2Size, int64_t N, double L2Cap) {
@@ -841,7 +862,7 @@ static EIGEN_ALWAYS_INLINE void copyBToRowMajor(Scalar *B_arr, int64_t LDB, int6
   }
 }
 
-#if defined(EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
+#if (EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
 /**
  * Reduce blocking sizes so that the size of the temporary workspace needed is less than "limit" bytes,
  *  - kB must be at least psize
@@ -865,7 +886,7 @@ constexpr std::pair<int64_t, int64_t> trsmBlocking(const int64_t limit) {
   }
   return {psize, EIGEN_AVX_MAX_NUM_ROW};  // Minimum blocking size required
 }
-#endif  // defined(EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
+#endif  // (EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
 
 /**
  * Main triangular solve driver
@@ -911,7 +932,7 @@ void triSolve(Scalar *A_arr, Scalar *B_arr, int64_t M, int64_t numRHS, int64_t L
    * large enough to allow GEMM updates to have larger "K"s (see below.) No benchmarking has been done so far to
    * determine optimal values for numM.
    */
-#if defined(EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
+#if (EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
   /**
    * If EIGEN_NO_MALLOC is requested, we try to reduce kB and numM so the maximum temp workspace required is less
    * than EIGEN_STACK_ALLOCATION_LIMIT. Actual workspace size may be less, depending on the number of vectors to
@@ -926,7 +947,7 @@ void triSolve(Scalar *A_arr, Scalar *B_arr, int64_t M, int64_t numRHS, int64_t L
   constexpr int64_t numM = blocking_.second;
   /**
    * If the temp workspace size exceeds EIGEN_STACK_ALLOCATION_LIMIT even with the minimum blocking sizes,
-   * we throw an assertion. Comment out EIGEN_USE_AVX512_TRSM_L_KERNELS definition if necessary
+   * we throw an assertion. Use -DEIGEN_USE_AVX512_TRSM_L_KERNELS=0 if necessary
    */
   static_assert(!(((((kB + psize - 1) / psize + 4) * psize) * numM * sizeof(Scalar) >= EIGEN_STACK_ALLOCATION_LIMIT) &&
                   !isBRowMajor),
@@ -948,8 +969,8 @@ void triSolve(Scalar *A_arr, Scalar *B_arr, int64_t M, int64_t numRHS, int64_t L
   }
 
 #if !defined(EIGEN_NO_MALLOC)
-  EIGEN_IF_CONSTEXPR(!isBRowMajor) B_temp = (Scalar *)handmade_aligned_malloc(sizeof(Scalar) * sizeBTemp, 4096);
-#elif defined(EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
+  EIGEN_IF_CONSTEXPR(!isBRowMajor) B_temp = (Scalar *)handmade_aligned_malloc(sizeof(Scalar) * sizeBTemp, 64);
+#elif (EIGEN_USE_AVX512_TRSM_L_KERNELS) && defined(EIGEN_NO_MALLOC)
   // Use alloca if malloc not allowed, requested temp workspace size should be less than EIGEN_STACK_ALLOCATION_LIMIT
   ei_declare_aligned_stack_constructed_variable(Scalar, B_temp_alloca, sizeBTemp, 0);
   B_temp = B_temp_alloca;
@@ -1089,7 +1110,8 @@ void triSolve(Scalar *A_arr, Scalar *B_arr, int64_t M, int64_t numRHS, int64_t L
 }
 
 // Template specializations of trsmKernelL/R for float/double and inner strides of 1.
-#if defined(EIGEN_USE_AVX512_TRSM_KERNELS)
+#if (EIGEN_USE_AVX512_TRSM_KERNELS)
+#if (EIGEN_USE_AVX512_TRSM_R_KERNELS)
 template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
 struct trsmKernelR;
 
@@ -1122,9 +1144,10 @@ EIGEN_DONT_INLINE void trsmKernelR<double, Index, Mode, false, TriStorageOrder, 
   triSolve<double, TriStorageOrder != RowMajor, true, (Mode & Lower) != Lower, (Mode & UnitDiag) != 0>(
       const_cast<double *>(_tri), _other, size, otherSize, triStride, otherStride);
 }
+#endif  // (EIGEN_USE_AVX512_TRSM_R_KERNELS)
 
 // These trsm kernels require temporary memory allocation
-#if defined(EIGEN_USE_AVX512_TRSM_L_KERNELS)
+#if (EIGEN_USE_AVX512_TRSM_L_KERNELS)
 template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
 struct trsmKernelL;
 
