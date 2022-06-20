@@ -184,6 +184,30 @@ template<typename MatrixType_> class HouseholderQR
       return *this;
     }
 
+    /** \returns the determinant of the matrix of which
+      * Q is the unitary matrix. It has only linear complexity
+      * (that is, O(n) where n is the dimension of the square matrix)
+      * for real matrices and quadratic for complex matrices.
+      *
+      * \sa householderQ(), determinant(), MatrixBase::determinant()
+      */
+    typename MatrixType::Scalar determinantOfQ() const;
+
+    /** \returns the determinant of the matrix of which
+      * *this is the QR decomposition. It has linear complexity
+      * (that is, O(n) where n is the dimension of the square matrix)
+      * for real matrices and quadratic for complex matrices.
+      *
+      * \note This is only for square matrices.
+      *
+      * \warning a determinant can be very big or small, so for matrices
+      * of large enough dimension, there is a risk of overflow/underflow.
+      * One way to work around that is to use logAbsDeterminant() instead.
+      *
+      * \sa absDeterminant(), logAbsDeterminant(), MatrixBase::determinant()
+      */
+    typename MatrixType::Scalar determinant() const;
+
     /** \returns the absolute value of the determinant of the matrix of which
       * *this is the QR decomposition. It has only linear complexity
       * (that is, O(n) where n is the dimension of the square matrix)
@@ -243,6 +267,14 @@ template<typename MatrixType_> class HouseholderQR
 };
 
 template<typename MatrixType>
+typename MatrixType::Scalar HouseholderQR<MatrixType>::determinant() const
+{
+  eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
+  eigen_assert(m_qr.rows() == m_qr.cols() && "You can't take the determinant of a non-square matrix!");
+  return m_qr.diagonal().prod() * determinantOfQ();
+}
+
+template<typename MatrixType>
 typename MatrixType::RealScalar HouseholderQR<MatrixType>::absDeterminant() const
 {
   using std::abs;
@@ -260,6 +292,42 @@ typename MatrixType::RealScalar HouseholderQR<MatrixType>::logAbsDeterminant() c
 }
 
 namespace internal {
+
+template<typename MatrixType, typename HCoeffsType, typename Scalar, typename RealScalar>
+struct determinant_of_q_helper
+{
+  static void determinant_of_q(const MatrixType& qr_matrix, const HCoeffsType& hCoeff, Scalar& out_determinant)
+  {
+    out_determinant = Scalar(1);
+    Index rows = qr_matrix.rows();
+    Index cols = qr_matrix.cols();
+    for (Index i = 0; i < cols; i ++)
+    {
+      // For each refleciton Q_n = I - h_n * v_n * v_n.conjugate(),
+      // det(Q_n) = 1 - h_n * v_n.conjugate() * v_n
+      //          = 1 - h_n * v_n.squaredNorm()
+      Scalar squaredNorm = qr_matrix.col(i).tail(rows - i - 1).squaredNorm() + Scalar(1);
+      out_determinant *= Scalar(1) - numext::conj(hCoeff(i)) * squaredNorm;
+    }
+  }
+};
+template<typename MatrixType, typename HCoeffsType, typename Scalar>
+struct determinant_of_q_helper<MatrixType, HCoeffsType, Scalar, Scalar>
+{
+  static void determinant_of_q(const MatrixType& qr_matrix, const HCoeffsType& hCoeff, Scalar& out_determinant)
+  {
+    Index size = hCoeff.rows();
+    bool negated = false;
+    for (Index i = 0; i < size; i ++)
+    {
+      // Each valid reflection simply negates sign of determinant
+      // This counts non-zero hCoeff values and sets negated flag.
+      if (hCoeff(i) != Scalar(0))
+        negated ^= true;
+    }
+    out_determinant = negated ? Scalar(-1) : Scalar(1);
+  }
+};
 
 /** \internal */
 template<typename MatrixQR, typename HCoeffs>
@@ -461,6 +529,16 @@ const HouseholderQR<typename MatrixBase<Derived>::PlainObject>
 MatrixBase<Derived>::householderQr() const
 {
   return HouseholderQR<PlainObject>(eval());
+}
+
+template<typename MatrixType>
+typename MatrixType::Scalar HouseholderQR<MatrixType>::determinantOfQ() const
+{
+  eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
+  Scalar det;
+  internal::determinant_of_q_helper<MatrixType, HCoeffsType, Scalar, RealScalar>
+    ::determinant_of_q(m_qr, m_hCoeffs, det);
+  return det;
 }
 
 } // end namespace Eigen
