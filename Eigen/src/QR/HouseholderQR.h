@@ -219,7 +219,7 @@ template<typename MatrixType_> class HouseholderQR
       * of large enough dimension, there is a risk of overflow/underflow.
       * One way to work around that is to use logAbsDeterminant() instead.
       *
-      * \sa logAbsDeterminant(), MatrixBase::determinant()
+      * \sa determinant(), logAbsDeterminant(), MatrixBase::determinant()
       */
     typename MatrixType::RealScalar absDeterminant() const;
 
@@ -233,7 +233,7 @@ template<typename MatrixType_> class HouseholderQR
       * \note This method is useful to work around the risk of overflow/underflow that's inherent
       * to determinant computation.
       *
-      * \sa absDeterminant(), MatrixBase::determinant()
+      * \sa determinant(), absDeterminant(), MatrixBase::determinant()
       */
     typename MatrixType::RealScalar logAbsDeterminant() const;
 
@@ -293,6 +293,7 @@ typename MatrixType::RealScalar HouseholderQR<MatrixType>::logAbsDeterminant() c
 
 namespace internal {
 
+/** \internal */
 template<typename MatrixType, typename HCoeffsType, typename Scalar, typename RealScalar>
 struct determinant_of_q_helper
 {
@@ -311,6 +312,8 @@ struct determinant_of_q_helper
     }
   }
 };
+
+/** \internal */
 template<typename MatrixType, typename HCoeffsType, typename Scalar>
 struct determinant_of_q_helper<MatrixType, HCoeffsType, Scalar, Scalar>
 {
