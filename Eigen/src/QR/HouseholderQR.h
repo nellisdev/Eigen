@@ -185,15 +185,6 @@ template<typename MatrixType_> class HouseholderQR
     }
 
     /** \returns the determinant of the matrix of which
-      * Q is the unitary matrix. It has only linear complexity
-      * (that is, O(n) where n is the dimension of the square matrix)
-      * for real matrices and quadratic for complex matrices.
-      *
-      * \sa householderQ(), determinant(), MatrixBase::determinant()
-      */
-    typename MatrixType::Scalar determinantOfQ() const;
-
-    /** \returns the determinant of the matrix of which
       * *this is the QR decomposition. It has linear complexity
       * (that is, O(n) where n is the dimension of the square matrix)
       * for real matrices and quadratic for complex matrices.
@@ -266,12 +257,53 @@ template<typename MatrixType_> class HouseholderQR
     bool m_isInitialized;
 };
 
+namespace internal {
+
+/** \internal */
+template<typename HCoeffs, bool IsComplex>
+struct householder_q_determinant
+{
+  typedef typename HCoeffs::Scalar Scalar;
+  static void run(const HCoeffs& hCoeffs, Scalar& out_det)
+  {std::cout << "complex" << std::endl;
+    out_det = Scalar(1);
+    Index size = hCoeffs.rows();
+    for (Index i = 0; i < size; i ++)
+    {
+      if (hCoeffs(i) != Scalar(0))
+        out_det *= - numext::conj(hCoeffs(i)) / hCoeffs(i);
+    }
+  }
+};
+
+/** \internal */
+template<typename HCoeffs>
+struct householder_q_determinant<HCoeffs, false>
+{
+  typedef typename HCoeffs::Scalar Scalar;
+  static void run(const HCoeffs& hCoeffs, Scalar& out_det)
+  {std::cout << "real" << std::endl;
+    bool negated = false;
+    Index size = hCoeffs.rows();
+    for (Index i = 0; i < size; i ++)
+    {
+      if (hCoeffs(i) != Scalar(0))
+        negated ^= true;
+    }
+    out_det = negated ? Scalar(-1) : Scalar(1);
+  }
+};
+
+} // end namespace internal
+
 template<typename MatrixType>
 typename MatrixType::Scalar HouseholderQR<MatrixType>::determinant() const
 {
   eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
   eigen_assert(m_qr.rows() == m_qr.cols() && "You can't take the determinant of a non-square matrix!");
-  return m_qr.diagonal().prod() * determinantOfQ();
+  Scalar detQ;
+  internal::householder_q_determinant<HCoeffsType, NumTraits<Scalar>::IsComplex>::run(m_hCoeffs, detQ);
+  return m_qr.diagonal().prod() * detQ;
 }
 
 template<typename MatrixType>
@@ -292,45 +324,6 @@ typename MatrixType::RealScalar HouseholderQR<MatrixType>::logAbsDeterminant() c
 }
 
 namespace internal {
-
-/** \internal */
-template<typename MatrixType, typename HCoeffsType, typename Scalar, typename RealScalar>
-struct determinant_of_q_helper
-{
-  static void determinant_of_q(const MatrixType& qr_matrix, const HCoeffsType& hCoeff, Scalar& out_determinant)
-  {
-    out_determinant = Scalar(1);
-    Index rows = qr_matrix.rows();
-    Index cols = qr_matrix.cols();
-    for (Index i = 0; i < cols; i ++)
-    {
-      // For each refleciton Q_n = I - h_n * v_n * v_n.conjugate(),
-      // det(Q_n) = 1 - h_n * v_n.conjugate() * v_n
-      //          = 1 - h_n * v_n.squaredNorm()
-      Scalar squaredNorm = qr_matrix.col(i).tail(rows - i - 1).squaredNorm() + Scalar(1);
-      out_determinant *= Scalar(1) - numext::conj(hCoeff(i)) * squaredNorm;
-    }
-  }
-};
-
-/** \internal */
-template<typename MatrixType, typename HCoeffsType, typename Scalar>
-struct determinant_of_q_helper<MatrixType, HCoeffsType, Scalar, Scalar>
-{
-  static void determinant_of_q(const MatrixType& qr_matrix, const HCoeffsType& hCoeff, Scalar& out_determinant)
-  {
-    Index size = hCoeff.rows();
-    bool negated = false;
-    for (Index i = 0; i < size; i ++)
-    {
-      // Each valid reflection simply negates sign of determinant
-      // This counts non-zero hCoeff values and sets negated flag.
-      if (hCoeff(i) != Scalar(0))
-        negated ^= true;
-    }
-    out_determinant = negated ? Scalar(-1) : Scalar(1);
-  }
-};
 
 /** \internal */
 template<typename MatrixQR, typename HCoeffs>
@@ -532,16 +525,6 @@ const HouseholderQR<typename MatrixBase<Derived>::PlainObject>
 MatrixBase<Derived>::householderQr() const
 {
   return HouseholderQR<PlainObject>(eval());
-}
-
-template<typename MatrixType>
-typename MatrixType::Scalar HouseholderQR<MatrixType>::determinantOfQ() const
-{
-  eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
-  Scalar det;
-  internal::determinant_of_q_helper<MatrixType, HCoeffsType, Scalar, RealScalar>
-    ::determinant_of_q(m_qr, m_hCoeffs, det);
-  return det;
 }
 
 } // end namespace Eigen
