@@ -461,7 +461,7 @@ template<typename MatrixType_> class ColPivHouseholderQR
 };
 
 template<typename MatrixType>
-typename MatrixType::Scalar HouseholderQR<MatrixType>::determinant() const
+typename MatrixType::Scalar ColPivHouseholderQR<MatrixType>::determinant() const
 {
   eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
   eigen_assert(m_qr.rows() == m_qr.cols() && "You can't take the determinant of a non-square matrix!");
