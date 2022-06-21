@@ -185,9 +185,9 @@ template<typename MatrixType_> class HouseholderQR
     }
 
     /** \returns the determinant of the matrix of which
-      * *this is the QR decomposition. It has linear complexity
+      * *this is the QR decomposition. It has only linear complexity
       * (that is, O(n) where n is the dimension of the square matrix)
-      * for real matrices and quadratic for complex matrices.
+      * as the QR decomposition has already been computed.
       *
       * \note This is only for square matrices.
       *
@@ -265,11 +265,14 @@ struct householder_q_determinant
 {
   typedef typename HCoeffs::Scalar Scalar;
   static void run(const HCoeffs& hCoeffs, Scalar& out_det)
-  {std::cout << "complex" << std::endl;
+  {
     out_det = Scalar(1);
     Index size = hCoeffs.rows();
     for (Index i = 0; i < size; i ++)
     {
+      // For each valid reflection Q_n,
+      // det(Q_n) = - conj(h_n) / h_n
+      // where h_n is the Householder coefficient.
       if (hCoeffs(i) != Scalar(0))
         out_det *= - numext::conj(hCoeffs(i)) / hCoeffs(i);
     }
@@ -282,11 +285,12 @@ struct householder_q_determinant<HCoeffs, false>
 {
   typedef typename HCoeffs::Scalar Scalar;
   static void run(const HCoeffs& hCoeffs, Scalar& out_det)
-  {std::cout << "real" << std::endl;
+  {
     bool negated = false;
     Index size = hCoeffs.rows();
     for (Index i = 0; i < size; i ++)
     {
+      // Each valid reflection negates the determinant.
       if (hCoeffs(i) != Scalar(0))
         negated ^= true;
     }
