@@ -426,7 +426,7 @@ template <typename MatrixType>
 typename MatrixType::Scalar
 CompleteOrthogonalDecomposition<MatrixType>::determinant() const {
   Scalar detZ;
-  internal::householder_determinant<HCoeffsType, NumTraits<Scalar>::IsComplex>::run(m_zCoeffs, detZ);
+  internal::householder_determinant<HCoeffsType, Scalar, NumTraits<Scalar>::IsComplex>::run(m_zCoeffs, detZ);
   return m_cpqr.determinant() * detZ;
 }
 

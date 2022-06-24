@@ -260,10 +260,9 @@ template<typename MatrixType_> class HouseholderQR
 namespace internal {
 
 /** \internal */
-template<typename HCoeffs, bool IsComplex>
+template<typename HCoeffs, typename Scalar, bool IsComplex>
 struct householder_determinant
 {
-  typedef typename HCoeffs::Scalar Scalar;
   static void run(const HCoeffs& hCoeffs, Scalar& out_det)
   {
     out_det = Scalar(1);
@@ -280,10 +279,9 @@ struct householder_determinant
 };
 
 /** \internal */
-template<typename HCoeffs>
-struct householder_determinant<HCoeffs, false>
+template<typename HCoeffs, typename Scalar>
+struct householder_determinant<HCoeffs, Scalar, false>
 {
-  typedef typename HCoeffs::Scalar Scalar;
   static void run(const HCoeffs& hCoeffs, Scalar& out_det)
   {
     bool negated = false;
@@ -306,7 +304,7 @@ typename MatrixType::Scalar HouseholderQR<MatrixType>::determinant() const
   eigen_assert(m_isInitialized && "HouseholderQR is not initialized.");
   eigen_assert(m_qr.rows() == m_qr.cols() && "You can't take the determinant of a non-square matrix!");
   Scalar detQ;
-  internal::householder_determinant<HCoeffsType, NumTraits<Scalar>::IsComplex>::run(m_hCoeffs, detQ);
+  internal::householder_determinant<HCoeffsType, Scalar, NumTraits<Scalar>::IsComplex>::run(m_hCoeffs, detQ);
   return m_qr.diagonal().prod() * detQ;
 }
 
