@@ -96,42 +96,6 @@ void cod_fixedsize() {
   VERIFY_IS_APPROX(cod_solution, pinv * rhs);
 }
 
-template<typename MatrixType> void cod_invertible()
-{
-  using std::log;
-  using std::abs;
-  typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
-  typedef typename MatrixType::Scalar Scalar;
-
-  int size = internal::random<int>(10,50);
-
-  MatrixType m1(size, size), m2(size, size), m3(size, size);
-  m1 = MatrixType::Random(size,size);
-
-  if (internal::is_same<RealScalar,float>::value)
-  {
-    // let's build a matrix more stable to inverse
-    MatrixType a = MatrixType::Random(size,size*2);
-    m1 += a * a.adjoint();
-  }
-
-  CompleteOrthogonalDecomposition<MatrixType> qr(m1);
-
-  check_solverbase<MatrixType, MatrixType>(m1, qr, size, size, size);
-
-  // now construct a matrix with prescribed determinant
-  m1.setZero();
-  for(int i = 0; i < size; i++) m1(i,i) = internal::random<Scalar>();
-  Scalar det = m1.diagonal().prod();
-  RealScalar absdet = abs(det);
-  m3 = qr.householderQ(); // get a unitary
-  m1 = m3 * m1 * m3.adjoint();
-  qr.compute(m1);
-  VERIFY_IS_APPROX(det, qr.determinant());
-  VERIFY_IS_APPROX(absdet, qr.absDeterminant());
-  VERIFY_IS_APPROX(log(absdet), qr.logAbsDeterminant());
-}
-
 template<typename MatrixType> void qr()
 {
   using std::sqrt;
@@ -384,13 +348,6 @@ EIGEN_DECLARE_TEST(qr_colpivoting)
     CALL_SUBTEST_2( qr_invertible<MatrixXd>() );
     CALL_SUBTEST_6( qr_invertible<MatrixXcf>() );
     CALL_SUBTEST_3( qr_invertible<MatrixXcd>() );
-  }
-
-  for(int i = 0; i < g_repeat; i++) {
-    CALL_SUBTEST_1( cod_invertible<MatrixXf>() );
-    CALL_SUBTEST_2( cod_invertible<MatrixXd>() );
-    CALL_SUBTEST_6( cod_invertible<MatrixXcf>() );
-    CALL_SUBTEST_3( cod_invertible<MatrixXcd>() );
   }
 
   CALL_SUBTEST_7(qr_verify_assert<Matrix3f>());
