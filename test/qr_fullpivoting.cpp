@@ -101,7 +101,7 @@ template<typename MatrixType> void qr_invertible()
   Scalar det = m1.diagonal().prod();
   RealScalar absdet = abs(det);
   m3 = qr.matrixQ(); // get a unitary
-  m1 = m3 * m1 * m3;
+  m1 = m3 * m1 * m3.adjoint();
   qr.compute(m1);
   VERIFY_IS_APPROX(det, qr.determinant());
   VERIFY_IS_APPROX(absdet, qr.absDeterminant());
