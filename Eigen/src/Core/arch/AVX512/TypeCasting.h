@@ -80,6 +80,8 @@ template<> EIGEN_STRONG_INLINE Packet8d preinterpret<Packet8d, Packet8d>(const P
   return a;
 }
 
+#ifndef EIGEN_VECTORIZE_AVX512FP16
+
 template <>
 struct type_casting_traits<half, float> {
   enum {
@@ -105,6 +107,8 @@ struct type_casting_traits<float, half> {
 template<> EIGEN_STRONG_INLINE Packet16h pcast<Packet16f, Packet16h>(const Packet16f& a) {
   return float2half(a);
 }
+
+#endif
 
 template <>
 struct type_casting_traits<bfloat16, float> {
