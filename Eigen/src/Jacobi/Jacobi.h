@@ -455,7 +455,7 @@ EIGEN_DEVICE_FUNC
 void /*EIGEN_DONT_INLINE*/ apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x, DenseBase<VectorY>& xpr_y, const JacobiRotation<OtherScalar>& j)
 {
   typedef typename VectorX::Scalar Scalar;
-  const bool Vectorizable =    (int(VectorX::Flags) & int(VectorY::Flags) & PacketAccessBit)
+  const bool Vectorizable =    (int(evaluator<VectorX>::Flags) & int(evaluator<VectorY>::Flags) & PacketAccessBit)
                             && (int(packet_traits<Scalar>::size) == int(packet_traits<OtherScalar>::size));
 
   eigen_assert(xpr_x.size() == xpr_y.size());
