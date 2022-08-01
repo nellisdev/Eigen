@@ -93,3 +93,14 @@ EIGEN_DOC_UNARY_ADDONS(cwiseArg,arg)
 EIGEN_DEVICE_FUNC
 inline const CwiseArgReturnType
 cwiseArg() const { return CwiseArgReturnType(derived()); }
+
+template<int N>
+using CwiseIntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<N, Scalar>, const Derived>;
+
+template<int N>
+EIGEN_DEVICE_FUNC
+inline const CwiseIntPowReturnType<N>
+cwiseIntPow() const
+{
+    return CwiseIntPowReturnType<N>(derived());
+}

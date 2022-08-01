@@ -39,6 +39,7 @@ typedef CwiseUnaryOp<internal::scalar_ceil_op<Scalar>, const Derived> CeilReturn
 typedef CwiseUnaryOp<internal::scalar_isnan_op<Scalar>, const Derived> IsNaNReturnType;
 typedef CwiseUnaryOp<internal::scalar_isinf_op<Scalar>, const Derived> IsInfReturnType;
 typedef CwiseUnaryOp<internal::scalar_isfinite_op<Scalar>, const Derived> IsFiniteReturnType;
+template<int N> using IntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<N, Scalar>, const Derived>;
 
 /** \returns an expression of the coefficient-wise absolute value of \c *this
   *
@@ -170,6 +171,16 @@ inline const Log2ReturnType
 log2() const
 {
   return Log2ReturnType(derived());
+}
+
+/** \returns an expression of the coefficient-wise power with a fixed integer exponent.
+  */
+template<int N>
+EIGEN_DEVICE_FUNC
+EIGEN_STRONG_INLINE const IntPowReturnType<N>
+intPow() const
+{
+    return IntPowReturnType<N>(derived());
 }
 
 /** \returns an expression of the coefficient-wise square root of *this.

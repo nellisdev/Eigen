@@ -180,6 +180,13 @@ namespace Eigen
   }
 #endif
 
+template <int N, typename Derived>
+using CwiseIntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<N, typename Derived::Scalar>, const Derived>;
+
+template <int N, typename Derived>
+EIGEN_DEVICE_FUNC inline const CwiseIntPowReturnType<N, Derived> intPow(const Eigen::ArrayBase<Derived>& x) {
+  return CwiseIntPowReturnType<N, Derived>(x.derived());
+}
 
   namespace internal
   {

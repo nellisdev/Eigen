@@ -1095,6 +1095,27 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
+template <int N, typename Scalar>
+struct scalar_intpow_op {
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+        return intpow_impl<N, Scalar>::run(a);
+    }
+    template <typename Packet>
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+        return intpow_impl<N, Packet>::run(a);
+    }
+};
+
+template <int N, typename Scalar>
+struct functor_traits<scalar_intpow_op<N, Scalar>> {
+    enum {
+        MulOps = (N % 2) + meta_floor_log2<N>::value,
+        DivOps = (N < 0) ? 1 : 0,
+        Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, false>::value,
+        PacketAccess = packet_traits<Scalar>::HasMul && (DivOps == 0 || packet_traits<Scalar>::HasDiv)
+    };
+};
+
 } // end namespace internal
 
 } // end namespace Eigen

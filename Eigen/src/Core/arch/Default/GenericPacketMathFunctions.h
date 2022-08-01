@@ -1623,6 +1623,47 @@ struct pchebevl {
   }
 };
 
+/*
+Integer power function : evaluate power function for integer-valued exponents
+Computes x^N by repeated squaring, where x is a scalar and N is a signed integer
+Example: x^-7 = 1/(x(((x^2)^2)^2))
+x^0 evaluates to 1
+x^1 evaluates to x 
+x^-N evaluates to 1 / x^N
+No special treatment is considered for particular values of x
+*/
+
+template <int N, typename Packet>
+struct intpow_impl {
+    enum {
+        Neg = N < 0,
+        AbsN = Neg ? -N : N,
+        Odd = AbsN % 2 == 1,
+        SquareOps = meta_floor_log2<AbsN>::value
+    };
+
+    static Packet run(Packet x) {
+        if(N == 0)
+            return pset1<Packet>(1);
+        else if(N == 1)
+            return x;
+        else if(N == -1)
+            return pdiv(pset1<Packet>(1),x);
+        else
+        {
+            Packet result = pmul(x, x);//first op
+            for (int op = 1; op < SquareOps; ++op)
+                result = pmul(result, result);
+            if (Odd)
+                result = pmul(result, x);
+            if (Neg)
+                result = pdiv(pset1<Packet>(1), result);
+            preciprocal
+            return result;
+        }
+    }
+};
+
 } // end namespace internal
 } // end namespace Eigen
 
