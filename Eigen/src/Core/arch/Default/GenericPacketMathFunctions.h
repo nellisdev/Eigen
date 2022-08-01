@@ -1658,7 +1658,6 @@ struct intpow_impl {
                 result = pmul(result, x);
             if (Neg)
                 result = pdiv(pset1<Packet>(1), result);
-            preciprocal
             return result;
         }
     }
