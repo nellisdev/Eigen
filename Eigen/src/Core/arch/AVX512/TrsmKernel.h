@@ -7,8 +7,8 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef EIGEN_TRSM_KERNEL_IMPL_H
-#define EIGEN_TRSM_KERNEL_IMPL_H
+#ifndef EIGEN_CORE_ARCH_AVX512_TRSM_KERNEL_H
+#define EIGEN_CORE_ARCH_AVX512_TRSM_KERNEL_H
 
 #include "../../InternalHeaderCheck.h"
 
@@ -106,6 +106,10 @@ int64_t avx512_trsm_cutoff(int64_t L2Size, int64_t N, double L2Cap) {
   int64_t cutoff_l = static_cast<int64_t>(cutoff_d);
   return (cutoff_l / EIGEN_AVX_MAX_NUM_ROW) * EIGEN_AVX_MAX_NUM_ROW;
 }
+#else // !(EIGEN_USE_AVX512_TRSM_KERNELS) || !(EIGEN_COMP_CLANG != 0)
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_CUTOFFS 0
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_R_CUTOFFS 0
+#define EIGEN_ENABLE_AVX512_NOCOPY_TRSM_L_CUTOFFS 0
 #endif
 
 /**
@@ -1184,4 +1188,4 @@ EIGEN_DONT_INLINE void trsmKernelL<double, Index, Mode, false, TriStorageOrder, 
 #endif  // EIGEN_USE_AVX512_TRSM_KERNELS
 }  // namespace internal
 }  // namespace Eigen
-#endif  // EIGEN_TRSM_KERNEL_IMPL_H
+#endif  // EIGEN_CORE_ARCH_AVX512_TRSM_KERNEL_H
