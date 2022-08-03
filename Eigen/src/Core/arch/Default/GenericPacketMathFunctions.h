@@ -1641,18 +1641,19 @@ See handlerErrors for details
 
 template <int N, typename Packet>
 struct intpow_impl {
+  typedef typename unpacket_traits<Packet>::type Scalar;
   static const bool Neg = N < 0;
   static const int AbsN = Neg ? -N : N;
   static const bool Odd = AbsN % 2;
 
   static Packet domath(const Packet x) {
-    Packet result = Neg ? pdiv(pset1<Packet>(1), x) : x;
+    Packet result = Neg ? pdiv(pset1<Packet>((Scalar(1)), x) : x;
     if (AbsN == 0)
-      return pset1<Packet>(1);
+      return pset1<Packet>(Scalar(1));
     else if (AbsN == 1)
       return result;
     else {
-      Packet y = pset1<Packet>(1);
+      Packet y = pset1<Packet>(Scalar(1));
       int m = AbsN;
       while (m > 1) {
         if (m % 2) y = pmul(y, result);
@@ -1666,14 +1667,14 @@ struct intpow_impl {
   static Packet handleErrors(const Packet x, const Packet xN) {
 
     if (N == 0) {
-      return pset1<Packet>(1);
+      return pset1<Packet>(Scalar(1));
     }
 
     typedef typename unpacket_traits<Packet>::type Scalar;
 
-    const Scalar pos_inf = +NumTraits<Scalar>::infinity();
+    const Scalar pos_inf = NumTraits<Scalar>::infinity();
     const Scalar neg_inf = -NumTraits<Scalar>::infinity();
-    const Scalar pos_zer = +Scalar(0);
+    const Scalar pos_zer = Scalar(0);
     const Scalar neg_zer = -Scalar(0);
 
     const Packet cst_pos_inf = pset1<Packet>(pos_inf);
