@@ -1721,17 +1721,16 @@ struct intpow_impl {
   }
   static constexpr int MulOps() {
     int result = 0;
-    int AbsN = N < 0 ? -N : N;
     if (AbsN <= 1)
       return 0;
     else {
-      while (AbsN > 1) {
-        bool Odd = AbsN % 2;
-        if (Odd) {
+      int m = AbsN;
+      while (m > 1) {
+        if (m % 2) {
           result++;
         }
         result++;
-        AbsN /= 2;
+        m /= 2;
       }
       result++;
       return result;
