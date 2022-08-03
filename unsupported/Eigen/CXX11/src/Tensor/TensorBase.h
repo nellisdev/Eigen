@@ -113,6 +113,13 @@ class TensorBase<Derived, ReadOnlyAccessors>
       return unaryExpr(internal::scalar_cube_op<Scalar>());
     }
 
+    template<int N>
+    EIGEN_DEVICE_FUNC
+    EIGEN_STRONG_INLINE const TensorCwiseUnaryOp<internal::scalar_intpow_op<N,Scalar>, const Derived>
+    intPow() const {
+      return unaryExpr(internal::scalar_intpow_op<N,Scalar>());
+    }
+
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE const TensorCwiseUnaryOp<internal::scalar_inverse_op<Scalar>, const Derived>
     inverse() const {
