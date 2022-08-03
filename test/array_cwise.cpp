@@ -130,7 +130,7 @@ void intPow_test_exponent(Scalar prec, bool& pass) {
 			Scalar base = abs_base * sign;
 			base_array.setConstant(base);
 
-			intPow_array = base_array.intPow<Exponent>();
+			intPow_array = base_array.template intPow<Exponent>();
 			std_pow_array = base_array.unaryExpr([&](Scalar x) {return static_cast<Scalar>(std::pow(x, Exponent)); });
 
 			Scalar e = std_pow_array(0);
