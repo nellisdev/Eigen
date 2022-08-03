@@ -1647,7 +1647,7 @@ struct intpow_impl {
   static const bool Odd = AbsN % 2;
 
   static Packet domath(const Packet x) {
-    Packet result = Neg ? pdiv(pset1<Packet>((Scalar(1)), x) : x;
+    Packet result = Neg ? pdiv(pset1<Packet>(Scalar(1)), x) : x;
     if (AbsN == 0)
       return pset1<Packet>(Scalar(1));
     else if (AbsN == 1)
