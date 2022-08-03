@@ -125,7 +125,7 @@ void intPow_test_exponent(Scalar prec, bool& pass) {
 
 	for (Scalar abs_base : base_abs_vals)
 	{
-		for (Scalar sign : {Scalar(-1), Scalar(1)})
+		for (Scalar sign : { Scalar(-1), Scalar(1) })
 		{
 			Scalar base = abs_base * sign;
 			base_array.setConstant(base);
