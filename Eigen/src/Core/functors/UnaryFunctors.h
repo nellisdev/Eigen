@@ -1109,10 +1109,10 @@ struct scalar_intpow_op {
 template <int N, typename Scalar>
 struct functor_traits<scalar_intpow_op<N, Scalar>> {
     enum {
-        MulOps = (N % 2) + meta_floor_log2<N>::value,
+        MulOps = intpow_impl<N, Scalar>::MulOps(),
         DivOps = (N < 0) ? 1 : 0,
-        Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, false>::value,
-        PacketAccess = packet_traits<Scalar>::HasMul && (DivOps == 0 || packet_traits<Scalar>::HasDiv)
+        PacketAccess = packet_traits<Scalar>::HasMul && (DivOps == 0 || packet_traits<Scalar>::HasDiv),
+        Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, packet_traits<Scalar>::HasDiv>::value
     };
 };
 
