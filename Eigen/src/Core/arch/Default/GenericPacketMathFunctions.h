@@ -1625,42 +1625,118 @@ struct pchebevl {
 
 /*
 Integer power function : evaluate power function for integer-valued exponents
-Computes x^N by repeated squaring, where x is a scalar and N is a signed integer
-Example: x^-7 = 1/(x(((x^2)^2)^2))
-x^0 evaluates to 1
-x^1 evaluates to x 
+
+In general:
 x^-N evaluates to 1 / x^N
-No special treatment is considered for particular values of x
+
+Special cases:
+x^0 evaluates to 1
+x^1 evaluates to x
+
+Error handling:
+
+See handlerErrors for details
+
 */
 
 template <int N, typename Packet>
 struct intpow_impl {
-    enum {
-        Neg = N < 0,
-        AbsN = Neg ? -N : N,
-        Odd = AbsN % 2 == 1,
-        SquareOps = meta_floor_log2<AbsN>::value
-    };
+  static const bool Neg = N < 0;
+  static const int AbsN = Neg ? -N : N;
+  static const bool Odd = AbsN % 2;
 
-    static Packet run(Packet x) {
-        if(N == 0)
-            return pset1<Packet>(1);
-        else if(N == 1)
-            return x;
-        else if(N == -1)
-            return pdiv(pset1<Packet>(1),x);
-        else
-        {
-            Packet result = pmul(x, x);//first op
-            for (int op = 1; op < SquareOps; ++op)
-                result = pmul(result, result);
-            if (Odd)
-                result = pmul(result, x);
-            if (Neg)
-                result = pdiv(pset1<Packet>(1), result);
-            return result;
-        }
+  static Packet domath(const Packet x) {
+    Packet result = Neg ? pdiv(pset1<Packet>(1), x) : x;
+    if (AbsN == 0)
+      return pset1<Packet>(1);
+    else if (AbsN == 1)
+      return result;
+    else {
+      Packet y = pset1<Packet>(1);
+      int m = AbsN;
+      while (m > 1) {
+        if (m % 2) y = pmul(y, result);
+        result = pmul(result, result);
+        m /= 2;
+      }
+      result = pmul(y, result);
+      return result;
     }
+  }
+  static Packet handleErrors(const Packet x, const Packet xN) {
+
+    if (N == 0) {
+      return pset1<Packet>(1);
+    }
+
+    typedef typename unpacket_traits<Packet>::type Scalar;
+
+    const Scalar pos_inf = +NumTraits<Scalar>::infinity();
+    const Scalar neg_inf = -NumTraits<Scalar>::infinity();
+    const Scalar pos_zer = +Scalar(0);
+    const Scalar neg_zer = -Scalar(0);
+
+    const Packet cst_pos_inf = pset1<Packet>(pos_inf);
+    const Packet cst_neg_inf = pset1<Packet>(neg_inf);
+    const Packet cst_pos_zer = pset1<Packet>(pos_zer);
+    const Packet cst_neg_zer = pset1<Packet>(neg_zer);
+
+    const Packet x_is_pos_inf = pcmp_eq(x, cst_pos_inf);
+    const Packet x_is_neg_inf = pcmp_eq(x, cst_neg_inf);
+  
+    const Packet x_is_neg = pand(x, cst_neg_zer);
+    const Packet x_is_zer = pcmp_eq(x, cst_pos_zer); // either +0 or -0
+    const Packet x_is_neg_zer = pand(x_is_zer, x_is_neg); // -0
+    const Packet x_is_pos_zer = pandnot(x_is_zer, x_is_neg); // +0
+
+    Packet result = xN;
+
+    if (Neg) {
+      // N is a negative integer
+      result = pselect(x_is_pos_inf, cst_pos_zer, result);    // +0 if x is +∞ and N is negative
+      if (Odd) { // N is a negative odd integer
+        result = pselect(x_is_pos_zer, cst_pos_inf, result);  // +∞ if x is +0 and N is negative odd
+        result = pselect(x_is_neg_zer, cst_neg_inf, result);  // -∞ if x is -0 and N is negative odd
+        result = pselect(x_is_neg_inf, cst_neg_zer, result);  // -0 if x is -∞ and N is negative odd
+      } else { // N is a negative even integer
+        result = pselect(x_is_zer, cst_pos_inf, result);      // +∞ if x is +/-0 and N is negative even
+        result = pselect(x_is_neg_inf, cst_pos_zer, result);  // +0 if x is -∞ and N is negative even
+      }
+    } else { // N is a positive integer
+      result = pselect(x_is_pos_inf, cst_pos_inf, result);    // +∞ if x is +∞ and N is positive
+      if (Odd) { // N is a positive odd integer
+        result = pselect(x_is_neg_inf, cst_neg_inf, result);  // -∞ if x is -∞ and N is positive odd
+        result = pselect(x_is_neg_zer, cst_neg_zer, result);  // -0 if x is -0 and N is positive odd
+      } else { // N is a positive even integer
+        result = pselect(x_is_neg_inf, cst_pos_inf, result);  // +∞ if x is -∞ and N is positive even
+      }
+    }
+
+    return result;
+  }
+  static Packet run(const Packet x) {
+    Packet result = domath(x);
+    result = handleErrors(x, result); // disable for faster and less-safe behavior
+    return result;
+  }
+  static constexpr int MulOps() {
+    int result = 0;
+    int AbsN = N < 0 ? -N : N;
+    if (AbsN <= 1)
+      return 0;
+    else {
+      while (AbsN > 1) {
+        bool Odd = AbsN % 2;
+        if (Odd) {
+          result++;
+        }
+        result++;
+        AbsN /= 2;
+      }
+      result++;
+      return result;
+    }
+  }
 };
 
 } // end namespace internal
