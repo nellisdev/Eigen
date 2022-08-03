@@ -54,24 +54,17 @@ EIGEN_ALWAYS_INLINE void storeAccumulator(Index i, const DataMapper& data, const
 #ifdef USE_PARTIAL_PACKETS
   if (full) {
     EIGEN_UNUSED_VARIABLE(elements);
-
     bload<DataMapper, Packet, 0, ColMajor, false, 4>(tRes, data, i, 0);
-
     bscale<Packet, 4>(tRes, result, alpha);
-
     bstore<DataMapper, Packet, 4>(tRes, data, i);
   } else {
     bload_partial<DataMapper, Packet, 0, false, 4>(tRes, data, i, elements);
-
     bscale<Packet, 4>(tRes, result, alpha);
-
     bstore_partial<DataMapper, Packet, 4>(tRes, data, i, elements);
   }
 #else
   bload<DataMapper, Packet, 0, ColMajor, false, 4>(tRes, data, i, 0);
-
   bscale<Packet, 4, (accCols != accCols2)>(tRes, result, alpha, pMask);
-
   bstore<DataMapper, Packet, 4>(tRes, data, i);
 #endif
 }
