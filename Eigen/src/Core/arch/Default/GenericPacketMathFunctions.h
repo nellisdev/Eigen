@@ -1432,13 +1432,16 @@ Packet generic_pow(const Packet& x, const Packet& y) {
   const Packet cst_pos_inf = pset1<Packet>(NumTraits<Scalar>::infinity());
   const Packet cst_neg_inf = pset1<Packet>(-NumTraits<Scalar>::infinity());
   const Packet cst_zero = pset1<Packet>(Scalar(0));
+  const Packet cst_neg_zero = pset1<Packet>(-Scalar(0));
   const Packet cst_one = pset1<Packet>(Scalar(1));
   const Packet cst_nan = pset1<Packet>(NumTraits<Scalar>::quiet_NaN());
 
   const Packet abs_x = pabs(x);
   // Predicates for sign and magnitude of x.
-  const Packet x_is_neg = pcmp_lt(x, cst_zero);
   const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_zero);
+  const Packet x_has_signbit = pcmp_eq(por(pand(x, cst_neg_zero), cst_pos_inf), cst_neg_inf);
+  const Packet x_is_neg = pandnot(x_has_signbit, abs_x_is_zero);
+  const Packet x_is_neg_zero = pand(x_has_signbit, abs_x_is_zero);
   const Packet abs_x_is_inf = pcmp_eq(abs_x, cst_pos_inf);
   const Packet abs_x_is_one =  pcmp_eq(abs_x, cst_one);
   const Packet abs_x_is_gt_one = pcmp_lt(cst_one, abs_x);
@@ -1446,10 +1449,6 @@ Packet generic_pow(const Packet& x, const Packet& y) {
   const Packet x_is_one =  pandnot(abs_x_is_one, x_is_neg);
   const Packet x_is_neg_one =  pand(abs_x_is_one, x_is_neg);
   const Packet x_is_nan = pandnot(ptrue(x), pcmp_eq(x, x));
-  // This is a bit dirty, since it relies on pselect switching on a packet with only the MSB set,
-  // which is not how we normally define mask packets.
-  const Packet x_has_signbit = pselect(pand(x, pset1<Packet>(Scalar(-0.))), ptrue(x), pzero(x));
-  const Packet x_is_neg_zero = pand(x_has_signbit, abs_x_is_zero);
 
   // Predicates for sign and magnitude of y.
   const Packet abs_y = pabs(y);
