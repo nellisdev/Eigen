@@ -1,4 +1,3 @@
-
 typedef CwiseUnaryOp<internal::scalar_abs_op<Scalar>, const Derived> AbsReturnType;
 typedef CwiseUnaryOp<internal::scalar_arg_op<Scalar>, const Derived> ArgReturnType;
 typedef CwiseUnaryOp<internal::scalar_abs2_op<Scalar>, const Derived> Abs2ReturnType;
@@ -169,16 +168,6 @@ inline const Log2ReturnType
 log2() const
 {
   return Log2ReturnType(derived());
-}
-
-/** \returns an expression of the coefficient-wise power with a fixed integer exponent.
-  */
-template<int N>
-EIGEN_DEVICE_FUNC
-EIGEN_STRONG_INLINE const IntPowReturnType<N>
-intPow() const
-{
-    return IntPowReturnType<N>(derived());
 }
 
 /** \returns an expression of the coefficient-wise square root of *this.
