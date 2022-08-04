@@ -694,22 +694,21 @@ ndtri() const
 }
 
 template<int Exponent>
-using IntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
-
-template<int Exponent>
-using CwiseIntPowReturnType = CwiseUnaryOp<IntPowOpType<Exponent>, const Derived>;
+using IntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<Scalar, Exponent>, const Derived>;
 
 template<int Exponent>
 EIGEN_DEVICE_FUNC
-inline const CwiseIntPowReturnType<Exponent>
+inline const IntPowReturnType<Exponent>
 intPow(int exponent = Exponent) const
 {
-    return CwiseIntPowReturnType<Exponent>(derived(), IntPowOpType<Exponent>(exponent));
+    using ArrayCwiseIntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
+    return IntPowReturnType<Exponent>(derived(), ArrayCwiseIntPowOpType(exponent));
 }
 
 EIGEN_DEVICE_FUNC
-inline const CwiseIntPowReturnType<Dynamic>
+inline const IntPowReturnType<Dynamic>
 intPow(int exponent) const
 {
-    return CwiseIntPowReturnType<Dynamic>(derived(), IntPowOpType<Dynamic>(exponent));
+    using ArrayCwiseIntPowOpType = internal::scalar_intpow_op<Scalar, Dynamic>;
+    return IntPowReturnType<Dynamic>(derived(), ArrayCwiseIntPowOpType(exponent));
 }
