@@ -85,7 +85,7 @@ void pow_test() {
 
 
 template<typename Scalar, int Exponent>
-void intPow_test_exponent(Scalar prec, bool& pass) {
+void intPow_test_exponent(int exponent, Scalar prec, bool& pass) {
 
 	const Scalar zero = Scalar(0);
 	const Scalar eps = Eigen::NumTraits<Scalar>::epsilon();
@@ -130,8 +130,8 @@ void intPow_test_exponent(Scalar prec, bool& pass) {
 			Scalar base = abs_base * sign;
 			base_array.setConstant(base);
 
-			intPow_array = base_array.template intPow<Exponent>();
-			std_pow_array = base_array.unaryExpr([&](Scalar x) {return static_cast<Scalar>(std::pow(x, Exponent)); });
+			intPow_array = base_array.template intPow<Exponent>(exponent);
+			std_pow_array = base_array.unaryExpr([&](Scalar x) {return static_cast<Scalar>(std::pow(x, exponent)); });
 
 			Scalar e = std_pow_array(0);
 			Scalar a = intPow_array(0);
@@ -139,7 +139,7 @@ void intPow_test_exponent(Scalar prec, bool& pass) {
 			bool isApprox = numext::abs(a - e) / numext::mini(numext::abs(a), numext::abs(e)) <= prec;
 			bool fail = !(a == e) && !isApprox && !((numext::isnan)(a) && (numext::isnan)(e));
 			if (fail) {
-				std::cout << "pow(" << base << "," << Exponent << ")   =   " << a << " !=  " << e << std::endl;
+				std::cout << "pow(" << base << "," << exponent << ")   =   " << a << " !=  " << e << std::endl;
 			}
       pass = pass && !fail;
 		}
@@ -162,23 +162,45 @@ void intPow_test()
 
   bool pass = true;
 
-	intPow_test_exponent<Scalar, zero>(prec, pass);
+	//static
 
-	intPow_test_exponent<Scalar, one>(prec, pass);
-	intPow_test_exponent<Scalar, two>(prec, pass);
-	intPow_test_exponent<Scalar, three>(prec, pass);
-	intPow_test_exponent<Scalar, odd>(prec, pass);
-	intPow_test_exponent<Scalar, even>(prec, pass);
-	intPow_test_exponent<Scalar, big_odd>(prec, pass);
-	intPow_test_exponent<Scalar, big_even>(prec, pass);
+	intPow_test_exponent<Scalar, zero>(zero, prec, pass);
 
-	intPow_test_exponent<Scalar, -one>(prec, pass);
-	intPow_test_exponent<Scalar, -two>(prec, pass);
-	intPow_test_exponent<Scalar, -three>(prec, pass);
-	intPow_test_exponent<Scalar, -odd>(prec, pass);
-	intPow_test_exponent<Scalar, -even>(prec, pass);
-	intPow_test_exponent<Scalar, -big_odd>(prec, pass);
-	intPow_test_exponent<Scalar, -big_even>(prec, pass);
+	intPow_test_exponent<Scalar, one>(one, prec, pass);
+	intPow_test_exponent<Scalar, two>(two, prec, pass);
+	intPow_test_exponent<Scalar, three>(three, prec, pass);
+	intPow_test_exponent<Scalar, odd>(odd, prec, pass);
+	intPow_test_exponent<Scalar, even>(even, prec, pass);
+	intPow_test_exponent<Scalar, big_odd>(big_odd, prec, pass);
+	intPow_test_exponent<Scalar, big_even>(big_even, prec, pass);
+
+	intPow_test_exponent<Scalar, -one>(-one, prec, pass);
+	intPow_test_exponent<Scalar, -two>(-two, prec, pass);
+	intPow_test_exponent<Scalar, -three>(-three, prec, pass);
+	intPow_test_exponent<Scalar, -odd>(-odd, prec, pass);
+	intPow_test_exponent<Scalar, -even>(-even, prec, pass);
+	intPow_test_exponent<Scalar, -big_odd>(-big_odd, prec, pass);
+	intPow_test_exponent<Scalar, -big_even>(-big_even, prec, pass);
+
+	//dynamic
+
+	intPow_test_exponent<Scalar, Dynamic>(zero, prec, pass);
+
+	intPow_test_exponent<Scalar, Dynamic>(one, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(two, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(three, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(even, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(big_odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(big_even, prec, pass);
+
+	intPow_test_exponent<Scalar, Dynamic>(-one, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-two, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-three, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-even, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-big_odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-big_even, prec, pass);
 
   VERIFY(pass);
 }
