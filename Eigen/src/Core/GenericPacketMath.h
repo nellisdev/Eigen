@@ -59,6 +59,7 @@ struct default_packet_traits
     HasMax       = 1,
     HasConj      = 1,
     HasSetLinear = 1,
+    HasSign      = 1,
     HasBlend     = 0,
     // This flag is used to indicate whether packet comparison is supported.
     // pcmp_eq, pcmp_lt and pcmp_le should be defined for it to be true.
@@ -101,8 +102,7 @@ struct default_packet_traits
     HasRound  = 0,
     HasRint   = 0,
     HasFloor  = 0,
-    HasCeil   = 0,
-    HasSign   = 0
+    HasCeil   = 0
   };
 };
 
@@ -179,7 +179,7 @@ struct eigen_packet_wrapper
  */
 template<typename Packet>
 struct is_scalar {
-  typedef typename unpacket_traits<Packet>::type Scalar;
+  using Scalar = typename unpacket_traits<Packet>::type;
   enum {
     value = internal::is_same<Packet, Scalar>::value
   };
@@ -1171,6 +1171,24 @@ EIGEN_DEVICE_FUNC inline Packet preciprocal(const Packet& a) {
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet prsqrt(const Packet& a) {
   return preciprocal<Packet>(psqrt(a));
+}
+
+/** \internal \returns -1 if a is negative, 0 otherwise, +1 if a is positive. */
+template<typename Packet> EIGEN_DEVICE_FUNC inline
+std::enable_if_t<!NumTraits<typename unpacket_traits<Packet>::type>::IsComplex, Packet>
+psign(const Packet& a) {
+  using Scalar = typename unpacket_traits<Packet>::type;
+  const Packet cst_one = pset1<Packet>(Scalar(1));
+  const Packet cst_minus_one = pset1<Packet>(Scalar(-1));
+  const Packet cst_zero = pzero(a);
+
+  const Packet not_nan_mask = pcmp_eq(a, a);
+  const Packet positive_mask = pcmp_lt(cst_zero, a);
+  const Packet positive = pand(positive_mask, cst_one);
+  const Packet negative_mask = pcmp_lt(a, cst_zero);
+  const Packet negative = pand(negative_mask, cst_minus_one);
+
+  return pselect(not_nan_mask, por(positive, negative), a);
 }
 
 } // end namespace internal

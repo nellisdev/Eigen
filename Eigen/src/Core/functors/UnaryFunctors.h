@@ -923,9 +923,10 @@ struct scalar_sign_op<Scalar, false, true> {
   {
       return Scalar( (a>Scalar(0)) - (a<Scalar(0)) );
   }
-  //TODO
-  //template <typename Packet>
-  //EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::psign(a); }
+  template <typename Packet>
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const {
+    return internal::psign(a);
+  }
 };
 
 template<typename Scalar>
@@ -934,9 +935,10 @@ struct scalar_sign_op<Scalar, false, false> {
   {
     return (numext::isnan)(a) ? a : Scalar( (a>Scalar(0)) - (a<Scalar(0)) );
   }
-  //TODO
-  //template <typename Packet>
-  //EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::psign(a); }
+  template <typename Packet>
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const {
+    return internal::psign(a);
+  }
 };
 
 template<typename Scalar, bool is_integer>
@@ -961,7 +963,7 @@ struct functor_traits<scalar_sign_op<Scalar> >
         NumTraits<Scalar>::IsComplex
         ? ( 8*NumTraits<Scalar>::MulCost  ) // roughly
         : ( 3*NumTraits<Scalar>::AddCost),
-    PacketAccess = packet_traits<Scalar>::HasSign
+    PacketAccess = packet_traits<Scalar>::HasSign && !NumTraits<Scalar>::IsComplex
   };
 };
 
