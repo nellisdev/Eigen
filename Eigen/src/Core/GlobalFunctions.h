@@ -180,12 +180,24 @@ namespace Eigen
   }
 #endif
 
-template <int N, typename Derived>
-using CwiseIntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<N, typename Derived::Scalar>, const Derived>;
+template <typename Derived, int Exponent>
+using IntPowOpType = internal::scalar_intpow_op<typename Derived::Scalar, Exponent>;
 
-template <int N, typename Derived>
-EIGEN_DEVICE_FUNC inline const CwiseIntPowReturnType<N, Derived> intPow(const Eigen::ArrayBase<Derived>& x) {
-  return CwiseIntPowReturnType<N, Derived>(x.derived());
+template <typename Derived, int Exponent>
+using CwiseIntPowReturnType = CwiseUnaryOp<IntPowOpType<Derived, Exponent>, const Derived>;
+
+template <int Exponent, typename Derived>
+EIGEN_DEVICE_FUNC inline const CwiseIntPowReturnType<Derived, Exponent>
+intPow(const Eigen::ArrayBase<Derived>& x, int exponent = Exponent)
+{
+    return CwiseIntPowReturnType<Derived, Exponent>(x.derived(), IntPowOpType<Derived, Exponent>(exponent));
+}
+
+template <typename Derived>
+EIGEN_DEVICE_FUNC inline const CwiseIntPowReturnType<Derived, Dynamic>
+intPow(const Eigen::ArrayBase<Derived>& x, int exponent)
+{
+    return CwiseIntPowReturnType<Derived, Dynamic>(x.derived(), IntPowOpType<Derived, Dynamic>(exponent));
 }
 
   namespace internal
