@@ -181,23 +181,22 @@ namespace Eigen
 #endif
 
 template <typename Derived, int Exponent>
-using IntPowOpType = internal::scalar_intpow_op<typename Derived::Scalar, Exponent>;
-
-template <typename Derived, int Exponent>
-using CwiseIntPowReturnType = CwiseUnaryOp<IntPowOpType<Derived, Exponent>, const Derived>;
+using IntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<typename Derived::Scalar, Exponent>, const Derived>;
 
 template <int Exponent, typename Derived>
-EIGEN_DEVICE_FUNC inline const CwiseIntPowReturnType<Derived, Exponent>
+EIGEN_DEVICE_FUNC inline const IntPowReturnType<Derived, Exponent>
 intPow(const Eigen::ArrayBase<Derived>& x, int exponent = Exponent)
 {
-    return CwiseIntPowReturnType<Derived, Exponent>(x.derived(), IntPowOpType<Derived, Exponent>(exponent));
+    using IntPowOpType = internal::scalar_intpow_op<typename Derived::Scalar, Exponent>;
+    return IntPowReturnType<Derived, Exponent>(x.derived(), IntPowOpType(exponent));
 }
 
 template <typename Derived>
-EIGEN_DEVICE_FUNC inline const CwiseIntPowReturnType<Derived, Dynamic>
+EIGEN_DEVICE_FUNC inline const IntPowReturnType<Derived, Dynamic>
 intPow(const Eigen::ArrayBase<Derived>& x, int exponent)
 {
-    return CwiseIntPowReturnType<Derived, Dynamic>(x.derived(), IntPowOpType<Derived, Dynamic>(exponent));
+    using IntPowOpType = internal::scalar_intpow_op<typename Derived::Scalar, Dynamic>;
+    return IntPowReturnType<Derived, Dynamic>(x.derived(), IntPowOpType(exponent));
 }
 
   namespace internal
