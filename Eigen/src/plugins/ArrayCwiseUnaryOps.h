@@ -1,5 +1,4 @@
 
-
 typedef CwiseUnaryOp<internal::scalar_abs_op<Scalar>, const Derived> AbsReturnType;
 typedef CwiseUnaryOp<internal::scalar_arg_op<Scalar>, const Derived> ArgReturnType;
 typedef CwiseUnaryOp<internal::scalar_abs2_op<Scalar>, const Derived> Abs2ReturnType;
@@ -39,7 +38,6 @@ typedef CwiseUnaryOp<internal::scalar_ceil_op<Scalar>, const Derived> CeilReturn
 typedef CwiseUnaryOp<internal::scalar_isnan_op<Scalar>, const Derived> IsNaNReturnType;
 typedef CwiseUnaryOp<internal::scalar_isinf_op<Scalar>, const Derived> IsInfReturnType;
 typedef CwiseUnaryOp<internal::scalar_isfinite_op<Scalar>, const Derived> IsFiniteReturnType;
-template<int N> using IntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<N, Scalar>, const Derived>;
 
 /** \returns an expression of the coefficient-wise absolute value of \c *this
   *
@@ -704,4 +702,25 @@ inline const NdtriReturnType
 ndtri() const
 {
   return NdtriReturnType(derived());
+}
+
+template<int Exponent>
+using IntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
+
+template<int Exponent>
+using CwiseIntPowReturnType = CwiseUnaryOp<IntPowOpType<Exponent>, const Derived>;
+
+template<int Exponent>
+EIGEN_DEVICE_FUNC
+inline const CwiseIntPowReturnType<Exponent>
+intPow(int exponent = Exponent) const
+{
+    return CwiseIntPowReturnType<Exponent>(derived(), IntPowOpType<Exponent>(exponent));
+}
+
+EIGEN_DEVICE_FUNC
+inline const CwiseIntPowReturnType<Dynamic>
+intPow(int exponent) const
+{
+    return CwiseIntPowReturnType<Dynamic>(derived(), IntPowOpType<Dynamic>(exponent));
 }
