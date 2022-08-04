@@ -94,13 +94,23 @@ EIGEN_DEVICE_FUNC
 inline const CwiseArgReturnType
 cwiseArg() const { return CwiseArgReturnType(derived()); }
 
-template<int N>
-using CwiseIntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<N, Scalar>, const Derived>;
+template<int Exponent>
+using IntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
 
-template<int N>
+template<int Exponent>
+using CwiseIntPowReturnType = CwiseUnaryOp<IntPowOpType<Exponent>, const Derived>;
+
+template<int Exponent>
 EIGEN_DEVICE_FUNC
-inline const CwiseIntPowReturnType<N>
-cwiseIntPow() const
+inline const CwiseIntPowReturnType<Exponent>
+cwiseIntPow(int exponent = Exponent) const
 {
-    return CwiseIntPowReturnType<N>(derived());
+    return CwiseIntPowReturnType<Exponent>(derived(), IntPowOpType<Exponent>(exponent));
+}
+
+EIGEN_DEVICE_FUNC
+inline const CwiseIntPowReturnType<Dynamic>
+cwiseIntPow(int exponent) const
+{
+    return CwiseIntPowReturnType<Dynamic>(derived(), IntPowOpType<Dynamic>(exponent));
 }
