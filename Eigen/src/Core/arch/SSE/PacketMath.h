@@ -155,7 +155,8 @@ struct packet_traits<float> : default_packet_traits {
 #ifdef EIGEN_VECTORIZE_SSE4_1
     HasRound = 1,
 #endif
-    HasRint = 1
+    HasRint = 1,
+    HasSign = 0   // The manually vectorized version is slightly slower for SSE.
   };
 };
 template <>
