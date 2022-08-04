@@ -72,7 +72,8 @@ void pow_test() {
     for (int j = 0; j < num_cases; ++j) {
       Scalar e = static_cast<Scalar>(std::pow(x(i,j), y(i,j)));
       Scalar a = actual(i, j);
-      bool fail = !(a==e) && !internal::isApprox(a, e, tol) && !((numext::isnan)(a) && (numext::isnan)(e));
+      bool isApprox = numext::abs(a - e) / numext::mini(numext::abs(a), numext::abs(e)) <= tol;
+      bool fail = !(a==e) && !isApprox && !((numext::isnan)(a) && (numext::isnan)(e));
       all_pass &= !fail;
       if (fail) {
         std::cout << "pow(" << x(i,j) << "," << y(i,j) << ")   =   " << a << " !=  " << e << std::endl;
@@ -80,6 +81,128 @@ void pow_test() {
     }
   }
   VERIFY(all_pass);
+}
+
+
+template<typename Scalar, int Exponent>
+void intPow_test_exponent(int exponent, Scalar prec, bool& pass) {
+
+	const Scalar zero = Scalar(0);
+	const Scalar eps = Eigen::NumTraits<Scalar>::epsilon();
+	const Scalar one = Scalar(1);
+	const Scalar two = Scalar(2);
+	const Scalar three = Scalar(3);
+	const Scalar sqrt_half = Scalar(std::sqrt(0.5));
+	const Scalar sqrt2 = Scalar(std::sqrt(2));
+	const Scalar inf = Eigen::NumTraits<Scalar>::infinity();
+	const Scalar nan = Eigen::NumTraits<Scalar>::quiet_NaN();
+	const Scalar denorm_min = std::numeric_limits<Scalar>::denorm_min();
+	const Scalar min = (std::numeric_limits<Scalar>::min)();
+	const Scalar max = (std::numeric_limits<Scalar>::max)();
+	const Scalar max_exp = (static_cast<Scalar>(int(Eigen::NumTraits<Scalar>::max_exponent())) * Scalar(EIGEN_LN2)) / eps;
+
+	const static Scalar base_abs_vals[] = { zero,
+									  denorm_min,
+									  min,
+									  eps,
+									  sqrt_half,
+									  one,
+									  sqrt2,
+									  two,
+									  three,
+									  max_exp,
+									  max,
+									  inf,
+									  nan };
+
+	// Repeat the same value to make sure we hit the vectorized path.
+	const int num_repeats = internal::packet_traits<Scalar>::size * internal::packet_traits<Scalar>::size;
+	
+
+	Array<Scalar, Dynamic, Dynamic> base_array(num_repeats, 1);
+	Array<Scalar, Dynamic, Dynamic> std_pow_array(num_repeats, 1);
+	Array<Scalar, Dynamic, Dynamic> intPow_array(num_repeats, 1);
+
+	for (Scalar abs_base : base_abs_vals)
+	{
+		for (Scalar sign : { Scalar(-1), Scalar(1) })
+		{
+			Scalar base = abs_base * sign;
+			base_array.setConstant(base);
+
+			intPow_array = base_array.template intPow<Exponent>(exponent);
+			std_pow_array = base_array.unaryExpr([&](Scalar x) {return static_cast<Scalar>(std::pow(x, exponent)); });
+
+			Scalar e = std_pow_array(0);
+			Scalar a = intPow_array(0);
+			// modified isApprox test so that isApprox(-inf,inf) == false !
+			bool isApprox = numext::abs(a - e) / numext::mini(numext::abs(a), numext::abs(e)) <= prec;
+			bool fail = !(a == e) && !isApprox && !((numext::isnan)(a) && (numext::isnan)(e));
+			if (fail) {
+				std::cout << "pow(" << base << "," << exponent << ")   =   " << a << " !=  " << e << std::endl;
+			}
+      pass = pass && !fail;
+		}
+	}
+}
+
+template<typename Scalar>
+void intPow_test()
+{
+	const Scalar prec = test_precision<Scalar>();
+
+	const int zero = 0;
+	const int one = 1;
+	const int two = 2;
+	const int three = 3;
+	const int odd = 9;
+	const int even = 10;
+	const int big_odd = 2 * (NumTraits<int16_t>::highest() / 10) + 1;
+	const int big_even = big_odd + 1;
+
+  bool pass = true;
+
+	//static
+
+	intPow_test_exponent<Scalar, zero>(zero, prec, pass);
+
+	intPow_test_exponent<Scalar, one>(one, prec, pass);
+	intPow_test_exponent<Scalar, two>(two, prec, pass);
+	intPow_test_exponent<Scalar, three>(three, prec, pass);
+	intPow_test_exponent<Scalar, odd>(odd, prec, pass);
+	intPow_test_exponent<Scalar, even>(even, prec, pass);
+	intPow_test_exponent<Scalar, big_odd>(big_odd, prec, pass);
+	intPow_test_exponent<Scalar, big_even>(big_even, prec, pass);
+
+	intPow_test_exponent<Scalar, -one>(-one, prec, pass);
+	intPow_test_exponent<Scalar, -two>(-two, prec, pass);
+	intPow_test_exponent<Scalar, -three>(-three, prec, pass);
+	intPow_test_exponent<Scalar, -odd>(-odd, prec, pass);
+	intPow_test_exponent<Scalar, -even>(-even, prec, pass);
+	intPow_test_exponent<Scalar, -big_odd>(-big_odd, prec, pass);
+	intPow_test_exponent<Scalar, -big_even>(-big_even, prec, pass);
+
+	//dynamic
+
+	intPow_test_exponent<Scalar, Dynamic>(zero, prec, pass);
+
+	intPow_test_exponent<Scalar, Dynamic>(one, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(two, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(three, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(even, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(big_odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(big_even, prec, pass);
+
+	intPow_test_exponent<Scalar, Dynamic>(-one, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-two, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-three, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-even, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-big_odd, prec, pass);
+	intPow_test_exponent<Scalar, Dynamic>(-big_even, prec, pass);
+
+  VERIFY(pass);
 }
 
 template<typename ArrayType> void array(const ArrayType& m)
@@ -443,6 +566,7 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   m3 = (m1.square()<NumTraits<Scalar>::epsilon()).select(Scalar(1),m3);
   VERIFY_IS_APPROX(m3.pow(RealScalar(-2)), m3.square().inverse());
   pow_test<Scalar>();
+  intPow_test<Scalar>();
 
   VERIFY_IS_APPROX(log10(m3), log(m3)/numext::log(Scalar(10)));
   VERIFY_IS_APPROX(log2(m3), log(m3)/numext::log(Scalar(2)));

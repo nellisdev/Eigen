@@ -1095,6 +1095,34 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
+template <typename Scalar, int Exponent>
+struct scalar_intpow_op {
+  scalar_intpow_op(int exponent) : m_exponent(exponent) { ; }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+    return intpow_impl<Scalar, Exponent>::run(a, m_exponent);
+  }
+
+  template <typename Packet>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+    return intpow_impl<Packet, Exponent>::run(a, m_exponent);
+  }
+
+ private:
+  scalar_intpow_op() { ; }
+  internal::variable_if_dynamic<int, Exponent> m_exponent;
+};
+
+template <typename Scalar, int Exponent>
+struct functor_traits<scalar_intpow_op<Scalar, Exponent>> {
+  enum {
+    MulOps = Exponent == Dynamic ? 4 : intpow_impl<Scalar, Exponent>::MulOps(),
+    DivOps = (Exponent < 0) ? 1 : 0,  // if Dynamic, assumes a division is necessary
+    PacketAccess = ((MulOps == 0) || packet_traits<Scalar>::HasMul) && (DivOps == 0 || packet_traits<Scalar>::HasDiv),
+    Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, packet_traits<Scalar>::HasDiv>::value
+  };
+};
+
 } // end namespace internal
 
 } // end namespace Eigen

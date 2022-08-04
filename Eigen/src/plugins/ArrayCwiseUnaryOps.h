@@ -1,5 +1,3 @@
-
-
 typedef CwiseUnaryOp<internal::scalar_abs_op<Scalar>, const Derived> AbsReturnType;
 typedef CwiseUnaryOp<internal::scalar_arg_op<Scalar>, const Derived> ArgReturnType;
 typedef CwiseUnaryOp<internal::scalar_abs2_op<Scalar>, const Derived> Abs2ReturnType;
@@ -693,4 +691,24 @@ inline const NdtriReturnType
 ndtri() const
 {
   return NdtriReturnType(derived());
+}
+
+template<int Exponent>
+using IntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<Scalar, Exponent>, const Derived>;
+
+template<int Exponent>
+EIGEN_DEVICE_FUNC
+inline const IntPowReturnType<Exponent>
+intPow(int exponent = Exponent) const
+{
+    using ArrayCwiseIntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
+    return IntPowReturnType<Exponent>(derived(), ArrayCwiseIntPowOpType(exponent));
+}
+
+EIGEN_DEVICE_FUNC
+inline const IntPowReturnType<Dynamic>
+intPow(int exponent) const
+{
+    using ArrayCwiseIntPowOpType = internal::scalar_intpow_op<Scalar, Dynamic>;
+    return IntPowReturnType<Dynamic>(derived(), ArrayCwiseIntPowOpType(exponent));
 }

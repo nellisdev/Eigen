@@ -93,3 +93,23 @@ EIGEN_DOC_UNARY_ADDONS(cwiseArg,arg)
 EIGEN_DEVICE_FUNC
 inline const CwiseArgReturnType
 cwiseArg() const { return CwiseArgReturnType(derived()); }
+
+template<int Exponent>
+using CwiseIntPowReturnType = CwiseUnaryOp<internal::scalar_intpow_op<Scalar, Exponent>, const Derived>;
+
+template<int Exponent>
+EIGEN_DEVICE_FUNC
+inline const CwiseIntPowReturnType<Exponent>
+cwiseIntPow(int exponent = Exponent) const
+{
+    using IntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
+    return CwiseIntPowReturnType<Exponent>(derived(), IntPowOpType(exponent));
+}
+
+EIGEN_DEVICE_FUNC
+inline const CwiseIntPowReturnType<Dynamic>
+cwiseIntPow(int exponent) const
+{
+    using IntPowOpType = internal::scalar_intpow_op<Scalar, Dynamic>;
+    return CwiseIntPowReturnType<Dynamic>(derived(), IntPowOpType(exponent));
+}
