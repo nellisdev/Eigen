@@ -1626,34 +1626,33 @@ struct pchebevl {
 template <typename Packet, int Exponent>
 struct intpow_impl {
   typedef typename unpacket_traits<Packet>::type Scalar;
-  static Packet domath(const Packet& x, int exponent) {
-    const int absExponent = exponent < 0 ? -exponent : exponent;
-    const bool exponentIsNegative = exponent < 0;
-    Packet result = exponentIsNegative ? pdiv(pset1<Packet>(Scalar(1)), x) : x;
-    if (absExponent == 0)
-      return pset1<Packet>(Scalar(1));
-    else if (absExponent == 1)
-      return result;
-    else {
-      Packet y = pset1<Packet>(Scalar(1));
-      int m = absExponent;
-      while (m > 1) {
-        if (m % 2) y = pmul(y, result);
-        result = pmul(result, result);
-        m /= 2;
-      }
-      result = pmul(y, result);
-      return result;
-    }
+  typedef internal::variable_if_dynamic<int, Exponent> ExponentType;
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ExponentType& exponent) {
+    Packet result = doMath(x, exponent);
+    result = handleErrors(x, result, exponent);
+    return result;
   }
-  static Packet handleErrors(const Packet& x, const Packet& powx, int exponent) {
-    const int absExponent = exponent < 0 ? -exponent : exponent;
-    const bool exponentIsNegative = exponent < 0;
-    const bool exponentIsOdd = absExponent % 2;
-
-    if (exponent == 0) {
-      return pset1<Packet>(Scalar(1));
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet doMath(const Packet& x, const ExponentType& exponent) {
+    if (exponent.value() == 0) return pset1<Packet>(Scalar(1));
+    const bool exponentIsNegative = exponent.value() < 0;
+    const int absExponent = exponent.value() < 0 ? -exponent.value() : exponent.value();
+    Packet result = exponentIsNegative ? pdiv(pset1<Packet>(Scalar(1)), x) : x;
+    Packet y = pset1<Packet>(Scalar(1));
+    int m = absExponent;
+    while (m > 1) {
+      if (m % 2) y = pmul(y, result);
+      result = pmul(result, result);
+      m /= 2;
     }
+    result = pmul(y, result);
+    return result;
+  }
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handleErrors(const Packet& x, const Packet& powx,
+                                                                   const ExponentType& exponent) {
+    const int absExponent = exponent.value() < 0 ? -exponent.value() : exponent.value();
+    const bool exponentIsNegative = exponent.value() < 0;
+    const bool exponentIsPositive = exponent.value() > 0; // prefer to check for positivity instead of non-negativity
+    const bool exponentIsOdd = absExponent % 2;
 
     const Scalar pos_inf = NumTraits<Scalar>::infinity();
     const Scalar neg_inf = -NumTraits<Scalar>::infinity();
@@ -1667,26 +1666,25 @@ struct intpow_impl {
 
     const Packet x_is_pos_inf = pcmp_eq(x, cst_pos_inf);
     const Packet x_is_neg_inf = pcmp_eq(x, cst_neg_inf);
-
-    const Packet x_is_neg = pand(x, cst_neg_zer);
-    const Packet x_is_zer = pcmp_eq(x, cst_pos_zer);
-    const Packet x_is_neg_zer = pand(x_is_zer, x_is_neg);
-    const Packet x_is_pos_zer = pandnot(x_is_zer, x_is_neg);
+    const Packet abs_x_is_zer = pcmp_eq(x, cst_pos_zer);
+    const Packet x_has_signbit = pselect(pand(x, cst_neg_zer), ptrue(x), pzero(x));
+    const Packet x_is_neg_zer = pand(abs_x_is_zer, x_has_signbit);
+    const Packet x_is_pos_zer = pandnot(abs_x_is_zer, x_has_signbit);
 
     Packet result = powx;
 
     if (exponentIsNegative) {
-      result = pselect(x_is_pos_inf, cst_pos_zer, result);  // +0 if x is +∞ and N is negative
+      result = pselect(x_is_pos_inf, cst_pos_zer, result);    // +0 if x is +∞ and N is negative
       if (exponentIsOdd) {
         result = pselect(x_is_pos_zer, cst_pos_inf, result);  // +∞ if x is +0 and N is negative odd
         result = pselect(x_is_neg_zer, cst_neg_inf, result);  // -∞ if x is -0 and N is negative odd
         result = pselect(x_is_neg_inf, cst_neg_zer, result);  // -0 if x is -∞ and N is negative odd
       } else {
-        result = pselect(x_is_zer, cst_pos_inf, result);      // +∞ if x is +/-0 and N is negative even
+        result = pselect(abs_x_is_zer, cst_pos_inf, result);  // +∞ if x is +/-0 and N is negative even
         result = pselect(x_is_neg_inf, cst_pos_zer, result);  // +0 if x is -∞ and N is negative even
       }
-    } else {
-      result = pselect(x_is_pos_inf, cst_pos_inf, result);  // +∞ if x is +∞ and N is positive
+    } else if (exponentIsPositive) {
+      result = pselect(x_is_pos_inf, cst_pos_inf, result);    // +∞ if x is +∞ and N is positive
       if (exponentIsOdd) {
         result = pselect(x_is_neg_inf, cst_neg_inf, result);  // -∞ if x is -∞ and N is positive odd
         result = pselect(x_is_neg_zer, cst_neg_zer, result);  // -0 if x is -0 and N is positive odd
@@ -1695,11 +1693,6 @@ struct intpow_impl {
       }
     }
 
-    return result;
-  }
-  static Packet run(const Packet& x, int exponent) {
-    Packet result = domath(x, exponent);
-    result = handleErrors(x, result, exponent);
     return result;
   }
   static constexpr int MulOps(int exponent) {
@@ -1719,6 +1712,9 @@ struct intpow_impl {
       result++;
       return result;
     }
+  }
+  static constexpr int MulOps() {
+      return MulOps(Exponent);
   }
 };
 
