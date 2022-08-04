@@ -113,11 +113,25 @@ class TensorBase<Derived, ReadOnlyAccessors>
       return unaryExpr(internal::scalar_cube_op<Scalar>());
     }
 
-    template<int N>
+    template<int Exponent>
+    using IntPowOpType = internal::scalar_intpow_op<Scalar, Exponent>;
+
+    template<int Exponent>
+    using TensorCwiseIntPowReturnType = TensorCwiseUnaryOp<IntPowOpType<Exponent>, const Derived>;
+
+    template<int Exponent>
     EIGEN_DEVICE_FUNC
-    EIGEN_STRONG_INLINE const TensorCwiseUnaryOp<internal::scalar_intpow_op<N,Scalar>, const Derived>
-    intPow() const {
-      return unaryExpr(internal::scalar_intpow_op<N,Scalar>());
+        inline const TensorCwiseIntPowReturnType<Exponent>
+        intPow(int exponent = Exponent) const
+    {
+        return TensorCwiseIntPowReturnType<Exponent>(derived(), IntPowOpType<Exponent>(exponent));
+    }
+
+    EIGEN_DEVICE_FUNC
+        inline const TensorCwiseIntPowReturnType<Dynamic>
+        intPow(int exponent) const
+    {
+        return TensorCwiseIntPowReturnType<Dynamic>(derived(), IntPowOpType<Dynamic>(exponent));
     }
 
     EIGEN_DEVICE_FUNC
