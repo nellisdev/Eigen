@@ -102,7 +102,8 @@ struct default_packet_traits
     HasRint   = 0,
     HasFloor  = 0,
     HasCeil   = 0,
-    HasSign   = 0
+    HasSign   = 0,
+    HasSignBit   = 0
   };
 };
 
@@ -320,6 +321,10 @@ pcmp_lt(const Packet& a, const Packet& b)  { return a<b ? ptrue(a) : pzero(a); }
 /** \internal \returns a == b as a bit mask */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 pcmp_eq(const Packet& a, const Packet& b) { return a==b ? ptrue(a) : pzero(a); }
+
+/** \internal \returns a == b as a bit mask */
+template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
+psignbit(const Packet& a, const Packet& b) { return std::signbit(a) ? ptrue(a) : pzero(b); }
 
 /** \internal \returns a < b or a==NaN or b==NaN as a bit mask */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
