@@ -1095,25 +1095,30 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
-template <int N, typename Scalar>
+template <typename Scalar, int Exponent>
 struct scalar_intpow_op {
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
-        return intpow_impl<N, Scalar>::run(a);
-    }
-    template <typename Packet>
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
-        return intpow_impl<N, Packet>::run(a);
-    }
+  scalar_intpow_op(int exponent) : m_exponent(exponent) { eigen_assert(Exponent == Dynamic || Exponent == exponent); }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+    return intpow_impl<Scalar, Exponent>::run(a, m_exponent.value());
+  }
+  template <typename Packet>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+    return intpow_impl<Packet, Exponent>::run(a, m_exponent.value());
+  }
+
+ private:
+  scalar_intpow_op() { ; }
+  internal::variable_if_dynamic<int, Exponent> m_exponent;
 };
 
-template <int N, typename Scalar>
-struct functor_traits<scalar_intpow_op<N, Scalar>> {
-    enum {
-        MulOps = intpow_impl<N, Scalar>::MulOps(),
-        DivOps = (N < 0) ? 1 : 0,
-        PacketAccess = packet_traits<Scalar>::HasMul && (DivOps == 0 || packet_traits<Scalar>::HasDiv),
-        Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, packet_traits<Scalar>::HasDiv>::value
-    };
+template <typename Scalar, int Exponent>
+struct functor_traits<scalar_intpow_op<Scalar, Exponent>> {
+  enum {
+    MulOps = Exponent == Dynamic ? 10 : intpow_impl<Scalar, Exponent>::MulOps(Exponent),
+    DivOps = (Exponent < 0) ? 1 : 0,  // if Dynamic, assumes a division is necessary
+    PacketAccess = ((MulOps == 0) || packet_traits<Scalar>::HasMul) && (DivOps == 0 || packet_traits<Scalar>::HasDiv),
+    Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, packet_traits<Scalar>::HasDiv>::value
+  };
 };
 
 } // end namespace internal
