@@ -355,7 +355,7 @@ struct apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime
     };
 
     /*** dynamic-size vectorized paths ***/
-    if(SizeAtCompileTime == Dynamic && ((incrx==1 && incry==1) || PacketSize == 1))
+    if(size >= 2 * PacketSize && SizeAtCompileTime == Dynamic && ((incrx == 1 && incry == 1) || PacketSize == 1))
     {
       // both vectors are sequentially stored in memory => vectorization
       enum { Peeling = 2 };
@@ -455,12 +455,12 @@ struct apply_rotation_in_the_plane_selector<Scalar,OtherScalar,SizeAtCompileTime
 
 template<typename VectorX, typename VectorY, typename OtherScalar>
 EIGEN_DEVICE_FUNC
-void /*EIGEN_DONT_INLINE*/ apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x, DenseBase<VectorY>& xpr_y, const JacobiRotation<OtherScalar>& j)
+void inline apply_rotation_in_the_plane(DenseBase<VectorX>& xpr_x, DenseBase<VectorY>& xpr_y, const JacobiRotation<OtherScalar>& j)
 {
   typedef typename VectorX::Scalar Scalar;
-  const bool Vectorizable =    (int(evaluator<VectorX>::Flags) & int(evaluator<VectorY>::Flags) & PacketAccessBit)
-                            && (int(packet_traits<Scalar>::size) == int(packet_traits<OtherScalar>::size));
-  
+  constexpr bool Vectorizable = (int(evaluator<VectorX>::Flags) & int(evaluator<VectorY>::Flags) & PacketAccessBit) &&
+                                (int(packet_traits<Scalar>::size) == int(packet_traits<OtherScalar>::size));
+
   eigen_assert(xpr_x.size() == xpr_y.size());
   Index size = xpr_x.size();
   Index incrx = xpr_x.derived().innerStride();
