@@ -1070,6 +1070,35 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
+template <typename Scalar, typename ExponentType>
+struct scalar_unarypow_op {
+    scalar_unarypow_op(const ExponentType& exponent) :
+        m_exponent(exponent) {}
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+        // TODO: pow_impl only uses integer version for integer base and exponent
+        EIGEN_USING_STD(pow);
+        return static_cast<Scalar>(pow(a, m_exponent));
+    }
+    template <typename Packet>
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+        return unary_pow_impl<Packet, ExponentType>::run(a, m_exponent);
+    }
+
+private:
+    const ExponentType m_exponent;
+    scalar_unarypow_op() { ; }
+};
+
+template <typename Scalar, typename ExponentType>
+struct functor_traits<scalar_unarypow_op<Scalar, ExponentType>> {
+    enum {
+        MulOps = 4,
+        DivOps = 1,
+        PacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul && packet_traits<Scalar>::HasDiv,
+        Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, packet_traits<Scalar>::HasDiv>::value
+    };
+};
+
 } // end namespace internal
 
 } // end namespace Eigen

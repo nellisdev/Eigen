@@ -198,6 +198,7 @@ template<typename Scalar> struct scalar_constant_op;
 template<typename Scalar> struct scalar_identity_op;
 template<typename Scalar> struct scalar_sign_op;
 template<typename Scalar,typename ScalarExponent> struct scalar_pow_op;
+template<typename Scalar, typename ExponentType> struct scalar_unarypow_op;
 template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_hypot_op;
 template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_product_op;
 template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_quotient_op;

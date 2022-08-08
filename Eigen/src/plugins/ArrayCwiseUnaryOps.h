@@ -694,3 +694,11 @@ ndtri() const
 {
   return NdtriReturnType(derived());
 }
+
+template<typename ExponentType>
+EIGEN_DEVICE_FUNC
+inline const CwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>
+fixedPow(const ExponentType& exponent) const
+{
+    return CwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>(derived(), internal::scalar_unarypow_op<Scalar, ExponentType>(exponent));
+}

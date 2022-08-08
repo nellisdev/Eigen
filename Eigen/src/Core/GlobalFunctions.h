@@ -180,6 +180,14 @@ namespace Eigen
   }
 #endif
 
+  template<typename Derived, typename ExponentType>
+  EIGEN_DEVICE_FUNC
+      inline const CwiseUnaryOp<internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>, const Derived>
+      fixedPow(const Eigen::ArrayBase<Derived>& x, const ExponentType& exponent)
+  {
+      return CwiseUnaryOp<internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>, const Derived>(x.derived(), internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>(exponent));
+  }
+
 
   namespace internal
   {

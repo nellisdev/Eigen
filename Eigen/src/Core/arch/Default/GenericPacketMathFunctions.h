@@ -1690,6 +1690,222 @@ struct pchebevl {
   }
 };
 
+template <typename Packet, typename ExponentType>
+struct unary_pow_impl {
+    typedef typename unpacket_traits<Packet>::type Scalar;
+    static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        Packet run(const Packet& x, const ExponentType& exponent)
+    {
+        const bool exponentIsFinite = numext::isfinite(exponent);
+        const bool exponentIsInteger = NumTraits<ExponentType>::IsInteger || exponentIsFinite && numext::round(exponent) == exponent;
+
+        if (exponentIsInteger)
+        {
+            Packet powx = intPow(x, exponent);
+            powx = handleIntErrors(x, powx, exponent);
+            return powx;
+        }
+        else
+        {
+            Packet powabsx = exponentIsFinite ? genPow(x, exponent) : x;
+            powabsx = handleGenErrors(x, powabsx, exponent);
+            return powabsx;
+        }
+    }
+    static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        Packet intPow(const Packet& x, const ExponentType& exponent) {
+        const Packet cst_pos_one = pset1<Packet>(Scalar(1));
+        if (exponent == 0) return cst_pos_one;
+        const bool exponentIsNegative = exponent < 0;
+        const ExponentType absExponent = exponentIsNegative ? -exponent : exponent;
+        Packet result = exponentIsNegative ? pdiv(cst_pos_one, x) : x;
+        Packet y = cst_pos_one;
+        ExponentType m = absExponent;
+        while (m > 1) {
+            if (isOdd(m)) y = pmul(y, result);
+            result = pmul(result, result);
+            m = numext::floor(m / ExponentType(2));
+        }
+        result = pmul(y, result);
+        return result;
+    }
+    static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        Packet genPow(const Packet& x, const ExponentType& exponent) {
+        const Packet exponent_packet = pset1<Packet>(static_cast<Scalar>(exponent));
+        Packet powabsx = generic_pow_impl(x, exponent_packet);
+        return powabsx;
+    }
+    static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        Packet handleIntErrors(const Packet& x, const Packet& powx,
+            const ExponentType& exponent) {
+
+        const bool exponent_is_negative = exponent < 0;
+        const ExponentType abs_exponent = exponent < 0 ? -exponent : exponent;
+        const bool exponent_is_odd = isOdd(abs_exponent);
+
+        const Scalar pos_zero = Scalar(0);
+        const Scalar neg_zero = -Scalar(0);
+        const Scalar pos_one = Scalar(1);
+        const Scalar neg_one = -Scalar(1);
+        const Scalar pos_inf = NumTraits<Scalar>::infinity();
+        const Scalar neg_inf = -NumTraits<Scalar>::infinity();
+
+        const Packet cst_pos_zero = pset1<Packet>(pos_zero);
+        const Packet cst_neg_zero = pset1<Packet>(neg_zero);
+        const Packet cst_pos_one = pset1<Packet>(pos_one);
+        const Packet cst_neg_one = pset1<Packet>(neg_one);
+        const Packet cst_pos_inf = pset1<Packet>(pos_inf);
+        const Packet cst_neg_inf = pset1<Packet>(neg_inf);
+
+        const Packet abs_x = pabs(x);
+        const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_pos_zero);
+        const Packet abs_x_is_lt_one = pcmp_lt(abs_x, cst_pos_one);
+        const Packet abs_x_is_one = pcmp_eq(x, cst_pos_one);
+        const Packet abs_x_is_inf = pcmp_eq(x, cst_pos_inf);
+
+        const Packet x_has_signbit = pcmp_eq(por(pand(x, cst_neg_zero), cst_pos_inf), cst_neg_inf);
+        const Packet x_is_neg = pandnot(x_has_signbit, abs_x_is_zero);
+        const Packet x_is_neg_zero = pand(x_has_signbit, abs_x_is_zero);
+        const Packet x_is_nan = pandnot(ptrue(x), pcmp_eq(x, x));
+
+        const Packet powx_is_nan = pandnot(ptrue(powx), pcmp_eq(powx, powx));
+        const Packet powx_is_nan_and_x_is_not_nan = pandnot(powx_is_nan, x_is_nan);
+        const Packet powx_is_divergent = exponent_is_negative ? abs_x_is_lt_one : pnot(abs_x_is_lt_one);
+        const Packet powx_is_negative = exponent_is_odd ? x_is_neg : cst_pos_zero;
+
+        if (exponent == 0)
+        {
+            return cst_pos_one;
+        }
+
+        Packet result = powx;
+        result = pselect(pand(powx_is_nan_and_x_is_not_nan, pandnot(powx_is_divergent, powx_is_negative)), cst_pos_inf, result);
+        result = pselect(pand(powx_is_nan_and_x_is_not_nan, pand(powx_is_divergent, powx_is_negative)), cst_neg_inf, result);
+        result = pselect(pandnot(powx_is_nan_and_x_is_not_nan, powx_is_divergent), cst_pos_zero, result);
+
+        if (exponent_is_negative) {
+            result = pselect(pandnot(abs_x_is_inf, x_is_neg), cst_pos_zero, result);
+            if (exponent_is_odd) {
+                result = pselect(abs_x_is_zero, cst_pos_inf, result);
+                result = pselect(x_is_neg_zero, cst_neg_inf, result);
+                result = pselect(pand(abs_x_is_inf, x_is_neg), cst_neg_zero, result);
+            }
+            else {
+                result = pselect(abs_x_is_zero, cst_pos_inf, result);
+                result = pselect(pand(abs_x_is_inf, x_is_neg), cst_pos_zero, result);
+            }
+        }
+        else {
+            result = pselect(pandnot(abs_x_is_inf, x_is_neg), cst_pos_inf, result);
+            if (exponent_is_odd) {
+                result = pselect(pand(abs_x_is_inf, x_is_neg), cst_neg_inf, result);
+                result = pselect(x_is_neg_zero, cst_neg_zero, result);
+            }
+            else {
+                result = pselect(abs_x_is_zero, cst_pos_zero, result);
+                result = pselect(pand(abs_x_is_inf, x_is_neg), cst_pos_inf, result);
+            }
+        }
+
+        if (exponent_is_odd)
+        {
+            result = pselect(pand(abs_x_is_one, x_is_neg), cst_neg_one, result);
+        }
+        else
+        {
+            result = pselect(pand(abs_x_is_one, x_is_neg), cst_pos_one, result);
+        }
+
+        return pselect(pandnot(abs_x_is_one, x_is_neg), cst_pos_one, result);
+    }
+    static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+        Packet handleGenErrors(const Packet& x, const Packet& powabsx,
+            const Scalar& exponent) {
+
+        const bool exponent_is_nan = numext::isnan(exponent);
+        const bool exponent_is_finite = numext::isfinite(exponent);
+        const bool exponent_is_negative = exponent < 0;
+        const bool exponent_is_infinite = !exponent_is_finite && !exponent_is_nan;
+
+        const Scalar pos_zero = Scalar(0);
+        const Scalar neg_zero = -Scalar(0);
+        const Scalar pos_one = Scalar(1);
+        const Scalar neg_one = -Scalar(1);
+        const Scalar pos_inf = NumTraits<Scalar>::infinity();
+        const Scalar neg_inf = -NumTraits<Scalar>::infinity();
+        const Scalar nan = NumTraits<Scalar>::quiet_NaN();
+
+        const Packet cst_pos_zero = pset1<Packet>(pos_zero);
+        const Packet cst_neg_zero = pset1<Packet>(neg_zero);
+        const Packet cst_pos_one = pset1<Packet>(pos_one);
+        const Packet cst_neg_one = pset1<Packet>(neg_one);
+        const Packet cst_pos_inf = pset1<Packet>(pos_inf);
+        const Packet cst_neg_inf = pset1<Packet>(neg_inf);
+        const Packet cst_nan = pset1<Packet>(nan);
+
+        const Packet abs_x = pabs(x);
+        const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_pos_zero);
+        const Packet abs_x_is_one = pcmp_eq(abs_x, cst_pos_one);
+        const Packet abs_x_is_lt_one = pcmp_lt(abs_x, cst_pos_one);
+        const Packet abs_x_is_gt_one = pcmp_lt(cst_pos_one, abs_x);
+        const Packet abs_x_is_inf = pcmp_eq(abs_x, cst_pos_inf);
+
+        const Packet x_has_signbit = pcmp_eq(por(pand(x, cst_neg_zero), cst_pos_inf), cst_neg_inf);
+        const Packet x_is_neg = pandnot(x_has_signbit, abs_x_is_zero);
+        const Packet x_is_neg_zero = pand(x_has_signbit, abs_x_is_zero);
+        const Packet x_is_nan = pandnot(ptrue(x), pcmp_eq(x, x));
+
+        if (exponent_is_nan)
+        {
+            return pselect(pandnot(abs_x_is_one, x_is_neg), cst_pos_one, cst_nan);
+        }
+
+        Packet result = powabsx;
+
+        if (exponent_is_finite)
+        {
+            result = pselect(x_is_neg, cst_nan, result);
+
+            if (exponent_is_negative)
+            {
+                result = pselect(abs_x_is_zero, cst_pos_inf, result);
+            }
+        }
+
+        if (exponent_is_negative)
+        {
+            result = pselect(abs_x_is_inf, cst_pos_zero, result);
+        }
+        else
+        {
+            result = pselect(abs_x_is_zero, cst_pos_zero, result);
+            result = pselect(abs_x_is_inf, cst_pos_inf, result);
+        }
+
+        if (exponent_is_infinite)
+        {
+            result = pselect(pand(abs_x_is_one, x_is_neg), cst_pos_one, result);
+
+            if (exponent_is_negative)
+            {
+                result = pselect(abs_x_is_lt_one, cst_pos_inf, result);
+                result = pselect(abs_x_is_gt_one, cst_pos_zero, result);
+            }
+            else
+            {
+                result = pselect(abs_x_is_lt_one, cst_pos_zero, result);
+                result = pselect(abs_x_is_gt_one, cst_pos_inf, result);
+            }
+        }
+
+        return pselect(pandnot(abs_x_is_one, x_is_neg), cst_pos_one, result);
+    }
+    static bool isOdd(const ExponentType& absExponent)
+    {
+        return numext::fmod(absExponent, ExponentType(2)) == 1;
+    }
+};
+
 } // end namespace internal
 } // end namespace Eigen
 
