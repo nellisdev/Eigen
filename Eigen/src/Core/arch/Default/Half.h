@@ -328,7 +328,7 @@ namespace half_impl {
 // versions to get the ALU speed increased), but you do save the
 // conversion steps back and forth.
 
-#if defined(EIGEN_HAS_NATIVE_FP16)
+#if defined(EIGEN_HAS_NATIVE_FP16) && !defined(EIGEN_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
 EIGEN_STRONG_INLINE __device__ half operator + (const half& a, const half& b) {
 #if defined(EIGEN_CUDA_SDK_VER) && EIGEN_CUDA_SDK_VER >= 90000
   return __hadd(::__half(a), ::__half(b));
