@@ -1761,8 +1761,7 @@ struct unary_pow_impl {
     const Packet powx_is_nan = pandnot(ptrue(powx), pcmp_eq(powx, powx));
     const Packet powx_is_nan_and_x_is_valid =
         exponent_is_odd ? pandnot(powx_is_nan, por(x_is_neg, x_is_nan)) : pandnot(powx_is_nan, x_is_nan);
-    const Packet powx_is_divergent = exponent_is_negative ? abs_x_is_lt_one : pnot(abs_x_is_lt_one);
-    const Packet powx_is_negative = exponent_is_odd ? x_is_neg : cst_pos_zero;
+    const Packet powx_is_divergent = exponent_is_negative ? abs_x_is_lt_one : pnot(por(abs_x_is_lt_one, abs_x_is_one));
 
     if (exponent == 0) {
       return cst_pos_one;
@@ -1773,9 +1772,11 @@ struct unary_pow_impl {
 
     Packet result = powx;
 
-    result =
-        pselect(pand(powx_is_nan_and_x_is_valid, pandnot(powx_is_divergent, powx_is_negative)), cst_pos_inf, result);
-    result = pselect(pand(powx_is_nan_and_x_is_valid, pand(powx_is_divergent, powx_is_negative)), cst_neg_inf, result);
+    if (exponent_is_odd) {
+      result = pselect(pand(powx_is_nan_and_x_is_valid, pand(powx_is_divergent, x_is_neg)), cst_neg_inf, result);
+    } else {
+      result = pselect(pand(powx_is_nan_and_x_is_valid, powx_is_divergent), cst_pos_inf, result);
+    }
     result = pselect(pandnot(powx_is_nan_and_x_is_valid, powx_is_divergent), cst_pos_zero, result);
 
     if (exponent_is_integer) {
