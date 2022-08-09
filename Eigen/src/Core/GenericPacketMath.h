@@ -1173,24 +1173,6 @@ Packet prsqrt(const Packet& a) {
   return preciprocal<Packet>(psqrt(a));
 }
 
-/** \internal \returns -1 if a is negative, 0 otherwise, +1 if a is positive. */
-template<typename Packet> EIGEN_DEVICE_FUNC inline
-std::enable_if_t<!NumTraits<typename unpacket_traits<Packet>::type>::IsComplex, Packet>
-psign(const Packet& a) {
-  using Scalar = typename unpacket_traits<Packet>::type;
-  const Packet cst_one = pset1<Packet>(Scalar(1));
-  const Packet cst_minus_one = pset1<Packet>(Scalar(-1));
-  const Packet cst_zero = pzero(a);
-
-  const Packet not_nan_mask = pcmp_eq(a, a);
-  const Packet positive_mask = pcmp_lt(cst_zero, a);
-  const Packet positive = pand(positive_mask, cst_one);
-  const Packet negative_mask = pcmp_lt(a, cst_zero);
-  const Packet negative = pand(negative_mask, cst_minus_one);
-
-  return pselect(not_nan_mask, por(positive, negative), a);
-}
-
 } // end namespace internal
 
 } // end namespace Eigen
