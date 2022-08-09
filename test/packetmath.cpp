@@ -527,6 +527,7 @@ void packetmath() {
   CHECK_CWISE1_IF(PacketTraits::HasNegate, internal::negate, internal::pnegate);
   CHECK_CWISE1_IF(PacketTraits::HasReciprocal, REF_RECIPROCAL, internal::preciprocal);
   CHECK_CWISE1(numext::conj, internal::pconj);
+  CHECK_CWISE1_IF(PacketTraits::HasSign, numext::sign, internal::psign);
 
 
   for (int offset = 0; offset < 3; ++offset) {
@@ -1341,7 +1342,7 @@ void packetmath_complex() {
       data1[i] = Scalar(internal::random<RealScalar>(), internal::random<RealScalar>());
     }
     CHECK_CWISE1_N(numext::sqrt, internal::psqrt, size);
-    CHECK_CWISE1_N(numext::sign, internal::psign, size);
+    CHECK_CWISE1_IF(PacketTraits::HasSign, numext::sign, internal::psign);
 
     // Test misc. corner cases.
     const RealScalar zero = RealScalar(0);

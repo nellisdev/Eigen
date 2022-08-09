@@ -853,10 +853,12 @@ Packet psqrt_complex(const Packet& a) {
 }
 
 
-/** \internal \returns -1 if a is negative, 0 otherwise, +1 if a is positive. */
+/** \internal \returns -1 if a is strictly negative, 0 otherwise, +1 if a is
+    strictly positive. */
 template<typename Packet> 
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-std::enable_if_t<!NumTraits<typename unpacket_traits<Packet>::type>::IsComplex, Packet>
+std::enable_if_t<(!NumTraits<typename unpacket_traits<Packet>::type>::IsComplex &&
+                  !NumTraits<typename unpacket_traits<Packet>::type>::IsInteger), Packet>
 psign(const Packet& a) {
   using Scalar = typename unpacket_traits<Packet>::type;
   const Packet cst_one = pset1<Packet>(Scalar(1));
@@ -870,6 +872,24 @@ psign(const Packet& a) {
   const Packet negative = pand(negative_mask, cst_minus_one);
 
   return pselect(not_nan_mask, por(positive, negative), a);
+}
+
+template<typename Packet> 
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+std::enable_if_t<(!NumTraits<typename unpacket_traits<Packet>::type>::IsComplex &&
+                  NumTraits<typename unpacket_traits<Packet>::type>::IsInteger), Packet>
+psign(const Packet& a) {
+  using Scalar = typename unpacket_traits<Packet>::type;
+  const Packet cst_one = pset1<Packet>(Scalar(1));
+  const Packet cst_minus_one = pset1<Packet>(Scalar(-1));
+  const Packet cst_zero = pzero(a);
+
+  const Packet positive_mask = pcmp_lt(cst_zero, a);
+  const Packet positive = pand(positive_mask, cst_one);
+  const Packet negative_mask = pcmp_lt(a, cst_zero);
+  const Packet negative = pand(negative_mask, cst_minus_one);
+
+  return por(positive, negative);
 }
 
 // \internal \returns the the sign of a complex number z, defined as z / abs(z).
@@ -898,7 +918,7 @@ psign(const Packet& a) {
   // Set l to a_max if a_min is zero, since the roundtrip sqrt(a_max^2) may be
   // lossy.
   l = pselect(a_min_zero_mask, a_max, l);
-  // Step 2 compute a / abs(a)
+  // Step 2 compute a / abs(a).
   RealPacket sign_as_real = pandnot(pdiv(a.v, l), a_max_zero_mask);
   Packet sign;
   sign.v = sign_as_real;
