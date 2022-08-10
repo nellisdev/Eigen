@@ -1760,10 +1760,10 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_errors(const Packet& 
   // general case
   // see https://en.cppreference.com/w/cpp/numeric/math/pow
 
-  const bool exponent_is_finite = numext::isfinite(exponent);
+  const bool exponent_is_finite = (numext::isfinite)(exponent);
   const bool exponent_is_integer = exponent_is_finite && numext::round(exponent) == exponent;
   const bool exponent_is_odd = exponent_is_integer && numext::fmod(absExponent, ExponentType(2)) == 1;
-  const bool exponent_is_nan = numext::isnan(exponent);
+  const bool exponent_is_nan = (numext::isnan)(exponent);
   const bool exponent_is_negative = exponent < 0;
   const bool exponent_is_infinite = !exponent_is_finite && !exponent_is_nan;
 
@@ -1866,7 +1866,7 @@ template <typename Packet, typename ExponentType, bool ExponentIsInteger = NumTr
 struct unary_pow_impl {
   typedef typename unpacket_traits<Packet>::type Scalar;
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ExponentType& exponent) {
-    const bool exponentIsFinite = numext::isfinite(exponent);
+    const bool exponentIsFinite = (numext::isfinite)(exponent);
     const bool exponentIsInteger = exponentIsFinite && numext::round(exponent) == exponent;
     Packet result = exponentIsInteger ? int_pow(x, exponent) : (exponentIsFinite ? gen_pow(x, exponent) : x);
     result = handle_errors(x, result, exponent);
