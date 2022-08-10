@@ -1733,6 +1733,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_errors(const Packet& 
   typedef typename unpacket_traits<Packet>::type Scalar;
 
   const ExponentType absExponent = numext::abs(exponent);
+  const Packet abs_x = pabs(x);
 
   if (NumTraits<Scalar>::IsInteger && NumTraits<ExponentType>::IsInteger) {
     // special case
@@ -1752,7 +1753,6 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_errors(const Packet& 
                                  ? Scalar(1) + static_cast<Scalar>(pow(2, double(maxExponent) / double(absExponent)))
                                  : Scalar(2);
     const Packet x_threshold = pset1<Packet>(threshold);
-    const Packet abs_x = pabs(x);
     const Packet abs_x_is_gte_threshold = pnot(pcmp_lt(abs_x, x_threshold));
     return pselect(abs_x_is_gte_threshold, cst_min, powx);
   }
@@ -1781,7 +1781,6 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_errors(const Packet& 
   const Packet cst_neg_inf = pset1<Packet>(neg_inf);
   const Packet cst_nan = pset1<Packet>(nan);
 
-  const Packet abs_x = pabs(x);
   const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_pos_zero);
   const Packet abs_x_is_lt_one = pcmp_lt(abs_x, cst_pos_one);
   const Packet abs_x_is_one = pcmp_eq(abs_x, cst_pos_one);

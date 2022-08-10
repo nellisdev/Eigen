@@ -1073,7 +1073,9 @@ struct functor_traits<scalar_logistic_op<T> > {
 template <typename Scalar, typename ExponentType>
 struct scalar_unarypow_op {
     scalar_unarypow_op(const ExponentType& exponent) :
-        m_exponent(exponent) {}
+        m_exponent(exponent) {
+          EIGEN_STATIC_ASSERT(is_arithmetic<ExponentType>::value, EXPONENT MUST BE ARITHMETIC);
+        }
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
         // TODO: pow_impl only uses integer version for integer base and exponent
         EIGEN_USING_STD(pow);
@@ -1086,7 +1088,7 @@ struct scalar_unarypow_op {
 
 private:
     const ExponentType m_exponent;
-    scalar_unarypow_op() { ; }
+    scalar_unarypow_op() { }
 };
 
 template <typename Scalar, typename ExponentType>
