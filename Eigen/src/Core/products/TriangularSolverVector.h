@@ -102,7 +102,7 @@ struct triangular_solve_vector<LhsScalar, RhsScalar, Index, OnTheLeft, Mode, Con
                             const CwiseUnaryOp<typename internal::scalar_conjugate_op<LhsScalar>,LhsMap>,
                             const LhsMap&
                            > cjLhs(lhs);
-    static const Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
+    constexpr Index PanelWidth = EIGEN_TUNE_TRIANGULAR_PANEL_WIDTH;
 
     for(Index pi=IsLower ? 0 : size;
         IsLower ? pi<size : pi>0;
