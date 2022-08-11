@@ -80,17 +80,17 @@ void pow_test() {
     }
   }
   
-  Matrix<Scalar, Dynamic, 1> eigenPow(num_repeats);
-	Matrix<Scalar, Dynamic, 1> stdPow(num_repeats);
+  Array<Scalar, Dynamic, 1> eigenPow(num_repeats);
+	Array<Scalar, Dynamic, 1> stdPow(num_repeats);
 	for (int i = 0; i < num_cases; ++i) {
-		Matrix<Scalar, Dynamic, 1> bases = x.col(i);
+		Array<Scalar, Dynamic, 1> bases = x.col(i);
 		for (Scalar abs_exponent : abs_vals)
 		{
 			for (Scalar sign : {Scalar(-1), Scalar(1)})
 			{
 				Scalar exponent = sign * abs_exponent;
 				eigenPow.setZero();
-				eigenPow = bases.cwisePow(exponent);
+				eigenPow = bases.pow(exponent);
 				stdPow.setZero();
 				stdPow = bases.unaryExpr([&](Scalar x) {return static_cast<Scalar>(std::pow(x, exponent)); });
 				for (int j = 0; j < num_repeats; j++)
