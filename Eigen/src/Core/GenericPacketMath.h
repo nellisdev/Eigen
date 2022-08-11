@@ -510,7 +510,7 @@ struct pminmax_impl<PropagateNumbers> {
 };
 
 
-#ifndef SYCL_DEVICE_ONLY
+#if !defined(SYCL_DEVICE_ONLY) && !defined(__NVCOMPILER)
 #define EIGEN_BINARY_OP_NAN_PROPAGATION(Type, Func) Func
 #else
 #define EIGEN_BINARY_OP_NAN_PROPAGATION(Type, Func) \

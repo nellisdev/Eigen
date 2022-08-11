@@ -87,7 +87,7 @@ struct CacheSizes {
 /** \internal */
 inline void manage_caching_sizes(Action action, std::ptrdiff_t* l1, std::ptrdiff_t* l2, std::ptrdiff_t* l3)
 {
-#if defined(__NVCOMPILER) && (defined(_OPENMP) || defined(_OPENACC))
+#ifdef __NVCOMPILER
   if(action==GetAction)
   {
     // Volta, Turing, or newer
