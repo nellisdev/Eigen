@@ -694,3 +694,31 @@ ndtri() const
 {
   return NdtriReturnType(derived());
 }
+
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+template <typename ExponentType>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename std::enable_if<
+    internal::is_arithmetic<ExponentType>::value,
+    CwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>>::type
+pow(const ExponentType& exponent) const {
+  return CwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>(
+      derived(), internal::scalar_unarypow_op<Scalar, ExponentType>(exponent));
+#else
+/** \returns an expression of the coefficients of \c *this rasied to the constant power \a exponent
+ *
+ * \tparam T is the scalar type of \a exponent. It must be compatible with the scalar type of the given expression.
+ *
+ * This function computes the coefficient-wise power. The function MatrixBase::pow() in the
+ * unsupported module MatrixFunctions computes the matrix power.
+ *
+ * Example: \include Cwise_pow.cpp
+ * Output: \verbinclude Cwise_pow.out
+ *
+ * \sa ArrayBase::pow(ArrayBase), square(), cube(), exp(), log()
+ */
+template <typename ExponentType>
+const typename std::enable_if<internal::is_arithmetic<ExponentType>::value,
+                              CwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>>::type
+pow(const ExponentType& exponent) const;
+#endif
+}
