@@ -1072,7 +1072,7 @@ struct functor_traits<scalar_logistic_op<T> > {
 
 template <typename Scalar, typename ExponentType>
 struct scalar_unarypow_op {
-    scalar_unarypow_op(const ExponentType& exponent) :
+    EIGEN_DEVICE_FUNC inline scalar_unarypow_op(const ExponentType& exponent) :
         m_exponent(exponent) {
           EIGEN_STATIC_ASSERT(is_arithmetic<ExponentType>::value, EXPONENT MUST BE ARITHMETIC);
         }
@@ -1093,12 +1093,14 @@ private:
 
 template <typename Scalar, typename ExponentType>
 struct functor_traits<scalar_unarypow_op<Scalar, ExponentType>> {
-    enum {
-        MulOps = 4,
-        DivOps = 1,
-        PacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul && packet_traits<Scalar>::HasDiv,
-        Cost = MulOps * NumTraits<Scalar>::MulCost + DivOps * scalar_div_cost<Scalar, packet_traits<Scalar>::HasDiv>::value
-    };
+  enum {
+    GenPacketAccess = functor_traits<scalar_pow_op<Scalar, ExponentType>>::PacketAccess,
+    IntPacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul &&
+                      (!NumTraits<ExponentType>::IsSigned || packet_traits<Scalar>::HasDiv) &&
+                      packet_traits<Scalar>::HasCmp,
+    PacketAccess = (NumTraits<ExponentType>::IsInteger ? IntPacketAccess : GenPacketAccess),
+    Cost = functor_traits<scalar_pow_op<Scalar, ExponentType>>::Cost
+  };
 };
 
 } // end namespace internal
