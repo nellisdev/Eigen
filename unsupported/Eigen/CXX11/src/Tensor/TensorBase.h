@@ -333,9 +333,9 @@ class TensorBase<Derived, ReadOnlyAccessors>
 
     template<typename ExponentType>
     EIGEN_DEVICE_FUNC
-        EIGEN_STRONG_INLINE const TensorCwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>
-        pow(ExponentType exponent) const {
-        return unaryExpr(internal::scalar_unarypow_op<Scalar,ExponentType>(exponent));
+    EIGEN_STRONG_INLINE const TensorCwiseUnaryOp<internal::scalar_unarypow_op<Scalar, ExponentType>, const Derived>
+    pow(ExponentType exponent) const {
+      return unaryExpr(internal::scalar_unarypow_op<Scalar,ExponentType>(exponent));
     }
 
     EIGEN_DEVICE_FUNC
