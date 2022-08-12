@@ -1753,6 +1753,9 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_errors(const Pack
   constexpr bool base_and_exponent_are_integers = NumTraits<Scalar>::IsInteger && NumTraits<ScalarExponent>::IsInteger;
 
   if (base_and_exponent_are_integers) {
+
+    // integer base and integer exponent case
+
     EIGEN_USING_STD(pow);
     const Scalar min = NumTraits<Scalar>::lowest();
     const Packet cst_min = pset1<Packet>(min);
@@ -1766,8 +1769,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_errors(const Pack
     return pselect(abs_x_is_gte_thresh, cst_min, powx);
   }
 
-  // general case
-  // see https://en.cppreference.com/w/cpp/numeric/math/pow
+  // integer exponent case
 
   const bool exponent_is_odd = is_odd<ScalarExponent>::run(exponent);
   const bool exponent_is_neg = exponent < 0;
@@ -1826,8 +1828,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_gen_errors(const Pack
                                                                       const ScalarExponent& exponent) {
   typedef typename unpacket_traits<Packet>::type Scalar;
 
-  // general case
-  // see https://en.cppreference.com/w/cpp/numeric/math/pow
+  // non-integer exponent case
 
   const bool exponent_is_fin = (numext::isfinite)(exponent);
   const bool exponent_is_nan = (numext::isnan)(exponent);
