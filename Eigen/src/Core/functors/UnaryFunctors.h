@@ -1070,11 +1070,11 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
-template <typename Scalar, typename ExponentType>
-struct scalar_unarypow_op {
-    EIGEN_DEVICE_FUNC inline scalar_unarypow_op(const ExponentType& exponent) :
+template <typename Scalar, typename ScalarExponent>
+struct scalar_unary_pow_op {
+    EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent) :
         m_exponent(exponent) {
-          EIGEN_STATIC_ASSERT(is_arithmetic<ExponentType>::value, EXPONENT MUST BE ARITHMETIC);
+          EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
         }
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
         // TODO: pow_impl only uses integer version for integer base and exponent
@@ -1083,23 +1083,23 @@ struct scalar_unarypow_op {
     }
     template <typename Packet>
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
-        return unary_pow_impl<Packet, ExponentType>::run(a, m_exponent);
+        return unary_pow_impl<Packet, ScalarExponent>::run(a, m_exponent);
     }
 
 private:
-    const ExponentType m_exponent;
-    scalar_unarypow_op() { }
+    const ScalarExponent m_exponent;
+    scalar_unary_pow_op() { }
 };
 
-template <typename Scalar, typename ExponentType>
-struct functor_traits<scalar_unarypow_op<Scalar, ExponentType>> {
+template <typename Scalar, typename ScalarExponent>
+struct functor_traits<scalar_unary_pow_op<Scalar, ScalarExponent>> {
   enum {
-    GenPacketAccess = functor_traits<scalar_pow_op<Scalar, ExponentType>>::PacketAccess,
+    GenPacketAccess = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::PacketAccess,
     IntPacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul &&
-                      (!NumTraits<ExponentType>::IsSigned || packet_traits<Scalar>::HasDiv) &&
+                      (!NumTraits<ScalarExponent>::IsSigned || packet_traits<Scalar>::HasDiv) &&
                       packet_traits<Scalar>::HasCmp,
-    PacketAccess = (NumTraits<ExponentType>::IsInteger ? IntPacketAccess : GenPacketAccess),
-    Cost = functor_traits<scalar_pow_op<Scalar, ExponentType>>::Cost
+    PacketAccess = (NumTraits<ScalarExponent>::IsInteger ? IntPacketAccess : GenPacketAccess),
+    Cost = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::Cost
   };
 };
 

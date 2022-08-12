@@ -110,19 +110,19 @@ namespace Eigen
     * \relates ArrayBase
     */
 #ifdef EIGEN_PARSED_BY_DOXYGEN
-  template <typename Derived, typename ExponentType>
+  template <typename Derived, typename ScalarExponent>
   inline const typename std::enable_if<
-      !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ExponentType>::value,
-      CwiseUnaryOp<internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>, const Derived> >::type
-  pow(const Eigen::ArrayBase<Derived>& x, const ExponentType& exponent);
+      !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ScalarExponent>::value,
+      CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived> >::type
+  pow(const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent);
 #else
-  template <typename Derived, typename ExponentType>
+  template <typename Derived, typename ScalarExponent>
   EIGEN_DEVICE_FUNC inline const typename std::enable_if<
-      !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ExponentType>::value,
-      CwiseUnaryOp<internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>, const Derived> >::type
-  pow(const Eigen::ArrayBase<Derived>& x, const ExponentType& exponent) {
-    return CwiseUnaryOp<internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>, const Derived>(
-        x.derived(), internal::scalar_unarypow_op<typename Derived::Scalar, ExponentType>(exponent));
+      !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ScalarExponent>::value,
+      CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived> >::type
+  pow(const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent) {
+    return CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived>(
+        x.derived(), internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>(exponent));
 }
 #endif
 
