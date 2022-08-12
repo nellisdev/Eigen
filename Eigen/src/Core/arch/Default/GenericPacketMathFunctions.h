@@ -1888,7 +1888,7 @@ template <typename Packet, typename ScalarExponent, bool ExponentIsInteger = Num
 struct unary_pow_impl {
   typedef typename unpacket_traits<Packet>::type Scalar;
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) {
-    const bool exponent_is_integer = numext::isfinite(exponent) && numext::round(exponent) == exponent;
+    const bool exponent_is_integer = (numext::isfinite)(exponent) && numext::round(exponent) == exponent;
     if (exponent_is_integer) {
       Packet result = int_pow(x, exponent);
       result = handle_int_errors(x, result, exponent);
