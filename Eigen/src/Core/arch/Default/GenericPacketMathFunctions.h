@@ -1754,20 +1754,22 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_errors(const Pack
 
     // integer base and integer exponent case
 
-    constexpr int max_exponent = NumTraits<Scalar>::digits();
-    const ScalarExponent abs_exponent = numext::abs(exponent);
-    const int eff_exponent = abs_exponent < max_exponent ? static_cast<int>(abs_exponent) : max_exponent;
-    const int div = max_exponent / eff_exponent;
-    const int mod = max_exponent != (div * eff_exponent);
-    const int exp2div = (1 << div);
-    const int thresh = mod + exp2div;
+      EIGEN_USING_STD(exp2);
+      const ScalarExponent max_exponent = static_cast<ScalarExponent>(NumTraits<Scalar>::digits());
+      const ScalarExponent abs_exponent = numext::abs(exponent);
+      const ScalarExponent eff_exponent = numext::mini(abs_exponent, max_exponent);
+      const ScalarExponent div = max_exponent / eff_exponent;
+      const ScalarExponent mod = max_exponent != (div * eff_exponent);
+      const ScalarExponent exp2div = exp2(div);
+      const ScalarExponent thresh = mod + exp2div;
 
-    const Packet thresh_packet = pset1<Packet>(static_cast<Scalar>(thresh));
-    constexpr Scalar min = NumTraits<Scalar>::lowest();
-    const Packet cst_min = pset1<Packet>(min);
-    const Packet abs_x = pabs(x);
-    const Packet abs_x_is_gte_thresh = pcmp_le(thresh_packet, abs_x);
-    return pselect(abs_x_is_gte_thresh, cst_min, powx);
+      const Packet thresh_packet = pset1<Packet>(static_cast<Scalar>(thresh));
+      constexpr Scalar min = NumTraits<Scalar>::lowest();
+      const Packet cst_min = pset1<Packet>(min);
+      const Packet abs_x = pabs(x);
+      const Packet abs_x_is_gte_thresh = pcmp_le(thresh_packet, abs_x);
+      
+      return pselect(abs_x_is_gte_thresh, cst_min, powx);
   }
 
   // integer exponent case
