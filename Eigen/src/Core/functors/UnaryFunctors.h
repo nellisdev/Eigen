@@ -1070,16 +1070,37 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
-template <typename Scalar, typename ScalarExponent>
+template <typename Scalar, typename ScalarExponent, bool ExponentIsIntegerAtCompileTime = NumTraits<ScalarExponent>::IsInteger>
 struct scalar_unary_pow_op {
-    EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent) :
-        m_exponent(exponent) {
-          EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
-        }
+  typedef
+  EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent)
+      : m_exponent(static_cast<Scalar>(exponent)) {
+    EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
+  }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+    // TODO: pow_impl only uses integer version for integer base and exponent
+    EIGEN_USING_STD(pow);
+    return pow(a, m_exponent);
+  }
+  template <typename Packet>
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+    return unary_pow_impl<Packet, Scalar>::run(a, m_exponent);
+  }
+
+ private:
+  const Scalar m_exponent;
+  scalar_unary_pow_op() {}
+};
+
+template <typename Scalar, typename ScalarExponent>
+struct scalar_unary_pow_op<Scalar, ScalarExponent,true>{
+    typedef
+    EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent)
+        : m_exponent(exponent) {
+        EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
+    }
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
-        // TODO: pow_impl only uses integer version for integer base and exponent
-        EIGEN_USING_STD(pow);
-        return static_cast<Scalar>(pow(a, m_exponent));
+        return unary_pow_impl<Scalar, ScalarExponent>::run(a, m_exponent);
     }
     template <typename Packet>
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
@@ -1088,7 +1109,7 @@ struct scalar_unary_pow_op {
 
 private:
     const ScalarExponent m_exponent;
-    scalar_unary_pow_op() { }
+    scalar_unary_pow_op() {}
 };
 
 template <typename Scalar, typename ScalarExponent>
