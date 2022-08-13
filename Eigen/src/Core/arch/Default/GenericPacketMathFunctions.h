@@ -1738,12 +1738,10 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet int_pow(const Packet& x, con
   return result;
 }
 
-template <typename Packet, typename ScalarExponent>
-static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet gen_pow(const Packet& x, const ScalarExponent& exponent) {
-  typedef typename unpacket_traits<Packet>::type Scalar;
-  const Packet exponent_packet = pset1<Packet>(static_cast<Scalar>(exponent));
-  Packet powabsx = generic_pow_impl(x, exponent_packet);
-  return powabsx;
+template <typename Packet>
+static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet gen_pow(const Packet& x, const typename unpacket_traits<Packet>::type& exponent) {
+  const Packet exponent_packet = pset1<Packet>(exponent);
+  return generic_pow_impl(x, exponent_packet);
 }
 
 template <typename Packet, typename ScalarExponent>

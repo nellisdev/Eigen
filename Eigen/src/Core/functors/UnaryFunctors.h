@@ -1072,12 +1072,13 @@ struct functor_traits<scalar_logistic_op<T> > {
 
 template <typename Scalar, typename ScalarExponent, bool ExponentIsIntegerAtCompileTime = NumTraits<ScalarExponent>::IsInteger>
 struct scalar_unary_pow_op {
-  EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent)
-      : m_exponent(static_cast<Scalar>(exponent)) {
-    EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ScalarExponent& exponent)
+      : m_exponent(exponent) {
+    EIGEN_STATIC_ASSERT((is_same<Scalar, ScalarExponent>::value), NON_INTEGER_EXPONENT_MUST_BE_SAME_TYPE_AS_BASE);
   }
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
-    // TODO: pow_impl only uses integer version for integer base and exponent
+    // TODO: detect if exponent is integer at runtime
+    // may not be faster than direct call to pow
     EIGEN_USING_STD(pow);
     return pow(a, m_exponent);
   }
@@ -1087,15 +1088,15 @@ struct scalar_unary_pow_op {
   }
 
  private:
-  const Scalar m_exponent;
+  const ScalarExponent m_exponent;
   scalar_unary_pow_op() {}
 };
 
 template <typename Scalar, typename ScalarExponent>
 struct scalar_unary_pow_op<Scalar, ScalarExponent,true>{
-    EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent)
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ScalarExponent& exponent)
         : m_exponent(exponent) {
-        EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
+        EIGEN_STATIC_ASSERT((is_arithmetic<ScalarExponent>::value), EXPONENT_MUST_BE_ARITHMETIC);
     }
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
         return unary_pow_impl<Scalar, ScalarExponent>::run(a, m_exponent);
