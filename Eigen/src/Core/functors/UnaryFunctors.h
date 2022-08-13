@@ -1072,7 +1072,6 @@ struct functor_traits<scalar_logistic_op<T> > {
 
 template <typename Scalar, typename ScalarExponent, bool ExponentIsIntegerAtCompileTime = NumTraits<ScalarExponent>::IsInteger>
 struct scalar_unary_pow_op {
-  typedef
   EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent)
       : m_exponent(static_cast<Scalar>(exponent)) {
     EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
@@ -1094,7 +1093,6 @@ struct scalar_unary_pow_op {
 
 template <typename Scalar, typename ScalarExponent>
 struct scalar_unary_pow_op<Scalar, ScalarExponent,true>{
-    typedef
     EIGEN_DEVICE_FUNC inline scalar_unary_pow_op(const ScalarExponent& exponent)
         : m_exponent(exponent) {
         EIGEN_STATIC_ASSERT(is_arithmetic<ScalarExponent>::value, EXPONENT MUST BE ARITHMETIC);
