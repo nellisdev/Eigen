@@ -1115,9 +1115,7 @@ template <typename Scalar, typename ScalarExponent>
 struct functor_traits<scalar_unary_pow_op<Scalar, ScalarExponent>> {
   enum {
     GenPacketAccess = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::PacketAccess,
-    IntPacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul &&
-                      (!NumTraits<ScalarExponent>::IsSigned || packet_traits<Scalar>::HasDiv) &&
-                      packet_traits<Scalar>::HasCmp,
+    IntPacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul && packet_traits<Scalar>::HasCmp,
     PacketAccess = (NumTraits<ScalarExponent>::IsInteger ? IntPacketAccess : GenPacketAccess),
     Cost = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::Cost
   };

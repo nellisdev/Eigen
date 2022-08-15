@@ -108,6 +108,68 @@ void pow_test() {
   VERIFY(all_pass);
 }
 
+template<typename Base, typename Exponent, bool BothAreIntegers = NumTraits<Base>::IsInteger&& NumTraits<Exponent>::IsInteger>
+void int_pow_test()
+{
+	EIGEN_USING_STD(pow);
+
+  const double tol = test_precision<double>();
+	const Index num_abs_vals = 100;
+	const Index size = 2 * internal::packet_traits<Base>::size;
+
+	bool all_pass = true;
+	ArrayX<Base> bases = ArrayX<Base>::LinSpaced(num_abs_vals, 0, num_abs_vals - 1);
+	ArrayX<Exponent> exponents = ArrayX<Exponent>::LinSpaced(num_abs_vals, 0, num_abs_vals - 1);
+	ArrayX<Base> x(size), y(size);
+
+	const Index num_base_signs = NumTraits<Base>::IsSigned ? 2 : 1;
+	const Index num_exponent_signs = NumTraits<Exponent>::IsSigned ? 2 : 1;
+
+	typedef Array<Base, num_base_signs, 1> BaseSignType;
+	typedef Array<Exponent, num_exponent_signs, 1> ExponentSignType;
+
+	BaseSignType baseSigns;
+	baseSigns(0) = Base(1);
+	if (baseSigns.size() == 2)
+	{
+		baseSigns(1) = Base(1) - Base(2);
+	}
+	ExponentSignType exponentSigns;
+	exponentSigns(0) = Exponent(1);
+	if (exponentSigns.size() == 2)
+	{
+		exponentSigns(1) = Exponent(1) - Exponent(2);
+	}
+
+	for (Base abs_base : bases)
+	{
+		for (Base base_sign : baseSigns)
+		{
+			Base base = base_sign * abs_base;
+			x.setConstant(num_abs_vals, base);
+			for (Exponent abs_exponent : exponents)
+			{
+				for (Exponent exponent_sign : exponentSigns)
+				{
+					Exponent exponent = exponent_sign * abs_exponent;
+					y = x.pow(exponent);
+					for (Base result : y)
+					{
+						Base pow_base_exponent = (Base)pow(base, exponent);
+						// std::pow does not return exactly correct results for large integers (e.g. 3^34)
+						bool same = internal::isApprox(static_cast<double>(result), static_cast<double>(pow_base_exponent), tol);
+						if (!same) {
+							std::cout << "pow(" << base << "," << exponent << ")   =   " << result << " !=  " << pow_base_exponent << std::endl;
+						}
+						all_pass &= same;
+					}
+				}
+			}
+		}
+	}
+  VERIFY(all_pass);
+}
+
 template<typename ArrayType> void array(const ArrayType& m)
 {
   typedef typename ArrayType::Scalar Scalar;
@@ -469,6 +531,14 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   m3 = (m1.square()<NumTraits<Scalar>::epsilon()).select(Scalar(1),m3);
   VERIFY_IS_APPROX(m3.pow(RealScalar(-2)), m3.square().inverse());
   pow_test<Scalar>();
+  int_pow_test<int32_t, int32_t>();
+	int_pow_test<int32_t, uint32_t>();
+	int_pow_test<int32_t, int64_t>();
+	int_pow_test<int32_t, uint64_t>();
+	int_pow_test<int64_t, int32_t>();
+	int_pow_test<int64_t, uint32_t>();
+	int_pow_test<int64_t, int64_t>();
+	int_pow_test<int64_t, uint64_t>();
 
   VERIFY_IS_APPROX(log10(m3), log(m3)/numext::log(Scalar(10)));
   VERIFY_IS_APPROX(log2(m3), log(m3)/numext::log(Scalar(2)));
