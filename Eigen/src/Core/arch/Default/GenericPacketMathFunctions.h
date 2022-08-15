@@ -1839,7 +1839,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   const Packet cst_pos_zero = pset1<Packet>(pos_zero);
   const Packet cst_pos_one = pset1<Packet>(pos_one);
   const Packet cst_pos_overflow = pset1<Packet>(pos_overflow);
-  const Packet cst_neg_overflow = pset1<Packet>(pos_overflow);
+  const Packet cst_neg_overflow = pset1<Packet>(neg_overflow);
 
   const Packet abs_x = pabs(x);
   const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_pos_zero);
