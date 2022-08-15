@@ -156,8 +156,11 @@ void int_pow_test()
 					for (Base result : y)
 					{
 						Base pow_base_exponent = (Base)pow(base, exponent);
+						bool eigen_overflow = (result == NumTraits<Base>::highest()) || (result == NumTraits<Base>::lowest());
+						bool std_overflow = (pow_base_exponent == NumTraits<Base>::highest()) || (pow_base_exponent == NumTraits<Base>::lowest());
+						bool both_overflow = eigen_overflow && std_overflow;
 						// std::pow does not return exactly correct results for large integers (e.g. 3^34)
-						bool same = internal::isApprox(static_cast<double>(result), static_cast<double>(pow_base_exponent), tol);
+						bool same = internal::isApprox(static_cast<double>(result), static_cast<double>(pow_base_exponent), tol) || both_overflow;
 						if (!same) {
 							std::cout << "pow(" << base << "," << exponent << ")   =   " << result << " !=  " << pow_base_exponent << std::endl;
 						}

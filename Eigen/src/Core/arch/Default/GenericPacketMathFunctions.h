@@ -1822,12 +1822,10 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   // for example, using int, naive calculation of pow(-128,15) returns 0, which may be difficult to detect
   // overflow behavior is implementation dependent
   // for example, on gcc (int)pow(2,31) or (int)exp2(31) returns 2147483647 and (int)pow(-2,31) -(int)exp2(31) returns -2147483648
-  // on msvc, both values are -2147483648
-  // for consistency, the overflow behavior is determined by simply calculating a value that is guaranteed to overflow
-  // divide by zero will correspond to the overflow values and be sign-consistent where possible
-
-  // for unsigned base types, this will correctly round to zero for negative exponents
-  // otherwise, unsigned base types do not "overflow"
+  // on msvc and clang, both values are -2147483648
+  // overflow will be reported with NumTraits<Scalar>::highest() and NumTraits<Scalar>::lowest() in a
+  // manner that is consistent with the expected sign
+  // divide by zero will return NumTraits<Scalar>::lowest()
 
   constexpr bool base_is_signed = NumTraits<Scalar>::IsSigned;
   const bool exponent_is_odd = is_odd<ScalarExponent>::run(exponent);
@@ -1835,8 +1833,8 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   const Scalar pos_zero = Scalar(0);
   const Scalar pos_one = Scalar(1);
   const Scalar digits = static_cast<Scalar>(NumTraits<Scalar>::digits());
-  const Scalar pos_overflow = static_cast<Scalar>(exp2(digits));
-  const Scalar neg_overflow = static_cast<Scalar>(-exp2(digits));
+  const Scalar pos_overflow = NumTraits<Scalar>::highest();
+  const Scalar neg_overflow = NumTraits<Scalar>::lowest();
 
   const Packet cst_pos_zero = pset1<Packet>(pos_zero);
   const Packet cst_pos_one = pset1<Packet>(pos_one);
@@ -1859,10 +1857,10 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   const Packet thresh_packet = pset1<Packet>(static_cast<Scalar>(thresh));
   const Packet pow_is_overflow = (base_is_signed && exponent > 1) ? pcmp_le(thresh_packet, abs_x) : pzero(x);
   const Packet pow_is_pos_overflow = pandnot(pow_is_overflow, pow_is_neg);
-  const Packet pow_is_neg_overflow = por(pand(pow_is_overflow, pow_is_neg), pow_is_divzero);
+  const Packet pow_is_neg_overflow = pand(pow_is_overflow, pow_is_neg);
 
   Packet result = pselect(pow_is_zero, cst_pos_zero, powx);
-  result = pselect(pow_is_neg_overflow, cst_neg_overflow, result);
+  result = pselect(por(pow_is_neg_overflow, pow_is_divzero), cst_neg_overflow, result);
   result = pselect(pow_is_pos_overflow, cst_pos_overflow, result);
   return result;
 }
