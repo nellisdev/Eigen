@@ -1813,7 +1813,6 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
                                                                           const ScalarExponent& exponent) {
   typedef typename unpacket_traits<Packet>::type Scalar;
   EIGEN_USING_STD(exp2);
-  EIGEN_USING_STD(pow);
   // integer base, integer exponent case
 
   // this routine serves two purposes:
@@ -1836,8 +1835,8 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   const Scalar pos_zero = Scalar(0);
   const Scalar pos_one = Scalar(1);
   const Scalar digits = static_cast<Scalar>(NumTraits<Scalar>::digits());
-  const Scalar pos_overflow = static_cast<Scalar>(pow(Scalar(2),digits));
-  const Scalar neg_overflow = static_cast<Scalar>(pow(Scalar(-2),digits));
+  const Scalar pos_overflow = static_cast<Scalar>(exp2(digits));
+  const Scalar neg_overflow = static_cast<Scalar>(-exp2(digits));
 
   const Packet cst_pos_zero = pset1<Packet>(pos_zero);
   const Packet cst_pos_one = pset1<Packet>(pos_one);
@@ -1859,10 +1858,12 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   const Scalar thresh = numext::ceil(exp2(max_exponent / eff_exponent));
   const Packet thresh_packet = pset1<Packet>(static_cast<Scalar>(thresh));
   const Packet pow_is_overflow = (base_is_signed && exponent > 1) ? pcmp_le(thresh_packet, abs_x) : pzero(x);
+  const Packet pow_is_pos_overflow = pandnot(pow_is_overflow, pow_is_neg);
+  const Packet pow_is_neg_overflow = por(pand(pow_is_overflow, pow_is_neg), pow_is_divzero);
 
   Packet result = pselect(pow_is_zero, cst_pos_zero, powx);
-  result = pselect(pand(por(pow_is_overflow, pow_is_divzero), pow_is_neg), cst_neg_overflow, result);
-  result = pselect(pandnot(por(pow_is_overflow, pow_is_divzero), pow_is_neg), cst_pos_overflow, result);
+  result = pselect(pow_is_neg_overflow, cst_neg_overflow, result);
+  result = pselect(pow_is_pos_overflow, cst_pos_overflow, result);
   return result;
 }
 

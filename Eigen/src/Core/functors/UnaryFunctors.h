@@ -1116,7 +1116,7 @@ struct functor_traits<scalar_unary_pow_op<Scalar, ScalarExponent>> {
   enum {
     GenPacketAccess = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::PacketAccess,
     // TODO: fix packet_traits<Scalar>::HasCmp for integer packets
-    IntPacketAccess = !NumTraits<Scalar>::IsComplex && NumTraits<Scalar>::IsSigned && packet_traits<Scalar>::HasMul,
+    IntPacketAccess = !NumTraits<Scalar>::IsComplex && NumTraits<Scalar>::IsSigned && packet_traits<Scalar>::HasMul && !is_same<Scalar,int64_t>,
     PacketAccess = (NumTraits<ScalarExponent>::IsInteger ? IntPacketAccess : GenPacketAccess),
     Cost = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::Cost
   };
