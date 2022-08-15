@@ -1813,6 +1813,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
                                                                           const ScalarExponent& exponent) {
   typedef typename unpacket_traits<Packet>::type Scalar;
   EIGEN_USING_STD(exp2);
+  EIGEN_USING_STD(pow);
   // integer base, integer exponent case
 
   // this routine serves two purposes:
@@ -1835,8 +1836,8 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const 
   const Scalar pos_zero = Scalar(0);
   const Scalar pos_one = Scalar(1);
   const Scalar digits = static_cast<Scalar>(NumTraits<Scalar>::digits());
-  const Scalar pos_overflow = static_cast<Scalar>(exp2(digits));
-  const Scalar neg_overflow = static_cast<Scalar>(-exp2(digits));
+  const Scalar pos_overflow = static_cast<Scalar>(pow(Scalar(2),digits));
+  const Scalar neg_overflow = static_cast<Scalar>(pow(Scalar(-2),digits));
 
   const Packet cst_pos_zero = pset1<Packet>(pos_zero);
   const Packet cst_pos_one = pset1<Packet>(pos_one);
