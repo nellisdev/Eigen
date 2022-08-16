@@ -695,14 +695,16 @@ ndtri() const
   return NdtriReturnType(derived());
 }
 
+template <typename ScalarExponent>
+using UnaryPowReturnType =
+    typename std::enable_if_t<internal::is_arithmetic<ScalarExponent>::value,
+                              CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>;
+
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 template <typename ScalarExponent>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const typename std::enable_if<
-    internal::is_arithmetic<ScalarExponent>::value,
-    CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>::type
-pow(const ScalarExponent& exponent) const {
-  return CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>(
-      derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const UnaryPowReturnType<ScalarExponent> pow(
+    const ScalarExponent& exponent) const {
+  return UnaryPowReturnType<ScalarExponent>(derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
 #else
 /** \returns an expression of the coefficients of \c *this rasied to the constant power \a exponent
  *
@@ -717,8 +719,7 @@ pow(const ScalarExponent& exponent) const {
  * \sa ArrayBase::pow(ArrayBase), square(), cube(), exp(), log()
  */
 template <typename ScalarExponent>
-const typename std::enable_if<internal::is_arithmetic<ScalarExponent>::value,
-                              CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>::type
-pow(const ScalarExponent& exponent) const;
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const UnaryPowReturnType<ScalarExponent> pow(
+    const ScalarExponent& exponent) const;
 #endif
 }

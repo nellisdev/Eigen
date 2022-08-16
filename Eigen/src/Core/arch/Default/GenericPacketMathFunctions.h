@@ -1809,63 +1809,6 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_nonint_int_errors(con
 }
 
 template <typename Packet, typename ScalarExponent>
-static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_int_int_errors(const Packet& x, const Packet& powx,
-                                                                          const ScalarExponent& exponent) {
-  typedef typename unpacket_traits<Packet>::type Scalar;
-  EIGEN_USING_STD(exp2);
-  // integer base, integer exponent case
-
-  // this routine serves two purposes:
-  //   1) correctly round to zero for negative exponents
-  //   2) detect divide by zero
-  //   2) detect overflow and replace the results with something that can be easily detected by the user
-  // for example, using int, naive calculation of pow(-128,15) returns 0, which may be difficult to detect
-  // overflow behavior is implementation dependent
-  // for example, on gcc (int)pow(2,31) or (int)exp2(31) returns 2147483647 and (int)pow(-2,31) -(int)exp2(31) returns -2147483648
-  // on msvc and clang, both values are -2147483648
-  // overflow will be reported with NumTraits<Scalar>::highest() and NumTraits<Scalar>::lowest() in a
-  // manner that is consistent with the expected sign
-  // divide by zero will return NumTraits<Scalar>::lowest()
-
-  constexpr bool base_is_signed = NumTraits<Scalar>::IsSigned;
-  const bool exponent_is_odd = is_odd<ScalarExponent>::run(exponent);
-
-  const Scalar pos_zero = Scalar(0);
-  const Scalar pos_one = Scalar(1);
-  const Scalar digits = static_cast<Scalar>(NumTraits<Scalar>::digits());
-  const Scalar pos_overflow = NumTraits<Scalar>::highest();
-  const Scalar neg_overflow = NumTraits<Scalar>::lowest();
-
-  const Packet cst_pos_zero = pset1<Packet>(pos_zero);
-  const Packet cst_pos_one = pset1<Packet>(pos_one);
-  const Packet cst_pos_overflow = pset1<Packet>(pos_overflow);
-  const Packet cst_neg_overflow = pset1<Packet>(neg_overflow);
-
-  const Packet abs_x = pabs(x);
-  const Packet abs_x_is_zero = pcmp_eq(abs_x, cst_pos_zero);
-
-  const Packet x_has_signbit = pcmp_eq(por(pand(x, cst_neg_overflow), cst_pos_overflow), cst_neg_overflow);
-  const Packet x_is_neg = pandnot(x_has_signbit, abs_x_is_zero);
-
-  const Packet pow_is_zero = exponent < 0 ? pcmp_lt(cst_pos_one, abs_x) : pzero(x);
-  const Packet pow_is_neg = (base_is_signed && exponent_is_odd) ? x_is_neg : pzero(x);
-  const Packet pow_is_divzero = exponent < 0 ? abs_x_is_zero : pzero(x);
-
-  const double max_exponent = static_cast<double>(digits);
-  const double eff_exponent = numext::mini(static_cast<double>(exponent), max_exponent);
-  const Scalar thresh = numext::ceil(exp2(max_exponent / eff_exponent));
-  const Packet thresh_packet = pset1<Packet>(static_cast<Scalar>(thresh));
-  const Packet pow_is_overflow = (base_is_signed && exponent > 1) ? pcmp_le(thresh_packet, abs_x) : pzero(x);
-  const Packet pow_is_pos_overflow = pandnot(pow_is_overflow, pow_is_neg);
-  const Packet pow_is_neg_overflow = pand(pow_is_overflow, pow_is_neg);
-
-  Packet result = pselect(pow_is_zero, cst_pos_zero, powx);
-  result = pselect(por(pow_is_neg_overflow, pow_is_divzero), cst_neg_overflow, result);
-  result = pselect(pow_is_pos_overflow, cst_pos_overflow, result);
-  return result;
-}
-
-template <typename Packet, typename ScalarExponent>
 static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet handle_nonint_nonint_errors(const Packet& x, const Packet& powx,
                                                                                 const ScalarExponent& exponent) {
   typedef typename unpacket_traits<Packet>::type Scalar;
@@ -1958,17 +1901,6 @@ struct unary_pow_impl<Packet, ScalarExponent, false, true> {
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) {
     Packet result = unary_pow::int_pow(x, exponent);
     result = unary_pow::handle_nonint_int_errors(x, result, exponent);
-    return result;
-  }
-};
-
-template <typename Packet, typename ScalarExponent>
-struct unary_pow_impl<Packet, ScalarExponent, true, true> {
-  typedef typename unpacket_traits<Packet>::type Scalar;
-  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) {
-    // microoptimization: clamp exponent and maintain oddness (-1, NumTraits<Scalar>::digits())
-    Packet result = unary_pow::int_pow(x, exponent);
-    result = unary_pow::handle_int_int_errors(x, result, exponent);
     return result;
   }
 };

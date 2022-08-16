@@ -94,10 +94,12 @@ EIGEN_DEVICE_FUNC
 inline const CwiseArgReturnType
 cwiseArg() const { return CwiseArgReturnType(derived()); }
 
-template<typename ScalarExponent>
-EIGEN_DEVICE_FUNC
-inline const CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>
-cwisePow(const ScalarExponent& exponent) const
-{
-    return CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>(derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
+template <typename ScalarExponent>
+using CwisePowReturnType =
+    std::enable_if_t<internal::is_arithmetic<ScalarExponent>::value,
+                     CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>;
+
+template <typename ScalarExponent>
+EIGEN_DEVICE_FUNC inline const CwisePowReturnType<ScalarExponent> cwisePow(const ScalarExponent& exponent) const {
+  return CwisePowReturnType<ScalarExponent>(derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
 }

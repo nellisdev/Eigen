@@ -79,20 +79,20 @@ void pow_test() {
       }
     }
   }
+
+  // ensure both vectorized and non-vectorized paths taken
+  Index test_size = 2 * internal::packet_traits<Scalar>::size + 1;
   
-  Array<Scalar, Dynamic, 1> eigenPow(num_repeats);
-  Array<Scalar, Dynamic, 1> stdPow(num_repeats);
+  Array<Scalar, Dynamic, 1> eigenPow(test_size);
   for (int i = 0; i < num_cases; ++i) {
     Array<Scalar, Dynamic, 1> bases = x.col(i);
     for (Scalar abs_exponent : abs_vals){
-      for (Scalar sign : {Scalar(-1), Scalar(1)}){
-        Scalar exponent = sign * abs_exponent;
+      for (Scalar exponent : {-abs_exponent, abs_exponent}){
+        // test floating point exponent code path
         eigenPow.setZero();
         eigenPow = bases.pow(exponent);
-        stdPow.setZero();
-        stdPow = bases.unaryExpr([&](Scalar x) {return static_cast<Scalar>(std::pow(x, exponent)); });
         for (int j = 0; j < num_repeats; j++){
-          Scalar e = stdPow(j);
+          Scalar e = std::pow(bases(j), exponent);
           Scalar a = eigenPow(j);
           bool success = (a == e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
           all_pass &= success;
@@ -100,76 +100,27 @@ void pow_test() {
             std::cout << "pow(" << x(i, j) << "," << y(i, j) << ")   =   " << a << " !=  " << e << std::endl;
           }
         }
+        // test integer exponent code path
+        bool exponent_is_integer = (numext::isfinite)(exponent) && numext::round(exponent) == exponent;
+        if (exponent_is_integer && numext::abs(exponent) < NumTraits<int32_t>::highest())
+        {
+          int32_t exponent_as_int = static_cast<int32_t>(exponent);
+          eigenPow.setZero();
+          eigenPow = bases.pow(exponent_as_int);
+          for (int j = 0; j < num_repeats; j++){
+            Scalar e = std::pow(bases(j), exponent);
+            Scalar a = eigenPow(j);
+            bool success = (a == e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
+            all_pass &= success;
+            if (!success) {
+              std::cout << "pow(" << x(i, j) << "," << y(i, j) << ")   =   " << a << " !=  " << e << std::endl;
+            }
+          }
+        }
       }
     }
   }
 
-
-  VERIFY(all_pass);
-}
-
-template<typename Base, typename Exponent, bool BothAreIntegers = NumTraits<Base>::IsInteger&& NumTraits<Exponent>::IsInteger>
-void int_pow_test()
-{
-	EIGEN_USING_STD(pow);
-
-  const double tol = test_precision<double>();
-	const Index num_abs_vals = 100;
-	const Index size = 2 * internal::packet_traits<Base>::size;
-
-	bool all_pass = true;
-	ArrayX<Base> bases = ArrayX<Base>::LinSpaced(num_abs_vals, 0, num_abs_vals - 1);
-	ArrayX<Exponent> exponents = ArrayX<Exponent>::LinSpaced(num_abs_vals, 0, num_abs_vals - 1);
-	ArrayX<Base> x(size), y(size);
-
-	const Index num_base_signs = NumTraits<Base>::IsSigned ? 2 : 1;
-	const Index num_exponent_signs = NumTraits<Exponent>::IsSigned ? 2 : 1;
-
-	typedef Array<Base, num_base_signs, 1> BaseSignType;
-	typedef Array<Exponent, num_exponent_signs, 1> ExponentSignType;
-
-	BaseSignType baseSigns;
-	baseSigns(0) = Base(1);
-	if (baseSigns.size() == 2)
-	{
-		baseSigns(1) = Base(1) - Base(2);
-	}
-	ExponentSignType exponentSigns;
-	exponentSigns(0) = Exponent(1);
-	if (exponentSigns.size() == 2)
-	{
-		exponentSigns(1) = Exponent(1) - Exponent(2);
-	}
-
-	for (Base abs_base : bases)
-	{
-		for (Base base_sign : baseSigns)
-		{
-			Base base = base_sign * abs_base;
-			x.setConstant(num_abs_vals, base);
-			for (Exponent abs_exponent : exponents)
-			{
-				for (Exponent exponent_sign : exponentSigns)
-				{
-					Exponent exponent = exponent_sign * abs_exponent;
-					y = x.pow(exponent);
-					for (Base result : y)
-					{
-						Base pow_base_exponent = (Base)pow(base, exponent);
-						bool eigen_overflow = (result == NumTraits<Base>::highest()) || (result == NumTraits<Base>::lowest());
-						bool std_overflow = (pow_base_exponent == NumTraits<Base>::highest()) || (pow_base_exponent == NumTraits<Base>::lowest());
-						bool both_overflow = eigen_overflow && std_overflow;
-						// std::pow does not return exactly correct results for large integers (e.g. 3^34)
-						bool same = internal::isApprox(static_cast<double>(result), static_cast<double>(pow_base_exponent), tol) || both_overflow;
-						if (!same) {
-							std::cout << "pow(" << base << "," << exponent << ")   =   " << result << " !=  " << pow_base_exponent << std::endl;
-						}
-						all_pass &= same;
-					}
-				}
-			}
-		}
-	}
   VERIFY(all_pass);
 }
 

@@ -332,10 +332,11 @@ class TensorBase<Derived, ReadOnlyAccessors>
     }
 
     template<typename ScalarExponent>
-    EIGEN_DEVICE_FUNC
-    EIGEN_STRONG_INLINE const TensorCwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>
-    pow(ScalarExponent exponent) const {
-      return unaryExpr(internal::scalar_unary_pow_op<Scalar,ScalarExponent>(exponent));
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const std::enable_if_t<internal::is_arithmetic<ScalarExponent>::value,
+        TensorCwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>
+        pow(ScalarExponent exponent) const
+    {
+        return unaryExpr(internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
     }
 
     EIGEN_DEVICE_FUNC
