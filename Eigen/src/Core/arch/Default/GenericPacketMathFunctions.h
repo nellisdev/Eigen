@@ -1095,7 +1095,9 @@ void twoprod(const Packet& x_hi, const Packet& x_lo,
 }
 
 // This function implements the division of double word {x_hi, x_lo}
-// by float y.
+// by float y. This is Algorithm 15 from "Tight and rigourous error bounds
+// for basic building blocks of double-word arithmetic", Joldes, Muller, & Popescu,
+// 2017. https://hal.archives-ouvertes.fr/hal-01351529
 template <typename Packet>
 void doubleword_div_fp(const Packet& x_hi, const Packet& x_lo, const Packet& y,
                            Packet& z_hi, Packet& z_lo) {
