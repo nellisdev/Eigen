@@ -485,7 +485,6 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   m3 = (m1.square()<NumTraits<Scalar>::epsilon()).select(Scalar(1),m3);
   VERIFY_IS_APPROX(m3.pow(RealScalar(-2)), m3.square().inverse());
   pow_test<Scalar>();
-  int_pow_test<int32_t, int32_t>();
 
   VERIFY_IS_APPROX(log10(m3), log(m3)/numext::log(Scalar(10)));
   VERIFY_IS_APPROX(log2(m3), log(m3)/numext::log(Scalar(2)));
