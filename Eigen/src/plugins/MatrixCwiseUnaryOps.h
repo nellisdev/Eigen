@@ -98,7 +98,19 @@ template <typename ScalarExponent>
 using CwisePowReturnType =
     std::enable_if_t<internal::is_arithmetic<ScalarExponent>::value,
                      CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>;
-
+                     
+/** \returns an expression of the coefficients of \c *this rasied to the constant power \a exponent
+ *
+ * \tparam T is the scalar type of \a exponent. It must be compatible with the scalar type of the given expression.
+ *
+ * This function computes the coefficient-wise power. The function MatrixBase::pow() in the
+ * unsupported module MatrixFunctions computes the matrix power.
+ *
+ * Example: \include Cwise_pow.cpp
+ * Output: \verbinclude Cwise_pow.out
+ *
+ * \sa ArrayBase::pow(ArrayBase), square(), cube(), exp(), log()
+ */
 template <typename ScalarExponent>
 EIGEN_DEVICE_FUNC inline const CwisePowReturnType<ScalarExponent> cwisePow(const ScalarExponent& exponent) const {
   return CwisePowReturnType<ScalarExponent>(derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
