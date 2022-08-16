@@ -80,8 +80,6 @@ void pow_test() {
     }
   }
 
-  typedef typename internal::make_integer<Scalar>::type Int_t;
-
   // ensure both vectorized and non-vectorized paths taken
   Index test_size = 2 * internal::packet_traits<Scalar>::size + 1;
   
@@ -103,10 +101,10 @@ void pow_test() {
           }
         }
         // test integer exponent code path
-        bool exponent_is_integer = numext::isfinite(exponent) && (numext::round(exponent) == exponent) && (numext::abs(exponent) < static_cast<Scalar>(NumTraits<Int_t>::highest()));
-        if (exponent_is_integer)
+        bool exponent_is_integer = (numext::isfinite)(exponent) && numext::round(exponent) == exponent;
+        if (exponent_is_integer && (numext::abs(exponent) < NumTraits<int32_t>::highest()))
         {
-          Int_t exponent_as_int = static_cast<Int_t>(exponent);
+          int32_t exponent_as_int = static_cast<int32_t>(exponent);
           eigenPow.setZero();
           eigenPow = bases.pow(exponent_as_int);
           for (int j = 0; j < num_repeats; j++){
