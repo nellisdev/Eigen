@@ -103,7 +103,7 @@ void pow_test() {
           }
         }
         // test integer exponent code path
-        bool exponent_is_integer = numext::isfinite(exponent) && (numext::round(exponent) == exponent) && (numext::abs(exponent) < static_cast<Scalar>(NumTraits<Int_t>::highest()));
+        bool exponent_is_integer = (numext::isfinite)(exponent) && (numext::round(exponent) == exponent) && (numext::abs(exponent) < static_cast<Scalar>(NumTraits<Int_t>::highest()));
         if (exponent_is_integer)
         {
           Int_t exponent_as_int = static_cast<Int_t>(exponent);
