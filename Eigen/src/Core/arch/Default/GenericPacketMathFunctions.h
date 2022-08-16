@@ -1708,7 +1708,7 @@ struct is_odd<ScalarExponent, true> {
 
 template <typename Packet, typename ScalarExponent,
           bool BaseIsIntegerType = NumTraits<typename unpacket_traits<Packet>::type>::IsInteger>
-struct init_int_pow {
+struct do_div {
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) {
     typedef typename unpacket_traits<Packet>::type Scalar;
     const Packet cst_pos_one = pset1<Packet>(Scalar(1));
@@ -1717,7 +1717,7 @@ struct init_int_pow {
 };
 
 template <typename Packet, typename ScalarExponent>
-struct init_int_pow<Packet, ScalarExponent, true> {
+struct do_div<Packet, ScalarExponent, true> {
   // pdiv not defined, nor necessary for integer base types
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) {
     EIGEN_UNUSED_VARIABLE(exponent);
@@ -1730,7 +1730,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet int_pow(const Packet& x, con
   typedef typename unpacket_traits<Packet>::type Scalar;
   const Packet cst_pos_one = pset1<Packet>(Scalar(1));
   if (exponent == 0) return cst_pos_one;
-  Packet result = init_int_pow<Packet, ScalarExponent>::run(x, exponent);
+  Packet result = x;
   Packet y = cst_pos_one;
   ScalarExponent m = numext::abs(exponent);
   while (m > 1) {
@@ -1740,6 +1740,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet int_pow(const Packet& x, con
     m = numext::floor(m / ScalarExponent(2));
   }
   result = pmul(y, result);
+  result = do_div<Packet, ScalarExponent>::run(x, exponent);
   return result;
 }
 
