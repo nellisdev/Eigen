@@ -110,7 +110,27 @@ namespace Eigen
     * \relates ArrayBase
     */
     
-  //see if this fixes it
+template <typename Derived, typename ScalarExponent>
+using GlobalUnaryPowReturnType = std::enable_if_t<
+    !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ScalarExponent>::value,
+    CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived> >;
+
+#ifdef EIGEN_PARSED_BY_DOXYGEN
+template <typename Derived, typename ScalarExponent>
+inline const typename std::enable_if<
+    !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ScalarExponent>::value,
+    CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived> >::type
+pow(const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent);
+#else
+template <typename Derived, typename ScalarExponent>
+EIGEN_DEVICE_FUNC inline const typename std::enable_if<
+    !internal::is_arithmetic<Derived>::value && internal::is_arithmetic<ScalarExponent>::value,
+    CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived> >::type
+pow(const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent) {
+  return CwiseUnaryOp<internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>, const Derived>(
+      x.derived(), internal::scalar_unary_pow_op<typename Derived::Scalar, ScalarExponent>(exponent));
+}
+#endif
 
   /** \returns an expression of the coefficient-wise power of \a x to the given array of \a exponents.
     *
