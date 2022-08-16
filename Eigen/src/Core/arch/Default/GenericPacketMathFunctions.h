@@ -1719,7 +1719,10 @@ struct init_int_pow {
 template <typename Packet, typename ScalarExponent>
 struct init_int_pow<Packet, ScalarExponent, true> {
   // pdiv not defined, nor necessary for integer base types
-  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) { return x; }
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet run(const Packet& x, const ScalarExponent& exponent) {
+    EIGEN_UNUSED_VARIABLE(exponent);
+    return x;
+  }
 };
 
 template <typename Packet, typename ScalarExponent>
