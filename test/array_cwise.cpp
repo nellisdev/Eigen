@@ -92,7 +92,7 @@ void pow_test() {
         eigenPow.setZero();
         eigenPow = bases.pow(exponent);
         for (int j = 0; j < num_repeats; j++){
-          Scalar e = std::pow(bases(j), exponent);
+          Scalar e = static_cast<Scalar>(std::pow(bases(j), exponent));
           Scalar a = eigenPow(j);
           bool success = (a == e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
           all_pass &= success;
@@ -102,13 +102,13 @@ void pow_test() {
         }
         // test integer exponent code path
         bool exponent_is_integer = (numext::isfinite)(exponent) && numext::round(exponent) == exponent;
-        if (exponent_is_integer && numext::abs(exponent) < NumTraits<int32_t>::highest())
+        if (exponent_is_integer && (numext::abs(exponent) < NumTraits<int32_t>::highest()))
         {
           int32_t exponent_as_int = static_cast<int32_t>(exponent);
           eigenPow.setZero();
           eigenPow = bases.pow(exponent_as_int);
           for (int j = 0; j < num_repeats; j++){
-            Scalar e = std::pow(bases(j), exponent);
+            Scalar e = static_cast<Scalar>(std::pow(bases(j), exponent));
             Scalar a = eigenPow(j);
             bool success = (a == e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
             all_pass &= success;
