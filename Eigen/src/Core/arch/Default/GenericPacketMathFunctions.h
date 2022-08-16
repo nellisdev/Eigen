@@ -1740,7 +1740,7 @@ static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet int_pow(const Packet& x, con
     m = numext::floor(m / ScalarExponent(2));
   }
   result = pmul(y, result);
-  result = do_div<Packet, ScalarExponent>::run(x, exponent);
+  result = do_div<Packet, ScalarExponent>::run(result, exponent);
   return result;
 }
 
