@@ -28,8 +28,8 @@ namespace Eigen {
   */
 
 namespace internal {
-template<typename Scalar_, int Options_, typename StorageIndex_>
-struct traits<SparseVector<Scalar_, Options_, StorageIndex_> >
+template<typename Scalar_, int Options_, typename StorageIndex_, bool Align_>
+struct traits<SparseVector<Scalar_, Options_, StorageIndex_, Align_> >
 {
   typedef Scalar_ Scalar;
   typedef StorageIndex_ StorageIndex;
@@ -43,7 +43,8 @@ struct traits<SparseVector<Scalar_, Options_, StorageIndex_> >
     MaxRowsAtCompileTime = RowsAtCompileTime,
     MaxColsAtCompileTime = ColsAtCompileTime,
     Flags = Options_ | NestByRefBit | LvalueBit | (IsColVector ? 0 : RowMajorBit) | CompressedAccessBit,
-    SupportedAccessPatterns = InnerRandomAccessPattern
+    SupportedAccessPatterns = InnerRandomAccessPattern,
+    Align = Align_
   };
 };
 
