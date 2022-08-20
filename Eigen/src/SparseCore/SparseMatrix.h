@@ -45,8 +45,8 @@ namespace Eigen {
   */
 
 namespace internal {
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
-struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_, Align> >
+template<typename Scalar_, int Options_, typename StorageIndex_, bool Align_>
+struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_, Align_> >
 {
   typedef Scalar_ Scalar;
   typedef StorageIndex_ StorageIndex;
@@ -58,12 +58,13 @@ struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_, Align> >
     MaxRowsAtCompileTime = Dynamic,
     MaxColsAtCompileTime = Dynamic,
     Flags = Options_ | NestByRefBit | LvalueBit | CompressedAccessBit,
-    SupportedAccessPatterns = InnerRandomAccessPattern
+    SupportedAccessPatterns = InnerRandomAccessPattern,
+    Align = Align_
   };
 };
 
-template<typename Scalar_, int Options_, typename StorageIndex_, int DiagIndex>
-struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_>, DiagIndex> >
+template<typename Scalar_, int Options_, typename StorageIndex_, int DiagIndex, bool Align_>
+struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_, Align_>, DiagIndex> >
 {
   typedef SparseMatrix<Scalar_, Options_, StorageIndex_> MatrixType;
   typedef typename ref_selector<MatrixType>::type MatrixTypeNested;
@@ -79,7 +80,8 @@ struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_>, DiagIndex
     ColsAtCompileTime = 1,
     MaxRowsAtCompileTime = Dynamic,
     MaxColsAtCompileTime = 1,
-    Flags = LvalueBit
+    Flags = LvalueBit,
+    Align = Align_
   };
 };
 
@@ -118,7 +120,7 @@ class SparseMatrix
     
 
     using Base::IsRowMajor;
-    typedef internal::CompressedStorage<Scalar,StorageIndex> Storage;
+    typedef internal::CompressedStorage<Scalar,StorageIndex, Align> Storage;
     enum {
       Options = Options_
     };

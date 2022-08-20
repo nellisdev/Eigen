@@ -20,7 +20,7 @@ namespace internal {
   * Stores a sparse set of values as a list of values and a list of indices.
   *
   */
-template<typename Scalar_,typename StorageIndex_>
+template<typename Scalar_,typename StorageIndex_, bool Align>
 class CompressedStorage
 {
   public:

@@ -73,7 +73,7 @@ class SparseVector
     EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(SparseVector, +=)
     EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(SparseVector, -=)
     
-    typedef internal::CompressedStorage<Scalar,StorageIndex> Storage;
+    typedef internal::CompressedStorage<Scalar,StorageIndex, Align> Storage;
     enum { IsColVector = internal::traits<SparseVector>::IsColVector };
     
     enum {
