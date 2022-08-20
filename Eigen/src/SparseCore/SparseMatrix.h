@@ -363,7 +363,7 @@ class SparseMatrix
         }
         
         std::swap(m_outerIndex, newOuterIndex);
-        internal::conditional_aligned_delete_auto<StorageIndex, Align>(newOuterIndex, m_outerSize);
+        internal::conditional_aligned_delete_auto<StorageIndex, Align>(newOuterIndex, m_outerSize + 1);
       }
       
     }
@@ -1255,7 +1255,7 @@ typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatr
     else
     {
       // turn the matrix into non-compressed mode
-      StorageIndex* newOuterIndex = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize + 1);
+      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize);
       for(Index j=0; j<m_outerSize; ++j)
         m_innerNonZeros[j] = m_outerIndex[j+1]-m_outerIndex[j];
     }
