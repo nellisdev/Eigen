@@ -62,9 +62,9 @@ struct sparse_vector_assign_selector;
 
 }
 
-template<typename Scalar_, int Options_, typename StorageIndex_>
+template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
 class SparseVector
-  : public SparseCompressedBase<SparseVector<Scalar_, Options_, StorageIndex_> >
+  : public SparseCompressedBase<SparseVector<Scalar_, Options_, StorageIndex_, Align> >
 {
     typedef SparseCompressedBase<SparseVector> Base;
     using Base::convert_index;

@@ -159,22 +159,13 @@ class CompressedStorage {
     Index id = searchLowerIndex(0, m_size, key);
     if (id >= m_size || m_indices[id] != key) {
       if (m_allocatedSize < m_size + 1) {
-        m_allocatedSize = 2 * (m_size + 1);
-        Scalar* newValues = conditional_aligned_new_auto<Scalar, Align>(m_allocatedSize);
-        StorageIndex* newIndices = conditional_aligned_new_auto<StorageIndex, Align>(m_allocatedSize);
-
-        // copy first chunk
-        internal::smart_copy(m_values, m_values + id, newValues);
-        internal::smart_copy(m_indices, m_indices + id, newIndices);
-
-        // copy the rest
-        if (m_size > id) {
-          internal::smart_copy(m_values + id, m_values + m_size, newValues + id + 1);
-          internal::smart_copy(m_indices + id, m_indices + m_size, newIndices + id + 1);
-        }
-        std::swap(m_values, newValues);
-        std::swap(m_indices, newIndices);
-      } else if (m_size > id) {
+        Index newAllocatedSize = 2 * (m_size + 1);
+        m_values = conditional_aligned_realloc_new_auto<Scalar, Align>(m_values, newAllocatedSize, m_allocatedSize);
+        m_indices =
+            conditional_aligned_realloc_new_auto<StorageIndex, Align>(m_indices, newAllocatedSize, m_allocatedSize);
+        m_allocatedSize = newAllocatedSize;
+      }
+      if (m_size > id) {
         internal::smart_memmove(m_values + id, m_values + m_size, m_values + id + 1);
         internal::smart_memmove(m_indices + id, m_indices + m_size, m_indices + id + 1);
       }
@@ -203,11 +194,8 @@ class CompressedStorage {
     EIGEN_SPARSE_COMPRESSED_STORAGE_REALLOCATE_PLUGIN
 #endif
     eigen_internal_assert(size != m_allocatedSize);
-    Scalar* newValues = conditional_aligned_realloc_new_auto<Scalar, Align>(m_values, size, m_allocatedSize);
-    StorageIndex* newIndices =
-        conditional_aligned_realloc_new_auto<StorageIndex, Align>(m_indices, size, m_allocatedSize);
-    std::swap(m_values, newValues);
-    std::swap(m_indices, newIndices);
+    m_values = conditional_aligned_realloc_new_auto<Scalar, Align>(m_values, size, m_allocatedSize);
+    m_indices = conditional_aligned_realloc_new_auto<StorageIndex, Align>(m_indices, size, m_allocatedSize);
     m_allocatedSize = size;
   }
 
