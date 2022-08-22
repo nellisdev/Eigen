@@ -194,7 +194,7 @@ template<> struct packet_traits<int>    : default_packet_traits
     size=4,
 
     HasShift = 1,
-    HasBlend = 1
+    HasBlend = 1,
   };
 };
 #endif
@@ -218,7 +218,6 @@ template<> struct packet_traits<bool> : default_packet_traits
     HasMin       = 0,
     HasMax       = 0,
     HasConj      = 0,
-    HasSign      = 0,
     HasSqrt      = 1
   };
 };
