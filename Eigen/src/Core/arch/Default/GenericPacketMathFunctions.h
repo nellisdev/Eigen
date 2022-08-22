@@ -858,7 +858,7 @@ Packet psqrt_complex(const Packet& a) {
 template <typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 std::enable_if_t<(!NumTraits<typename unpacket_traits<Packet>::type>::IsComplex &&
-    !NumTraits<typename unpacket_traits<Packet>::type>::IsInteger), Packet>
+                  !NumTraits<typename unpacket_traits<Packet>::type>::IsInteger), Packet>
   psign(const Packet& a) {
   using Scalar = typename unpacket_traits<Packet>::type;
   const Packet cst_one = pset1<Packet>(Scalar(1));
