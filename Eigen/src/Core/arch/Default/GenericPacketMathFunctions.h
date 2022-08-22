@@ -719,6 +719,42 @@ Packet pcos_float(const Packet& x)
   return psincos_float<false>(x);
 }
 
+// Generic implementation of acos(x).
+template<typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pacos_float(const Packet& x_in) {
+  typedef typename unpacket_traits<Packet>::type Scalar;
+  static_assert(std::is_same<Scalar, float>::value, "Scalar type must be float");
+
+  const Packet cst_one = pset1<Packet>(Scalar(1));
+  const Packet cst_pi = pset1<Packet>(Scalar(EIGEN_PI));
+  const Packet p6 = pset1<Packet>(2.26911413483321666717529296875e-3);
+  const Packet p5 = pset1<Packet>(-1.1063250713050365447998046875e-2);
+  const Packet p4 = pset1<Packet>(2.680264413356781005859375e-2);
+  const Packet p3 = pset1<Packet>(-4.87488098442554473876953125e-2);
+  const Packet p2 = pset1<Packet>(8.874166011810302734375e-2);
+  const Packet p1 = pset1<Packet>(-0.2145837843418121337890625);
+  const Packet p0 = pset1<Packet>(1.57079613208770751953125);
+
+  // For x in [0:1], we approximate acos(x)/sqrt(1-x), which is a smooth
+  // function, by a 6'th order polynomial.
+  // For x in [-1:0) we use that acos(-x) = pi - acos(x).
+  const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
+  Packet x2 = pmul(x_in,x_in);
+  Packet x = pabs(x_in);
+  Packet p_even = pmadd(p6, x2, p4);
+  p_even = pmadd(p_even, x2, p2);
+  p_even = pmadd(p_even, x2, p0);
+  Packet p_odd = pmadd(p5, x2, p3);
+  p_odd = pmadd(p_odd, x2, p1);
+  Packet p = pmadd(p_odd, x, p_even);
+
+  Packet denom = psqrt(psub(cst_one, x));
+  Packet result = pmul(denom, p);
+
+  return pselect(neg_mask, psub(cst_pi, result), result);
+}
+
 template<typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet pdiv_complex(const Packet& x, const Packet& y) {
