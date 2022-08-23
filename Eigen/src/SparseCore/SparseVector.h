@@ -28,8 +28,8 @@ namespace Eigen {
   */
 
 namespace internal {
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align_>
-struct traits<SparseVector<Scalar_, Options_, StorageIndex_, Align_> >
+template<typename Scalar_, int Options_, typename StorageIndex_>
+struct traits<SparseVector<Scalar_, Options_, StorageIndex_> >
 {
   typedef Scalar_ Scalar;
   typedef StorageIndex_ StorageIndex;
@@ -43,8 +43,7 @@ struct traits<SparseVector<Scalar_, Options_, StorageIndex_, Align_> >
     MaxRowsAtCompileTime = RowsAtCompileTime,
     MaxColsAtCompileTime = ColsAtCompileTime,
     Flags = Options_ | NestByRefBit | LvalueBit | (IsColVector ? 0 : RowMajorBit) | CompressedAccessBit,
-    SupportedAccessPatterns = InnerRandomAccessPattern,
-    Align = Align_
+    SupportedAccessPatterns = InnerRandomAccessPattern
   };
 };
 
@@ -63,9 +62,9 @@ struct sparse_vector_assign_selector;
 
 }
 
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
+template<typename Scalar_, int Options_, typename StorageIndex_>
 class SparseVector
-  : public SparseCompressedBase<SparseVector<Scalar_, Options_, StorageIndex_, Align> >
+  : public SparseCompressedBase<SparseVector<Scalar_, Options_, StorageIndex_> >
 {
     typedef SparseCompressedBase<SparseVector> Base;
     using Base::convert_index;
@@ -74,7 +73,7 @@ class SparseVector
     EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(SparseVector, +=)
     EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(SparseVector, -=)
     
-    typedef internal::CompressedStorage<Scalar,StorageIndex, Align> Storage;
+    typedef internal::CompressedStorage<Scalar,StorageIndex> Storage;
     enum { IsColVector = internal::traits<SparseVector>::IsColVector };
     
     enum {

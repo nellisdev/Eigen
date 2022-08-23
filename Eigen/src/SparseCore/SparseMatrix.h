@@ -45,8 +45,8 @@ namespace Eigen {
   */
 
 namespace internal {
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align_>
-struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_, Align_> >
+template<typename Scalar_, int Options_, typename StorageIndex_>
+struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_> >
 {
   typedef Scalar_ Scalar;
   typedef StorageIndex_ StorageIndex;
@@ -58,13 +58,12 @@ struct traits<SparseMatrix<Scalar_, Options_, StorageIndex_, Align_> >
     MaxRowsAtCompileTime = Dynamic,
     MaxColsAtCompileTime = Dynamic,
     Flags = Options_ | NestByRefBit | LvalueBit | CompressedAccessBit,
-    SupportedAccessPatterns = InnerRandomAccessPattern,
-    Align = Align_
+    SupportedAccessPatterns = InnerRandomAccessPattern
   };
 };
 
-template<typename Scalar_, int Options_, typename StorageIndex_, int DiagIndex, bool Align_>
-struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_, Align_>, DiagIndex> >
+template<typename Scalar_, int Options_, typename StorageIndex_, int DiagIndex>
+struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_>, DiagIndex> >
 {
   typedef SparseMatrix<Scalar_, Options_, StorageIndex_> MatrixType;
   typedef typename ref_selector<MatrixType>::type MatrixTypeNested;
@@ -80,8 +79,7 @@ struct traits<Diagonal<SparseMatrix<Scalar_, Options_, StorageIndex_, Align_>, D
     ColsAtCompileTime = 1,
     MaxRowsAtCompileTime = Dynamic,
     MaxColsAtCompileTime = 1,
-    Flags = LvalueBit,
-    Align = Align_
+    Flags = LvalueBit
   };
 };
 
@@ -96,9 +94,9 @@ struct traits<Diagonal<const SparseMatrix<Scalar_, Options_, StorageIndex_>, Dia
 
 } // end namespace internal
 
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
+template<typename Scalar_, int Options_, typename StorageIndex_>
 class SparseMatrix
-  : public SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_, Align> >
+  : public SparseCompressedBase<SparseMatrix<Scalar_, Options_, StorageIndex_> >
 {
     typedef SparseCompressedBase<SparseMatrix> Base;
     using Base::convert_index;
@@ -120,7 +118,7 @@ class SparseMatrix
     
 
     using Base::IsRowMajor;
-    typedef internal::CompressedStorage<Scalar,StorageIndex, Align> Storage;
+    typedef internal::CompressedStorage<Scalar,StorageIndex> Storage;
     enum {
       Options = Options_
     };
@@ -304,7 +302,7 @@ class SparseMatrix
       {
         Index totalReserveSize = 0;
         // turn the matrix into non-compressed mode
-        m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize);
+        m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
         
         // temporarily use m_innerSizes to hold the new starting points.
         StorageIndex* newOuterIndex = m_innerNonZeros;
@@ -337,7 +335,7 @@ class SparseMatrix
       }
       else
       {
-        StorageIndex* newOuterIndex = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize + 1);
+        StorageIndex* newOuterIndex = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize + 1);
         
         StorageIndex count = 0;
         for(Index j=0; j<m_outerSize; ++j)
@@ -365,7 +363,7 @@ class SparseMatrix
         }
         
         std::swap(m_outerIndex, newOuterIndex);
-        internal::conditional_aligned_delete_auto<StorageIndex, Align>(newOuterIndex, m_outerSize + 1);
+        internal::conditional_aligned_delete_auto<StorageIndex, true>(newOuterIndex, m_outerSize + 1);
       }
       
     }
@@ -488,7 +486,7 @@ class SparseMatrix
         m_outerIndex[j+1] = m_outerIndex[j] + m_innerNonZeros[j];
         oldStart = nextOldStart;
       }
-      internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_innerNonZeros, m_outerSize);
+      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
       m_innerNonZeros = 0;
       m_data.resize(m_outerIndex[m_outerSize]);
       m_data.squeeze();
@@ -499,7 +497,7 @@ class SparseMatrix
     {
       if(m_innerNonZeros != 0)
         return; 
-      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize);
+      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
       for (Index i = 0; i < m_outerSize; i++)
       {
         m_innerNonZeros[i] = m_outerIndex[i+1] - m_outerIndex[i]; 
@@ -569,7 +567,7 @@ class SparseMatrix
       if (m_innerNonZeros)
       {
         // Resize m_innerNonZeros
-        m_innerNonZeros = internal::conditional_aligned_realloc_new_auto<StorageIndex, Align>(
+        m_innerNonZeros = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(
               m_innerNonZeros, m_outerSize + outerChange, m_outerSize);
         
         for(Index i=m_outerSize; i<m_outerSize+outerChange; i++)          
@@ -578,7 +576,7 @@ class SparseMatrix
       else if (innerChange < 0) 
       {
         // Inner size decreased: allocate a new m_innerNonZeros
-        m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize + outerChange);
+        m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize + outerChange);
         for(Index i = 0; i < m_outerSize + (std::min)(outerChange, Index(0)); i++)
           m_innerNonZeros[i] = m_outerIndex[i+1] - m_outerIndex[i];
         for(Index i = m_outerSize; i < m_outerSize + outerChange; i++)
@@ -602,7 +600,7 @@ class SparseMatrix
       if (outerChange == 0)
         return;
           
-      m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, Align>(
+      m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(
           m_outerSize + outerChange + 1, m_outerSize + 1);
       if (outerChange > 0)
       {
@@ -627,13 +625,13 @@ class SparseMatrix
       m_data.clear();
       if (m_outerSize != outerSize || m_outerSize==0)
       {
-        m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, Align>(m_outerIndex, outerSize + 1,
+        m_outerIndex = internal::conditional_aligned_realloc_new_auto<StorageIndex, true>(m_outerIndex, outerSize + 1,
             m_outerSize + 1);
         m_outerSize = outerSize;
       }
       if(m_innerNonZeros)
       {
-        internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_innerNonZeros, m_outerSize);
+        internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
         m_innerNonZeros = 0;
       }
       std::fill_n(m_outerIndex, m_outerSize + 1, StorageIndex(0));
@@ -741,7 +739,7 @@ class SparseMatrix
       Eigen::Map<IndexVector>(this->m_data.indexPtr(), rows()).setLinSpaced(0, StorageIndex(rows()-1));
       Eigen::Map<ScalarVector>(this->m_data.valuePtr(), rows()).setOnes();
       Eigen::Map<IndexVector>(this->m_outerIndex, rows()+1).setLinSpaced(0, StorageIndex(rows()));
-      internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_innerNonZeros, m_outerSize);
+      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
       m_innerNonZeros = 0;
     }
     inline SparseMatrix& operator=(const SparseMatrix& other)
@@ -831,8 +829,8 @@ class SparseMatrix
     /** Destructor */
     inline ~SparseMatrix()
     {
-      internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_outerIndex, m_outerSize + 1);
-      internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_innerNonZeros, m_outerSize);
+      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_outerIndex, m_outerSize + 1);
+      internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
     }
 
     /** Overloaded for performance */
@@ -850,7 +848,7 @@ protected:
       resize(other.rows(), other.cols());
       if(m_innerNonZeros)
       {
-        internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_innerNonZeros, m_outerSize);
+        internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
         m_innerNonZeros = 0;
       }
     }
@@ -1090,9 +1088,9 @@ void set_from_triplets(const InputIterator& begin, const InputIterator& end, Spa
   * an abstract iterator over a complex data-structure that would be expensive to evaluate. The triplets should rather
   * be explicitly stored into a std::vector for instance.
   */
-template<typename Scalar, int Options_, typename StorageIndex_, bool Align>
+template<typename Scalar, int Options_, typename StorageIndex_>
 template<typename InputIterators>
-void SparseMatrix<Scalar,Options_,StorageIndex_, Align>::setFromTriplets(const InputIterators& begin, const InputIterators& end)
+void SparseMatrix<Scalar,Options_,StorageIndex_>::setFromTriplets(const InputIterators& begin, const InputIterators& end)
 {
   internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,Options_,StorageIndex_> >(begin, end, *this, internal::scalar_sum_op<Scalar,Scalar>());
 }
@@ -1106,17 +1104,17 @@ void SparseMatrix<Scalar,Options_,StorageIndex_, Align>::setFromTriplets(const I
   * mat.setFromTriplets(triplets.begin(), triplets.end(), [] (const Scalar&,const Scalar &b) { return b; });
   * \endcode
   */
-template<typename Scalar, int Options_, typename StorageIndex_, bool Align>
+template<typename Scalar, int Options_, typename StorageIndex_>
 template<typename InputIterators,typename DupFunctor>
-void SparseMatrix<Scalar,Options_,StorageIndex_, Align>::setFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func)
+void SparseMatrix<Scalar,Options_,StorageIndex_>::setFromTriplets(const InputIterators& begin, const InputIterators& end, DupFunctor dup_func)
 {
   internal::set_from_triplets<InputIterators, SparseMatrix<Scalar,Options_,StorageIndex_>, DupFunctor>(begin, end, *this, dup_func);
 }
 
 /** \internal */
-template<typename Scalar, int Options_, typename StorageIndex_, bool Align>
+template<typename Scalar, int Options_, typename StorageIndex_>
 template<typename DupFunctor>
-void SparseMatrix<Scalar,Options_,StorageIndex_, Align>::collapseDuplicates(DupFunctor dup_func)
+void SparseMatrix<Scalar,Options_,StorageIndex_>::collapseDuplicates(DupFunctor dup_func)
 {
   eigen_assert(!isCompressed());
   // TODO, in practice we should be able to use m_innerNonZeros for that task
@@ -1149,14 +1147,14 @@ void SparseMatrix<Scalar,Options_,StorageIndex_, Align>::collapseDuplicates(DupF
   m_outerIndex[m_outerSize] = count;
 
   // turn the matrix into compressed form
-  internal::conditional_aligned_delete_auto<StorageIndex, Align>(m_innerNonZeros, m_outerSize);
+  internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
   m_innerNonZeros = 0;
   m_data.resize(m_outerIndex[m_outerSize]);
 }
 
-template<typename Scalar, int Options_, typename StorageIndex_, bool Align>
+template<typename Scalar, int Options_, typename StorageIndex_>
 template<typename OtherDerived>
-EIGEN_DONT_INLINE SparseMatrix<Scalar,Options_,StorageIndex_, Align>& SparseMatrix<Scalar,Options_,StorageIndex_, Align>::operator=(const SparseMatrixBase<OtherDerived>& other)
+EIGEN_DONT_INLINE SparseMatrix<Scalar,Options_,StorageIndex_>& SparseMatrix<Scalar,Options_,StorageIndex_>::operator=(const SparseMatrixBase<OtherDerived>& other)
 {
   EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
         YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
@@ -1227,8 +1225,8 @@ EIGEN_DONT_INLINE SparseMatrix<Scalar,Options_,StorageIndex_, Align>& SparseMatr
   }
 }
 
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
-typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::insert(Index row, Index col)
+template<typename Scalar_, int Options_, typename StorageIndex_>
+typename SparseMatrix<Scalar_,Options_,StorageIndex_>::Scalar& SparseMatrix<Scalar_,Options_,StorageIndex_>::insert(Index row, Index col)
 {
   eigen_assert(row>=0 && row<rows() && col>=0 && col<cols());
   
@@ -1244,7 +1242,7 @@ typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatr
         m_data.reserve(2*m_innerSize);
       
       // turn the matrix into non-compressed mode
-      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize);
+      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
       
       std::fill(m_innerNonZeros, m_innerNonZeros + m_outerSize, StorageIndex(0));
       
@@ -1257,7 +1255,7 @@ typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatr
     else
     {
       // turn the matrix into non-compressed mode
-      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, Align>(m_outerSize);
+      m_innerNonZeros = internal::conditional_aligned_new_auto<StorageIndex, true>(m_outerSize);
       for(Index j=0; j<m_outerSize; ++j)
         m_innerNonZeros[j] = m_outerIndex[j+1]-m_outerIndex[j];
     }
@@ -1345,8 +1343,8 @@ typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatr
   return insertUncompressed(row,col);
 }
     
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
-EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::insertUncompressed(Index row, Index col)
+template<typename Scalar_, int Options_, typename StorageIndex_>
+EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_>::Scalar& SparseMatrix<Scalar_,Options_,StorageIndex_>::insertUncompressed(Index row, Index col)
 {
   eigen_assert(!isCompressed());
 
@@ -1377,8 +1375,8 @@ EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::
   return (m_data.value(p) = Scalar(0));
 }
 
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align>
-EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::Scalar& SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::insertCompressed(Index row, Index col)
+template<typename Scalar_, int Options_, typename StorageIndex_>
+EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_>::Scalar& SparseMatrix<Scalar_,Options_,StorageIndex_>::insertCompressed(Index row, Index col)
 {
   eigen_assert(isCompressed());
 
@@ -1486,12 +1484,12 @@ EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::
 
 namespace internal {
 
-template<typename Scalar_, int Options_, typename StorageIndex_, bool Align_>
-struct evaluator<SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> >
-  : evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> > >
+template<typename Scalar_, int Options_, typename StorageIndex_>
+struct evaluator<SparseMatrix<Scalar_,Options_,StorageIndex_> >
+  : evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_> > >
 {
-  typedef evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> > > Base;
-  typedef SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> SparseMatrixType;
+  typedef evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_> > > Base;
+  typedef SparseMatrix<Scalar_,Options_,StorageIndex_> SparseMatrixType;
   evaluator() : Base() {}
   explicit evaluator(const SparseMatrixType &mat) : Base(mat) {}
 };

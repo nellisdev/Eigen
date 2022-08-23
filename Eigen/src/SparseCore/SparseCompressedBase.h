@@ -43,7 +43,6 @@ class SparseCompressedBase
     EIGEN_SPARSE_PUBLIC_INTERFACE(SparseCompressedBase)
     using Base::operator=;
     using Base::IsRowMajor;
-    static const bool Align = internal::traits<Derived>::Align;
     
     class InnerIterator;
     class ReverseInnerIterator;
@@ -202,7 +201,7 @@ class SparseCompressedBase<Derived>::InnerIterator
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
     }
 
-    explicit InnerIterator(const internal::CompressedStorage<Scalar,StorageIndex, Align>& data)
+    explicit InnerIterator(const internal::CompressedStorage<Scalar,StorageIndex>& data)
       : m_values(data.valuePtr()), m_indices(data.indexPtr()), m_outer(0), m_id(0), m_end(data.size())
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
@@ -270,7 +269,7 @@ class SparseCompressedBase<Derived>::ReverseInnerIterator
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);
     }
 
-    explicit ReverseInnerIterator(const internal::CompressedStorage<Scalar,StorageIndex, Align>& data)
+    explicit ReverseInnerIterator(const internal::CompressedStorage<Scalar,StorageIndex>& data)
       : m_values(data.valuePtr()), m_indices(data.indexPtr()), m_outer(0), m_start(0), m_id(data.size())
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived);

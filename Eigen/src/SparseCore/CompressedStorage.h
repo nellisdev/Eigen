@@ -20,7 +20,7 @@ namespace internal {
   * Stores a sparse set of values as a list of values and a list of indices.
   *
   */
-template<typename Scalar_,typename StorageIndex_, bool Align>
+template<typename Scalar_,typename StorageIndex_>
 class CompressedStorage
 {
   public:
@@ -71,8 +71,8 @@ class CompressedStorage
 
     ~CompressedStorage()
     {
-      conditional_aligned_delete_auto<Scalar, Align>(m_values, m_allocatedSize);
-      conditional_aligned_delete_auto<StorageIndex, Align>(m_indices, m_allocatedSize);
+      conditional_aligned_delete_auto<Scalar, true>(m_values, m_allocatedSize);
+      conditional_aligned_delete_auto<StorageIndex, true>(m_indices, m_allocatedSize);
     }
 
     void reserve(Index size)
@@ -181,9 +181,9 @@ class CompressedStorage
         if (m_allocatedSize<m_size+1)
         {
           Index newAllocatedSize = 2 * (m_size + 1);
-          m_values = conditional_aligned_realloc_new_auto<Scalar, Align>(m_values, newAllocatedSize, m_allocatedSize);
+          m_values = conditional_aligned_realloc_new_auto<Scalar, true>(m_values, newAllocatedSize, m_allocatedSize);
           m_indices =
-              conditional_aligned_realloc_new_auto<StorageIndex, Align>(m_indices, newAllocatedSize, m_allocatedSize);
+              conditional_aligned_realloc_new_auto<StorageIndex, true>(m_indices, newAllocatedSize, m_allocatedSize);
           m_allocatedSize = newAllocatedSize;
         }
         if(m_size>id)
@@ -222,8 +222,8 @@ class CompressedStorage
         EIGEN_SPARSE_COMPRESSED_STORAGE_REALLOCATE_PLUGIN
       #endif
       eigen_internal_assert(size!=m_allocatedSize);
-      m_values = conditional_aligned_realloc_new_auto<Scalar, Align>(m_values, size, m_allocatedSize);
-      m_indices = conditional_aligned_realloc_new_auto<StorageIndex, Align>(m_indices, size, m_allocatedSize);
+      m_values = conditional_aligned_realloc_new_auto<Scalar, true>(m_values, size, m_allocatedSize);
+      m_indices = conditional_aligned_realloc_new_auto<StorageIndex, true>(m_indices, size, m_allocatedSize);
       m_allocatedSize = size;
     }
 
