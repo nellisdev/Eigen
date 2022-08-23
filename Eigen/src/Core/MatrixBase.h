@@ -259,6 +259,7 @@ template<typename Derived> class MatrixBase
     EIGEN_DEVICE_FUNC
     const DiagonalWrapper<const Derived> asDiagonal() const;
     const PermutationWrapper<const Derived> asPermutation() const;
+    const SkewSymmetricWrapper<const Derived> asSkewSymmetric() const;
 
     EIGEN_DEVICE_FUNC
     Derived& setIdentity();
@@ -272,6 +273,8 @@ template<typename Derived> class MatrixBase
 
     bool isUpperTriangular(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
     bool isLowerTriangular(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
+
+    bool isSkewSymmetric(const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const;
 
     template<typename OtherDerived>
     bool isOrthogonal(const MatrixBase<OtherDerived>& other,
