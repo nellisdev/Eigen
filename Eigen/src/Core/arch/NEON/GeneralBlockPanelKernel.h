@@ -96,8 +96,9 @@ struct gebp_traits <float,float,false,false,Architecture::NEON,GEBPPacketFull>
   EIGEN_STRONG_INLINE void madd_helper(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c) const
   {
     #if EIGEN_COMP_GNUC_STRICT
-    // workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
-    // vfmaq_laneq_f32 is implemented through a costly dup
+    // 1. workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
+    //    vfmaq_laneq_f32 is implemented through a costly dup, which was fixed in gcc9
+    // 2. workaround the gcc register split problem on arm64-neon
          if(LaneID==0)  asm("fmla %0.4s, %1.4s, %2.s[0]\n" : "+w" (c) : "w" (a), "w" (b) :  );
     else if(LaneID==1)  asm("fmla %0.4s, %1.4s, %2.s[1]\n" : "+w" (c) : "w" (a), "w" (b) :  );
     else if(LaneID==2)  asm("fmla %0.4s, %1.4s, %2.s[2]\n" : "+w" (c) : "w" (a), "w" (b) :  );
@@ -167,8 +168,9 @@ struct gebp_traits <double,double,false,false,Architecture::NEON>
   EIGEN_STRONG_INLINE void madd_helper(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c) const
   {
     #if EIGEN_COMP_GNUC_STRICT
-    // workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
-    // vfmaq_laneq_f64 is implemented through a costly dup
+    // 1. workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
+    //    vfmaq_laneq_f64 is implemented through a costly dup, which was fixed in gcc9
+    // 2. workaround the gcc register split problem on arm64-neon
          if(LaneID==0)  asm("fmla %0.2d, %1.2d, %2.d[0]\n" : "+w" (c) : "w" (a), "w" (b.B_0) :  );
     else if(LaneID==1)  asm("fmla %0.2d, %1.2d, %2.d[1]\n" : "+w" (c) : "w" (a), "w" (b.B_0) :  );
     else if(LaneID==2)  asm("fmla %0.2d, %1.2d, %2.d[0]\n" : "+w" (c) : "w" (a), "w" (b.B_1) :  );
@@ -241,7 +243,8 @@ struct gebp_traits <half,half,false,false,Architecture::NEON>
   EIGEN_STRONG_INLINE void madd_helper(const LhsPacket& a, const RhsPacketx4& b, AccPacket& c) const
   {
     #if EIGEN_COMP_GNUC_STRICT
-    // workaround gcc issue https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89101
+    // 1. vfmaq_lane_f16 is implemented through a costly dup
+    // 2. workaround the gcc register split problem on arm64-neon
          if(LaneID==0)  asm("fmla %0.8h, %1.8h, %2.h[0]\n" : "+w" (c) : "w" (a), "w" (b) :  );
     else if(LaneID==1)  asm("fmla %0.8h, %1.8h, %2.h[1]\n" : "+w" (c) : "w" (a), "w" (b) :  );
     else if(LaneID==2)  asm("fmla %0.8h, %1.8h, %2.h[2]\n" : "+w" (c) : "w" (a), "w" (b) :  );
