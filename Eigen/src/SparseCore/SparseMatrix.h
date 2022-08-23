@@ -1486,12 +1486,12 @@ EIGEN_DONT_INLINE typename SparseMatrix<Scalar_,Options_,StorageIndex_, Align>::
 
 namespace internal {
 
-template<typename Scalar_, int Options_, typename StorageIndex_>
-struct evaluator<SparseMatrix<Scalar_,Options_,StorageIndex_> >
-  : evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_> > >
+template<typename Scalar_, int Options_, typename StorageIndex_, bool Align_>
+struct evaluator<SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> >
+  : evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> > >
 {
-  typedef evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_> > > Base;
-  typedef SparseMatrix<Scalar_,Options_,StorageIndex_> SparseMatrixType;
+  typedef evaluator<SparseCompressedBase<SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> > > Base;
+  typedef SparseMatrix<Scalar_,Options_,StorageIndex_, Align_> SparseMatrixType;
   evaluator() : Base() {}
   explicit evaluator(const SparseMatrixType &mat) : Base(mat) {}
 };
