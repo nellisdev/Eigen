@@ -195,20 +195,9 @@ class SkewSymmetricMatrix3
     EIGEN_DEVICE_FUNC
     inline SkewSymmetricMatrix3() {}
 
-    /** Constructs a skew symmetric matrix with given dimension  */
-    EIGEN_DEVICE_FUNC
-    explicit inline SkewSymmetricMatrix3(Index dim) : m_vector(dim) {}
-
     /** Constructor from three scalars */
     EIGEN_DEVICE_FUNC
     inline SkewSymmetricMatrix3(const Scalar& x, const Scalar& y, const Scalar& z) : m_vector(x,y,z) {}
-
-    /** \brief Constructs a SkewSymmetricMatrix3 and initializes it by elements given by an initializer list of initializer
-      * lists \cpp11
-      */
-    EIGEN_DEVICE_FUNC
-    explicit EIGEN_STRONG_INLINE SkewSymmetricMatrix3(const std::initializer_list<std::initializer_list<Scalar>>& list)
-      : m_vector(list) {}
 
     /** \brief Constructs a SkewSymmetricMatrix3 from an r-value vector type */
     EIGEN_DEVICE_FUNC
@@ -338,7 +327,17 @@ template<typename Derived>
 bool MatrixBase<Derived>::isSkewSymmetric(const RealScalar& prec) const
 {
   if(cols() != rows()) return false;
-  return (this->transpose() - *this).isZero();
+  return (this->transpose() + *this).isZero(prec);
+}
+
+/** \returns the diagonal matrix product of \c *this by the diagonal matrix \a diagonal.
+ */
+template<typename Derived>
+template<typename SkewDerived>
+EIGEN_DEVICE_FUNC inline const Product<Derived, SkewDerived, LazyProduct>
+MatrixBase<Derived>::operator*(const SkewSymmetricBase<SkewDerived> &a_diagonal) const
+{
+  return Product<Derived, SkewDerived, LazyProduct>(derived(), a_diagonal.derived());
 }
 
 namespace internal {
