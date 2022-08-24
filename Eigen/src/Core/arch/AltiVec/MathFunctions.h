@@ -48,6 +48,12 @@ Packet4f pacos<Packet4f>(const Packet4f& _x)
   return pacos_float(_x);
 }
 
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet4f pasin<Packet4f>(const Packet4f& _x)
+{
+  return pasin_float(_x);
+}
+
 #ifdef __VSX__
 #ifndef EIGEN_COMP_CLANG
 template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS

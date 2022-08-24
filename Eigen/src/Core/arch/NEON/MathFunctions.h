@@ -39,6 +39,11 @@ template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet2f pacos<Pa
 template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet4f pacos<Packet4f>(const Packet4f& x)
 { return pacos_float(x); }
 
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet2f pasin<Packet2f>(const Packet2f& x)
+{ return pasin_float(x); }
+template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet4f pasin<Packet4f>(const Packet4f& x)
+{ return pasin_float(x); }
+
 // Hyperbolic Tangent function.
 template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet2f ptanh<Packet2f>(const Packet2f& x)
 { return internal::generic_fast_tanh_float(x); }

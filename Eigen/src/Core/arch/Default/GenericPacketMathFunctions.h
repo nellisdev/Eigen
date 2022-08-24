@@ -755,6 +755,51 @@ Packet pacos_float(const Packet& x_in) {
   return pselect(neg_mask, psub(cst_pi, result), result);
 }
 
+// Generic implementation of asin(x).
+template<typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pasin_float(const Packet& x_in) {
+  typedef typename unpacket_traits<Packet>::type Scalar;
+  static_assert(std::is_same<Scalar, float>::value, "Scalar type must be float");
+
+  // For |x| < 0.5 approximate asin(x)/x by an 8th order polynomial with
+  // even terms only.
+  const Packet p9 = pset1<Packet>(Scalar(5.08838854730129241943359375e-2f));
+  const Packet p7 = pset1<Packet>(Scalar(3.95139865577220916748046875e-2f));
+  const Packet p5 = pset1<Packet>(Scalar(7.550220191478729248046875e-2f));
+  const Packet p3 = pset1<Packet>(Scalar(0.16664917767047882080078125f));
+  const Packet p1 = pset1<Packet>(Scalar(1.00000011920928955078125f));
+
+  const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
+  Packet x = pabs(x_in);
+  // For arguments |x| > 0.5, we map x back to [0:0.5] using
+  // the transformation x_large = sqrt(0.5*(1-x)), and use the
+  // identity
+  //   asin(x) = pi/2 - 2 * asin( sqrt( 0.5 * (1 - x)))
+  const Packet cst_half = pset1<Packet>(Scalar(0.5f));
+  const Packet cst_two = pset1<Packet>(Scalar(2));
+  Packet x_large = psqrt(pnmadd(cst_half, x, cst_half));
+  const Packet large_mask = pcmp_lt(cst_half, x);
+  x = pselect(large_mask, x_large, x);
+
+  // Compute polynomial.
+  // x * (p1 + x^2*(p3 + x^2*(p5 + x^2*(p7 + x^2*p9))))
+  Packet x2 = pmul(x, x);
+  Packet p = pmadd(p9, x2, p7);
+  p = pmadd(p, x2, p5);
+  p = pmadd(p, x2, p3);
+  p = pmadd(p, x2, p1);
+  p = pmul(p, x);
+
+  constexpr float kPiOverTwo = static_cast<float>(0.5*EIGEN_PI);
+  Packet p_large = pnmadd(cst_two, p, pset1<Packet>(kPiOverTwo));
+  p = pselect(large_mask, p_large, p);
+
+  // Flip the sign for negative arguments.
+  return pselect(neg_mask, pnegate(p), p);
+}
+
+
 template<typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet pdiv_complex(const Packet& x, const Packet& y) {
