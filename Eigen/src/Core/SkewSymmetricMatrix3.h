@@ -18,10 +18,10 @@ namespace Eigen {
 /** \class SkewSymmetricBase
  * \ingroup Core_Module
  *
- * \brief Base class for diagonal matrices and expressions
+ * \brief Base class for skew symmetric matrices and expressions
  *
  * This is the base class that is inherited by SkewSymmetricMatrix3 and related expression
- * types, which internally use a vector for storing the diagonal entries. SkewSymmetric
+ * types, which internally use a three vector for storing the entries. SkewSymmetric
  * types always represent square three times three matrices.
  *
  * This implementations follows class DiagonalMatrix
@@ -63,14 +63,14 @@ class SkewSymmetricBase : public EigenBase<Derived>
     /**
      * Constructs a dense matrix from \c *this. Note, this directly returns a dense matrix type,
      * not an expression.
-     * \returns A dense matrix, with its diagonal entries set from the the derived object. */
+     * \returns A dense matrix, with its entries set from the the derived object. */
     EIGEN_DEVICE_FUNC
     DenseMatrixType toDenseMatrix() const { return derived(); }
 
-    /** \returns a reference to the derived object's vector of diagonal coefficients. */
+    /** \returns a reference to the derived object's vector of coefficients. */
     EIGEN_DEVICE_FUNC
     inline const SkewSymmetricVectorType& vector() const { return derived().vector(); }
-    /** \returns a const reference to the derived object's vector of diagonal coefficients. */
+    /** \returns a const reference to the derived object's vector of coefficients. */
     EIGEN_DEVICE_FUNC
     inline SkewSymmetricVectorType& vector() { return derived().vector(); }
 
@@ -81,7 +81,7 @@ class SkewSymmetricBase : public EigenBase<Derived>
     EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR 
     inline Index cols() const { return 3; }
 
-    /** \returns the diagonal matrix product of \c *this by the dense matrix, \a matrix */
+    /** \returns the matrix product of \c *this by the dense matrix, \a matrix */
     template<typename MatrixDerived>
     EIGEN_DEVICE_FUNC
     Product<Derived,MatrixDerived,LazyProduct>
@@ -124,7 +124,7 @@ class SkewSymmetricBase : public EigenBase<Derived>
     using SkewSymmetricSumReturnType = SkewSymmetricWrapper<const EIGEN_CWISE_BINARY_RETURN_TYPE(
         SkewSymmetricVectorType, typename OtherDerived::SkewSymmetricVectorType, sum)>;
 
-    /** \returns the sum of \c *this and the diagonal matrix \a other */
+    /** \returns the sum of \c *this and the skew symmetric matrix \a other */
     template <typename OtherDerived>
     EIGEN_DEVICE_FUNC inline SkewSymmetricSumReturnType<OtherDerived> operator+(
         const SkewSymmetricBase<OtherDerived>& other) const {
@@ -135,7 +135,7 @@ class SkewSymmetricBase : public EigenBase<Derived>
     using SkewSymmetricDifferenceReturnType = SkewSymmetricWrapper<const EIGEN_CWISE_BINARY_RETURN_TYPE(
         SkewSymmetricVectorType, typename OtherDerived::SkewSymmetricVectorType, difference)>;
 
-    /** \returns the difference of \c *this and the diagonal matrix \a other */
+    /** \returns the difference of \c *this and the skew symmetric matrix \a other */
     template <typename OtherDerived>
     EIGEN_DEVICE_FUNC inline SkewSymmetricDifferenceReturnType<OtherDerived> operator-(
         const SkewSymmetricBase<OtherDerived>& other) const {
@@ -180,16 +180,16 @@ class SkewSymmetricMatrix3
 
   protected:
 
-    SkewSymmetricVectorType m_diagonal;
+    SkewSymmetricVectorType m_vector;
 
   public:
 
     /** const version of vector(). */
     EIGEN_DEVICE_FUNC
-    inline const SkewSymmetricVectorType& vector() const { return m_diagonal; }
+    inline const SkewSymmetricVectorType& vector() const { return m_vector; }
     /** \returns a reference to the stored vector of coefficients. */
     EIGEN_DEVICE_FUNC
-    inline SkewSymmetricVectorType& vector() { return m_diagonal; }
+    inline SkewSymmetricVectorType& vector() { return m_vector; }
 
     /** Default constructor without initialization */
     EIGEN_DEVICE_FUNC
@@ -197,41 +197,37 @@ class SkewSymmetricMatrix3
 
     /** Constructs a skew symmetric matrix with given dimension  */
     EIGEN_DEVICE_FUNC
-    explicit inline SkewSymmetricMatrix3(Index dim) : m_diagonal(dim) {}
+    explicit inline SkewSymmetricMatrix3(Index dim) : m_vector(dim) {}
 
     /** Constructor from three scalars */
     EIGEN_DEVICE_FUNC
-    inline SkewSymmetricMatrix3(const Scalar& x, const Scalar& y, const Scalar& z) : m_diagonal(x,y,z) {}
+    inline SkewSymmetricMatrix3(const Scalar& x, const Scalar& y, const Scalar& z) : m_vector(x,y,z) {}
 
     /** \brief Constructs a SkewSymmetricMatrix3 and initializes it by elements given by an initializer list of initializer
       * lists \cpp11
       */
     EIGEN_DEVICE_FUNC
     explicit EIGEN_STRONG_INLINE SkewSymmetricMatrix3(const std::initializer_list<std::initializer_list<Scalar>>& list)
-      : m_diagonal(list) {}
+      : m_vector(list) {}
 
-    /** \brief Constructs a SkewSymmetricMatrix3 from an r-value diagonal vector type */
+    /** \brief Constructs a SkewSymmetricMatrix3 from an r-value vector type */
     EIGEN_DEVICE_FUNC
-    explicit inline SkewSymmetricMatrix3(SkewSymmetricVectorType&& vec) : m_diagonal(std::move(vec)) {}
+    explicit inline SkewSymmetricMatrix3(SkewSymmetricVectorType&& vec) : m_vector(std::move(vec)) {}
 
-    /** generic constructor from expression of the diagonal coefficients */
+    /** generic constructor from expression of the coefficients */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-        explicit inline SkewSymmetricMatrix3(const MatrixBase<OtherDerived>& other) : m_diagonal(other)
+        explicit inline SkewSymmetricMatrix3(const MatrixBase<OtherDerived>& other) : m_vector(other)
     {}
-
-    /** \brief Constructs a SkewSymmetricMatrix3 from an r-value diagonal vector type */
-    //EIGEN_DEVICE_FUNC
-    //explicit inline SkewSymmetricMatrix3(const SkewSymmetricVectorType& vec) : m_diagonal(vec) {}
 
     /** Copy constructor. */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    inline SkewSymmetricMatrix3(const SkewSymmetricBase<OtherDerived>& other) : m_diagonal(other.vector()) {}
+    inline SkewSymmetricMatrix3(const SkewSymmetricBase<OtherDerived>& other) : m_vector(other.vector()) {}
 
     #ifndef EIGEN_PARSED_BY_DOXYGEN
     /** copy constructor. prevent a default copy constructor from hiding the other templated constructor */
-    inline SkewSymmetricMatrix3(const SkewSymmetricMatrix3& other) : m_diagonal(other.vector()) {}
+    inline SkewSymmetricMatrix3(const SkewSymmetricMatrix3& other) : m_vector(other.vector()) {}
     #endif
 
     /** Copy operator. */
@@ -239,7 +235,7 @@ class SkewSymmetricMatrix3
     EIGEN_DEVICE_FUNC
     SkewSymmetricMatrix3& operator=(const SkewSymmetricBase<OtherDerived>& other)
     {
-      m_diagonal = other.vector();
+      m_vector = other.vector();
       return *this;
     }
 
@@ -250,7 +246,7 @@ class SkewSymmetricMatrix3
     EIGEN_DEVICE_FUNC
     SkewSymmetricMatrix3& operator=(const SkewSymmetricMatrix3& other)
     {
-      m_diagonal = other.vector();
+      m_vector = other.vector();
       return *this;
     }
     #endif
@@ -264,7 +260,7 @@ class SkewSymmetricMatrix3
 
     /** Sets all coefficients to zero. */
     EIGEN_DEVICE_FUNC
-    inline void setZero() { m_diagonal.setZero(); }
+    inline void setZero() { m_vector.setZero(); }
 };
 
 /** \class SkewSymmetricWrapper
@@ -312,14 +308,14 @@ class SkewSymmetricWrapper
 
     /** Constructor from expression of coefficients to wrap. */
     EIGEN_DEVICE_FUNC
-    explicit inline SkewSymmetricWrapper(SkewSymmetricVectorType& a_diagonal) : m_diagonal(a_diagonal) {}
+    explicit inline SkewSymmetricWrapper(SkewSymmetricVectorType& a_vector) : m_vector(a_vector) {}
 
     /** \returns a const reference to the wrapped expression of coefficients. */
     EIGEN_DEVICE_FUNC
-    const SkewSymmetricVectorType& vector() const { return m_diagonal; }
+    const SkewSymmetricVectorType& vector() const { return m_vector; }
 
   protected:
-    typename SkewSymmetricVectorType::Nested m_diagonal;
+    typename SkewSymmetricVectorType::Nested m_vector;
 };
 
 /** \returns a pseudo-expression of a skew symmetric matrix with *this as vector of coefficients
