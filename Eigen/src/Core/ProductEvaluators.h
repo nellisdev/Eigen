@@ -1174,6 +1174,30 @@ struct generic_product_impl<Lhs, Transpose<Rhs>, MatrixShape, TranspositionsShap
   }
 };
 
+/***************************************************************************
+* skew symmetric products
+* for now we just call the generic implementation
+***************************************************************************/
+template<typename Lhs, typename Rhs, int ProductTag, typename MatrixShape>
+struct generic_product_impl<Lhs, Rhs, SkewSymmetricShape, MatrixShape, ProductTag>
+{
+  template<typename Dest>
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
+  {
+    generic_product_impl<Rhs , Rhs, DenseShape, MatrixShape, ProductTag>::evalTo(dst, lhs, rhs);
+  }
+};
+
+template<typename Lhs, typename Rhs, int ProductTag, typename MatrixShape>
+struct generic_product_impl<Lhs, Rhs, MatrixShape, SkewSymmetricShape, ProductTag>
+{
+  template<typename Dest>
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
+  {
+    generic_product_impl<Lhs, Lhs, MatrixShape, DenseShape, ProductTag>::evalTo(dst, lhs, rhs.toDenseMatrix());
+  }
+};
+
 } // end namespace internal
 
 } // end namespace Eigen

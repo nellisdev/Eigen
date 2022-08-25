@@ -115,6 +115,13 @@ void scaling() {
   sk2 = v2.asSkewSymmetric();
 
   internal::set_is_malloc_allowed(false);
+  const Scalar s1 = internal::random<Scalar>();
+  VERIFY_IS_APPROX(SkewSymmetricMatrix3<Scalar>(sk1*s1).vector(), sk1.vector() * s1);
+  VERIFY_IS_APPROX(SkewSymmetricMatrix3<Scalar>(s1*sk1).vector(), s1 * sk1.vector());
+  std::cout << "(sq1.transpose()*sk1*sq1)" << (sq1.transpose()*(sk1*sq1)).eval() << std::endl;
+
+  (sq1*sk1).eval();
+  VERIFY_IS_APPROX(sq1 * (sk1 * s1), (sq1 * sk1) * s1);
 }
 } // namespace
 

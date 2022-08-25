@@ -186,6 +186,11 @@ template<typename Derived> class MatrixBase
     const Product<Derived, DiagonalDerived, LazyProduct>
     operator*(const DiagonalBase<DiagonalDerived> &diagonal) const;
 
+    template<typename SkewDerived>
+    EIGEN_DEVICE_FUNC
+    const Product<Derived, SkewDerived, LazyProduct>
+    operator*(const SkewSymmetricBase<SkewDerived> &skew) const;
+
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
     typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
