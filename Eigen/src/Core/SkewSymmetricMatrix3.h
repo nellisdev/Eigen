@@ -67,6 +67,10 @@ class SkewSymmetricBase : public EigenBase<Derived>
     EIGEN_DEVICE_FUNC
     DenseMatrixType toDenseMatrix() const { return derived(); }
 
+    /** Determinant vanishes */
+    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+    inline Scalar determinant() const { return 0; }
+
     /** \returns a reference to the derived object's vector of coefficients. */
     EIGEN_DEVICE_FUNC
     inline const SkewSymmetricVectorType& vector() const { return derived().vector(); }

@@ -1184,7 +1184,7 @@ struct generic_product_impl<Lhs, Rhs, SkewSymmetricShape, MatrixShape, ProductTa
   template<typename Dest>
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
   {
-    generic_product_impl<Rhs , Rhs, DenseShape, MatrixShape, ProductTag>::evalTo(dst, lhs, rhs);
+    generic_product_impl<typename Lhs::DenseMatrixType , Rhs, DenseShape, MatrixShape, ProductTag>::evalTo(dst, lhs, rhs);
   }
 };
 
@@ -1194,7 +1194,7 @@ struct generic_product_impl<Lhs, Rhs, MatrixShape, SkewSymmetricShape, ProductTa
   template<typename Dest>
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalTo(Dest& dst, const Lhs& lhs, const Rhs& rhs)
   {
-    generic_product_impl<Lhs, Lhs, MatrixShape, DenseShape, ProductTag>::evalTo(dst, lhs, rhs.toDenseMatrix());
+    generic_product_impl<Lhs, typename Rhs::DenseMatrixType, MatrixShape, DenseShape, ProductTag>::evalTo(dst, lhs, rhs);
   }
 };
 
