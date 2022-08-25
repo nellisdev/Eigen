@@ -71,6 +71,23 @@ class SkewSymmetricBase : public EigenBase<Derived>
     EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
     inline Scalar determinant() const { return 0; }
 
+    /** \returns the exponential of this matrix using Rodrigues’ formula */
+    EIGEN_DEVICE_FUNC
+    DenseMatrixType exponential() const {
+      DenseMatrixType retVal = DenseMatrixType::Identity();
+      const SkewSymmetricVectorType& v = vector();
+      if (v.isZero()) {
+        return retVal;
+      }
+      const Scalar norm2 = v.squaredNorm();
+      const Scalar norm = std::sqrt(norm2);
+      const DenseMatrixType m = toDenseMatrix();
+      derived()*derived();
+      //retVal += norm/std::sin(norm)*derived() + norm2*(1 - std::cos(norm))*m*m;
+
+      return retVal;
+    }
+
     /** \returns a reference to the derived object's vector of coefficients. */
     EIGEN_DEVICE_FUNC
     inline const SkewSymmetricVectorType& vector() const { return derived().vector(); }
@@ -90,6 +107,14 @@ class SkewSymmetricBase : public EigenBase<Derived>
     EIGEN_DEVICE_FUNC
     Product<Derived,MatrixDerived,LazyProduct>
     operator*(const MatrixBase<MatrixDerived> &matrix) const
+    {
+      return Product<Derived, MatrixDerived, LazyProduct>(derived(), matrix.derived());
+    }
+
+    template<typename MatrixDerived>
+    EIGEN_DEVICE_FUNC
+    Product<Derived,MatrixDerived,LazyProduct>
+    operator*(const SkewSymmetricBase<MatrixDerived> &matrix) const
     {
       return Product<Derived, MatrixDerived, LazyProduct>(derived(), matrix.derived());
     }
@@ -334,14 +359,14 @@ bool MatrixBase<Derived>::isSkewSymmetric(const RealScalar& prec) const
   return (this->transpose() + *this).isZero(prec);
 }
 
-/** \returns the diagonal matrix product of \c *this by the diagonal matrix \a diagonal.
+/** \returns the matrix product of \c *this by the skew symmetric matrix \skew.
  */
 template<typename Derived>
 template<typename SkewDerived>
 EIGEN_DEVICE_FUNC inline const Product<Derived, SkewDerived, LazyProduct>
-MatrixBase<Derived>::operator*(const SkewSymmetricBase<SkewDerived> &a_diagonal) const
+MatrixBase<Derived>::operator*(const SkewSymmetricBase<SkewDerived> &skew) const
 {
-  return Product<Derived, SkewDerived, LazyProduct>(derived(), a_diagonal.derived());
+  return Product<Derived, SkewDerived, LazyProduct>(derived(), skew.derived());
 }
 
 namespace internal {

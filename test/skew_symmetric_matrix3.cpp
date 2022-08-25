@@ -101,11 +101,17 @@ void multiplyScale() {
   SkewSymmetricMatrix3<Scalar> sk1;
   sk1 = v1.asSkewSymmetric();
 
-  //internal::set_is_malloc_allowed(false);
   const Scalar s1 = internal::random<Scalar>();
   VERIFY_IS_APPROX(SkewSymmetricMatrix3<Scalar>(sk1*s1).vector(), sk1.vector() * s1);
   VERIFY_IS_APPROX(SkewSymmetricMatrix3<Scalar>(s1*sk1).vector(), s1 * sk1.vector());
   VERIFY_IS_APPROX(sq1 * (sk1 * s1), (sq1 * sk1) * s1);
+
+  const Vector v2 = Vector::Random();
+  SquareMatrix sq2;
+  sq2 = v2.asSkewSymmetric();
+  SkewSymmetricMatrix3<Scalar> sk2;
+  sk2 = v2.asSkewSymmetric();
+  VERIFY_IS_APPROX(sk1*sk2, sq1*sq2);
 }
 
 template<typename Matrix>
@@ -127,6 +133,14 @@ void traceAndDet() {
   VERIFY_IS_APPROX(v.asSkewSymmetric().determinant(), static_cast<Scalar>(0));
   VERIFY_IS_APPROX(v.asSkewSymmetric().toDenseMatrix().trace(), static_cast<Scalar>(0));
 }
+
+template <typename Scalar>
+void exponentialIdentity() {
+  typedef Matrix<Scalar, 3, 1> Vector;
+  const Vector v = Vector::Zero();
+  VERIFY(v.asSkewSymmetric().exponential().isIdentity());
+}
+
 } // namespace
 
 
@@ -146,5 +160,8 @@ EIGEN_DECLARE_TEST(skew_symmetric_matrix3)
     CALL_SUBTEST_2(skewSymmetricMultiplication(MatrixXd(3,internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
     CALL_SUBTEST_2(traceAndDet<float>());
     CALL_SUBTEST_2(traceAndDet<double>());
+
+    CALL_SUBTEST_3(exponentialIdentity<float>());
+    CALL_SUBTEST_3(exponentialIdentity<double>());
   }
 }
