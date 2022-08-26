@@ -740,8 +740,9 @@ Packet pacos_float(const Packet& x_in) {
   // function, by a 6'th order polynomial.
   // For x in [-1:0) we use that acos(-x) = pi - acos(x).
   const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
-  Packet x2 = pmul(x_in,x_in);
   Packet x = pabs(x_in);
+  const Packet invalid_mask = pcmp_lt(pset1<Packet>(1.0f), x);
+  Packet x2 = pmul(x_in,x_in);
   Packet p_even = pmadd(p6, x2, p4);
   p_even = pmadd(p_even, x2, p2);
   p_even = pmadd(p_even, x2, p0);
@@ -752,7 +753,11 @@ Packet pacos_float(const Packet& x_in) {
   Packet denom = psqrt(psub(cst_one, x));
   Packet result = pmul(denom, p);
 
-  return pselect(neg_mask, psub(cst_pi, result), result);
+  result = pselect(neg_mask, psub(cst_pi, result), result);
+  // Return NaN for arguments outside [-1:1].
+  return pselect(invalid_mask,
+                 pset1<Packet>(std::numeric_limits<float>::quiet_NaN()),
+                 result);
 }
 
 // Generic implementation of asin(x).
@@ -772,6 +777,7 @@ Packet pasin_float(const Packet& x_in) {
 
   const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
   Packet x = pabs(x_in);
+  const Packet invalid_mask = pcmp_lt(pset1<Packet>(1.0f), x);
   // For arguments |x| > 0.5, we map x back to [0:0.5] using
   // the transformation x_large = sqrt(0.5*(1-x)), and use the
   // identity
@@ -794,9 +800,11 @@ Packet pasin_float(const Packet& x_in) {
   constexpr float kPiOverTwo = static_cast<float>(0.5*EIGEN_PI);
   Packet p_large = pnmadd(cst_two, p, pset1<Packet>(kPiOverTwo));
   p = pselect(large_mask, p_large, p);
-
   // Flip the sign for negative arguments.
-  return pselect(neg_mask, pnegate(p), p);
+  p = pselect(neg_mask, pnegate(p), p);
+  
+  // Return NaN for arguments outside [-1:1].
+  return pselect(invalid_mask, pset1<Packet>(std::numeric_limits<float>::quiet_NaN()), p);
 }
 
 
