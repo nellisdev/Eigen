@@ -1253,7 +1253,7 @@ struct lhs_process_one_packet
         r5.prefetch(prefetch_res_offset);
         r6.prefetch(prefetch_res_offset);
         r7.prefetch(prefetch_res_offset);
-        const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+        const RhsScalar* blB = &blockB[j2*strideB+offsetB*8];
         prefetch(&blB[0]);
 
         LhsPacket A0;
@@ -1380,7 +1380,7 @@ struct lhs_process_one_packet
         r3.prefetch(prefetch_res_offset);
 
         // performs "inner" products
-        const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+        const RhsScalar* blB = &blockB[j2*strideB+offsetB*4];
         prefetch(&blB[0]);
         LhsPacket A0, A1;
 
@@ -1605,7 +1605,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
             r7.prefetch(0);
 
             // performs "inner" products
-            const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+            const RhsScalar* blB = &blockB[j2*strideB+offsetB*8];
             prefetch(&blB[0]);
             LhsPacket A0, A1;
             for(Index k=0; k<peeled_kc; k+=pk)
@@ -1809,7 +1809,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
           r3.prefetch(0);
 
           // performs "inner" products
-          const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+          const RhsScalar* blB = &blockB[j2*strideB+offsetB*4];
           prefetch(&blB[0]);
           LhsPacket A0, A1;
 
@@ -2056,7 +2056,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
             r6.prefetch(prefetch_res_offset);
             r7.prefetch(prefetch_res_offset);
 
-            const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+            const RhsScalar* blB = &blockB[j2*strideB+offsetB*8];
             prefetch(&blB[0]);
             LhsPacket A0, A1;
             for(Index k=0; k<peeled_kc; k+=pk)
@@ -2216,7 +2216,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
           r3.prefetch(prefetch_res_offset);
 
           // performs "inner" products
-          const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+          const RhsScalar* blB = &blockB[j2*strideB+offsetB*4];
           prefetch(&blB[0]);
           LhsPacket A0, A1;
 
@@ -2415,7 +2415,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
           prefetch(&blA[0]);
           // gets a 1 x 1 res block as registers
           ResScalar C0(0),C1(0),C2(0),C3(0),C4(0),C5(0),C6(0),C7(0);
-          const RhsScalar* blB = &blockB[j2*strideB+offsetB];
+          const RhsScalar* blB = &blockB[j2*strideB+offsetB*8];
           for(Index k=0; k<depth; k++)
           {
             LhsScalar A0 = blA[k];
@@ -2465,7 +2465,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
         {
           const LhsScalar* blA = &blockA[i*strideA+offsetA];
           prefetch(&blA[0]);
-          const RhsScalar* blB = &blockB[j2*strideB+offsetB*nr];
+          const RhsScalar* blB = &blockB[j2*strideB+offsetB*4];
 
           // If LhsProgress is 8 or 16, it assumes that there is a
           // half or quarter packet, respectively, of the same size as
