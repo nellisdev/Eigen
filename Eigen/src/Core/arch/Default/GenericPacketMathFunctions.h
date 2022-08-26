@@ -807,38 +807,52 @@ Packet pasin_float(const Packet& x_in) {
   return pselect(invalid_mask, pset1<Packet>(std::numeric_limits<float>::quiet_NaN()), p);
 }
 
-// Generic implementation of atan(x).
 template<typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet patan_float(const Packet& x_in) {
   typedef typename unpacket_traits<Packet>::type Scalar;
   static_assert(std::is_same<Scalar, float>::value, "Scalar type must be float");
 
-  const Packet cst_one = pset1<Packet>(Scalar(1));
-  constexpr float kPiOverTwo = static_cast<float>(0.5*EIGEN_PI);
+  const Packet cst_one = pset1<Packet>(1.0f);
+  constexpr float kPiOverTwo = static_cast<float>(EIGEN_PI/2);
   const Packet cst_pi_over_two = pset1<Packet>(kPiOverTwo);
-  const Packet q0 = pset1<Packet>(1.2669074349e-3f);
-  const Packet q1 = pset1<Packet>(-0.3490232229f);
-  const Packet q2 = pset1<Packet>(5.71174696088e-2f);
-  const Packet q3 = pset1<Packet>(0.14178951085f);
-  const Packet q4 = pset1<Packet>(-6.5776780248e-2f);
+  constexpr float kPiOverFour = static_cast<float>(EIGEN_PI/4);
+  const Packet cst_pi_over_four = pset1<Packet>(kPiOverFour);
+  const Packet cst_large = pset1<Packet>(2.4142135623730950488016887f);  // tan(3*pi/8);
+  const Packet cst_medium = pset1<Packet>(0.4142135623730950488016887f);  // tan(pi/8);
+  const Packet q0 = pset1<Packet>(-0.333329379558563232421875f);
+  const Packet q2 = pset1<Packet>(0.19977366924285888671875f);
+  const Packet q4 = pset1<Packet>(-0.13874518871307373046875f);
+  const Packet q6 = pset1<Packet>(8.044691383838653564453125e-2f);
 
   const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
   Packet x = pabs(x_in);
-  // For |x| > 1, use atan(1/|x|) = pi/2 - atan(|x|).
-  const Packet large_mask = pcmp_lt(x, cst_one);
-  x = pselect(large_mask, preciprocal(x), x);
 
-  // Approximate atan(x) on [0:1] by a polynomial of the form
-  //   P(x) = x + x^2 * Q(x),
-  // where Q(x) is a degree 4 polynomial.
+  // Use the same range reduction strategy (to [0:tan(pi/8)]) as the
+  // Cephes library:
+  //   "Large": For x >= tan(3*pi/8), use atan(1/x) = pi/2 - atan(x).
+  //   "Medium": For x in [tan(pi/8) : tan(3*pi/8)),
+  //             use atan(x) = pi/4 + atan((x-1)/(x+1)).
+  //   "Small": For x < pi/8, approximate atan(x) directly by a polynomial
+  //            calculated using Sollya.
+  const Packet large_mask = pcmp_lt(cst_large, x);
+  x = pselect(large_mask, preciprocal(x), x);
+  const Packet medium_mask = pandnot(pcmp_lt(cst_medium, x), large_mask);
+  x = pselect(medium_mask, pdiv(psub(x, cst_one), padd(x, cst_one)), x);
+
+  // Approximate atan(x) on [0:tan(pi/8)] by a polynomial of the form
+  //   P(x) = x + x^3 * Q(x^2),
+  // where Q(x^2) is a cubic polynomial in x^2.
   const Packet x2 = pmul(x, x);
-  Packet q_even = pmadd(q4, x2, q2);
-  Packet q_odd = pmadd(q3, x2, q1);
-  q_even = pmadd(q_even, x2, q0);
-  const Packet q = pmadd(q_odd, x, q_even);
-  Packet p = pmadd(q, x2, x);
+  const Packet x4 = pmul(x2, x2);
+  Packet q_odd = pmadd(q6, x4, q2);
+  Packet q_even = pmadd(q4, x4, q0);
+  const Packet q = pmadd(q_odd, x2, q_even);
+  Packet p = pmadd(q, pmul(x, x2), x);
+
+  // Apply transformations according to the range reduction masks.
   p = pselect(large_mask, psub(cst_pi_over_two, p), p);
+  p = pselect(medium_mask, padd(cst_pi_over_four, p), p);
   return pselect(neg_mask, pnegate(p), p);
 }
 
