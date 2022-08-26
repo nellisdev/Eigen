@@ -2418,7 +2418,7 @@ void gebp_kernel<LhsScalar,RhsScalar,Index,DataMapper,mr,nr,ConjugateLhs,Conjuga
           const RhsScalar* blB = &blockB[j2*strideB+offsetB];
           for(Index k=0; k<depth; k++)
           {
-            RhsScalar A0 = blA[k];
+            LhsScalar A0 = blA[k];
             RhsScalar B_0;
 
             B_0 = blB[0];
