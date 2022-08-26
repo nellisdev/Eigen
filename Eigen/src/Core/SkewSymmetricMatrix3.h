@@ -81,10 +81,7 @@ class SkewSymmetricBase : public EigenBase<Derived>
       }
       const Scalar norm2 = v.squaredNorm();
       const Scalar norm = std::sqrt(norm2);
-      const DenseMatrixType m = toDenseMatrix();
-      derived()*derived();
-      //retVal += norm/std::sin(norm)*derived() + norm2*(1 - std::cos(norm))*m*m;
-
+      retVal += ((((1 - std::cos(norm))/norm2)*derived())*derived()) + (std::sin(norm)/norm)*derived().toDenseMatrix();
       return retVal;
     }
 
@@ -111,6 +108,7 @@ class SkewSymmetricBase : public EigenBase<Derived>
       return Product<Derived, MatrixDerived, LazyProduct>(derived(), matrix.derived());
     }
 
+    /** \returns the matrix product of \c *this by the skew symmetric matrix, \a matrix */
     template<typename MatrixDerived>
     EIGEN_DEVICE_FUNC
     Product<Derived,MatrixDerived,LazyProduct>
@@ -387,13 +385,13 @@ struct Assignment<DstXprType, SrcXprType, Functor, SkewSymmetric2Dense>
       dst.resize(3, 3);
     }
     dst.diagonal().setZero();
-    typename SrcXprType::SkewSymmetricVectorType v = src.vector();
-    dst(0, 1) = v(0);
-    dst(1, 0) = -v(0);
-    dst(0, 2) = -v(1);
-    dst(2, 0) = v(1);
-    dst(1, 2) = v(2);
-    dst(2, 1) = -v(2);
+    const typename SrcXprType::SkewSymmetricVectorType v = src.vector();
+    dst(0, 1) = -v(2);
+    dst(1, 0) = v(2);
+    dst(0, 2) = v(1);
+    dst(2, 0) = -v(1);
+    dst(1, 2) = -v(0);
+    dst(2, 1) = v(0);
   }
   
   static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)

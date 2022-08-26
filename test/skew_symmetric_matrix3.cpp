@@ -112,6 +112,10 @@ void multiplyScale() {
   SkewSymmetricMatrix3<Scalar> sk2;
   sk2 = v2.asSkewSymmetric();
   VERIFY_IS_APPROX(sk1*sk2, sq1*sq2);
+
+  // null space
+  VERIFY((sk1*v1).isZero());
+  VERIFY((sk2*v2).isZero());
 }
 
 template<typename Matrix>
@@ -137,9 +141,41 @@ void traceAndDet() {
 template <typename Scalar>
 void exponentialIdentity() {
   typedef Matrix<Scalar, 3, 1> Vector;
-  const Vector v = Vector::Zero();
-  VERIFY(v.asSkewSymmetric().exponential().isIdentity());
+  const Vector v1 = Vector::Zero();
+  VERIFY(v1.asSkewSymmetric().exponential().isIdentity());
+
+  Vector v2 = Vector::Random();
+  v2.normalize();
+  VERIFY((2*EIGEN_PI*v2).asSkewSymmetric().exponential().isIdentity());
 }
+
+template <typename Scalar>
+void exponentialOrthogonality() {
+  typedef Matrix<Scalar, 3, 1> Vector;
+  typedef Matrix<Scalar, 3, 3> SquareMatrix;
+  const Vector v = Vector::Random();
+  SquareMatrix sq = v.asSkewSymmetric().exponential();
+  VERIFY(sq.isUnitary());
+}
+
+template <typename Scalar>
+void exponentialRotation() {
+  typedef Matrix<Scalar, 3, 1> Vector;
+  typedef Matrix<Scalar, 3, 3> SquareMatrix;
+
+  // rotation axis is invariant
+  const Vector v1 = Vector::Random();
+  const SquareMatrix r1 = v1.asSkewSymmetric().exponential();
+  VERIFY_IS_APPROX(r1*v1, v1);
+
+  // rotate around z-axis
+  Vector v2;
+  v2 << 0, 0, EIGEN_PI;
+  const SquareMatrix r2 = v2.asSkewSymmetric().exponential();
+  VERIFY_IS_APPROX(r2*(Vector() << 1,0,0).finished(), (Vector() << -1,0,0).finished());
+  VERIFY_IS_APPROX(r2*(Vector() << 0,1,0).finished(), (Vector() << 0,-1,0).finished());
+}
+
 
 } // namespace
 
@@ -163,5 +199,9 @@ EIGEN_DECLARE_TEST(skew_symmetric_matrix3)
 
     CALL_SUBTEST_3(exponentialIdentity<float>());
     CALL_SUBTEST_3(exponentialIdentity<double>());
+    CALL_SUBTEST_3(exponentialOrthogonality<float>());
+    CALL_SUBTEST_3(exponentialOrthogonality<double>());
+    CALL_SUBTEST_3(exponentialRotation<float>());
+    CALL_SUBTEST_3(exponentialRotation<double>());
   }
 }
