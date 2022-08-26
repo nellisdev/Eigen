@@ -170,6 +170,7 @@ struct packet_traits<float> : default_packet_traits {
     HasCos = EIGEN_FAST_MATH,
     HasACos = 1,
     HasASin = 1,
+    HasATan = 1,
     HasLog = 1,
     HasExp = 1,
 #ifdef __VSX__

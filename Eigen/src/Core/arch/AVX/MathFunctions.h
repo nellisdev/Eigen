@@ -46,6 +46,12 @@ pacos<Packet8f>(const Packet8f& _x) {
 
 template <>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet8f
+patan<Packet8f>(const Packet8f& _x) {
+  return patan_float(_x);
+}
+
+template <>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet8f
 plog<Packet8f>(const Packet8f& _x) {
   return plog_float(_x);
 }

@@ -802,11 +802,45 @@ Packet pasin_float(const Packet& x_in) {
   p = pselect(large_mask, p_large, p);
   // Flip the sign for negative arguments.
   p = pselect(neg_mask, pnegate(p), p);
-  
+
   // Return NaN for arguments outside [-1:1].
   return pselect(invalid_mask, pset1<Packet>(std::numeric_limits<float>::quiet_NaN()), p);
 }
 
+// Generic implementation of atan(x).
+template<typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet patan_float(const Packet& x_in) {
+  typedef typename unpacket_traits<Packet>::type Scalar;
+  static_assert(std::is_same<Scalar, float>::value, "Scalar type must be float");
+
+  const Packet cst_one = pset1<Packet>(Scalar(1));
+  constexpr float kPiOverTwo = static_cast<float>(0.5*EIGEN_PI);
+  const Packet cst_pi_over_two = pset1<Packet>(kPiOverTwo);
+  const Packet q0 = pset1<Packet>(1.2669074349e-3f);
+  const Packet q1 = pset1<Packet>(-0.3490232229f);
+  const Packet q2 = pset1<Packet>(5.71174696088e-2f);
+  const Packet q3 = pset1<Packet>(0.14178951085f);
+  const Packet q4 = pset1<Packet>(-6.5776780248e-2f);
+
+  const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
+  Packet x = pabs(x_in);
+  // For |x| > 1, use atan(1/|x|) = pi/2 - atan(|x|).
+  const Packet large_mask = pcmp_lt(x, cst_one);
+  x = pselect(large_mask, preciprocal(x), x);
+
+  // Approximate atan(x) on [0:1] by a polynomial of the form
+  //   P(x) = x + x^2 * Q(x),
+  // where Q(x) is a degree 4 polynomial.
+  const Packet x2 = pmul(x, x);
+  Packet q_even = pmadd(q4, x2, q2);
+  Packet q_odd = pmadd(q3, x2, q1);
+  q_even = pmadd(q_even, x2, q0);
+  const Packet q = pmadd(q_odd, x, q_even);
+  Packet p = pmadd(q, x2, x);
+  p = pselect(large_mask, psub(cst_pi_over_two, p), p);
+  return pselect(neg_mask, pnegate(p), p);
+}
 
 template<typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
