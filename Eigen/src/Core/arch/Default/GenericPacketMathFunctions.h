@@ -742,17 +742,25 @@ Packet pacos_float(const Packet& x_in) {
   const Packet neg_mask = pcmp_lt(x_in, pzero(x_in));
   Packet x = pabs(x_in);
   const Packet invalid_mask = pcmp_lt(pset1<Packet>(1.0f), x);
+
+  // Evaluate the polynomial using Horner's rule:
+  //   P(x) = p0 + x * (p1 +  x * (p2 + ... (p5 + x * p6)) ... ) .
+  // We evaluate even and odd terms independently to increase
+  // instruction level parallelism.
   Packet x2 = pmul(x_in,x_in);
   Packet p_even = pmadd(p6, x2, p4);
-  p_even = pmadd(p_even, x2, p2);
-  p_even = pmadd(p_even, x2, p0);
   Packet p_odd = pmadd(p5, x2, p3);
+  p_even = pmadd(p_even, x2, p2);
   p_odd = pmadd(p_odd, x2, p1);
+  p_even = pmadd(p_even, x2, p0);
   Packet p = pmadd(p_odd, x, p_even);
 
+  // The polynomial approximates acos(x)/sqrt(1-x), so
+  // multiply by sqrt(1-x) to get acos(x).
   Packet denom = psqrt(psub(cst_one, x));
   Packet result = pmul(denom, p);
 
+  // Undo mapping for negative arguments.
   result = pselect(neg_mask, psub(cst_pi, result), result);
   // Return NaN for arguments outside [-1:1].
   return pselect(invalid_mask,
