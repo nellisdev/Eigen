@@ -223,6 +223,7 @@ template<> struct packet_traits<int64_t> : default_packet_traits
   enum {
     Vectorizable = 1,
     AlignedOnScalar = 1,
+    HasCmp = 1,
     size=4,
 
     // requires AVX512
