@@ -139,6 +139,15 @@ void traceAndDet() {
 }
 
 template <typename Scalar>
+void transpose() {
+  typedef Matrix<Scalar, 3, 1> Vector;
+  const Vector v = Vector::Random();
+  // By definition of a skew symmetric matrix: A^T = -A
+  VERIFY_IS_APPROX(v.asSkewSymmetric().toDenseMatrix().transpose(), v.asSkewSymmetric().transpose().toDenseMatrix());
+  VERIFY_IS_APPROX(v.asSkewSymmetric().transpose().vector(), (-v).asSkewSymmetric().vector());
+}
+
+template <typename Scalar>
 void exponentialIdentity() {
   typedef Matrix<Scalar, 3, 1> Vector;
   const Vector v1 = Vector::Zero();
@@ -201,6 +210,8 @@ EIGEN_DECLARE_TEST(skew_symmetric_matrix3)
     CALL_SUBTEST_2(skewSymmetricMultiplication(MatrixXd(3,internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
     CALL_SUBTEST_2(traceAndDet<float>());
     CALL_SUBTEST_2(traceAndDet<double>());
+    CALL_SUBTEST_2(transpose<float>());
+    CALL_SUBTEST_2(transpose<double>());
 
     CALL_SUBTEST_3(exponentialIdentity<float>());
     CALL_SUBTEST_3(exponentialIdentity<double>());

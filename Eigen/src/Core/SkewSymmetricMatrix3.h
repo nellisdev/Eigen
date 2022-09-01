@@ -71,6 +71,10 @@ class SkewSymmetricBase : public EigenBase<Derived>
     EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
     inline Scalar determinant() const { return 0; }
 
+    /** A.transpose() = -A */
+    EIGEN_DEVICE_FUNC
+    PlainObject transpose() const { return (-vector()).asSkewSymmetric(); }
+
     /** \returns the exponential of this matrix using Rodrigues’ formula */
     EIGEN_DEVICE_FUNC
     DenseMatrixType exponential() const {
