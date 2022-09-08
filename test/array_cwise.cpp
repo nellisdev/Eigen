@@ -127,13 +127,13 @@ void pow_test() {
 }
 
 template <typename Scalar, typename ScalarExponent>
-Scalar calc_overflow_threshold(const ScalarExponent exponent) {
+    Scalar calc_overflow_threshold(const ScalarExponent exponent) {
     EIGEN_USING_STD(exp2);
     EIGEN_USING_STD(log2);
     EIGEN_STATIC_ASSERT((NumTraits<Scalar>::digits() < 2 * NumTraits<double>::digits()), BASE_TYPE_IS_TOO_BIG);
 
     if (exponent < 2)
-        return NumTraits<Scalar>::highest();
+      return base_max_value;
     else {
         // base^e <= highest ==> base <= 2^(log2(highest)/e)
         // For floating-point types, consider the bound for integer values that can be reproduced exactly = 2 ^ digits
@@ -152,7 +152,7 @@ void test_exponent(Exponent exponent) {
     // avoid integer overflow in Base type
     Base threshold = calc_overflow_threshold<Base, Exponent>(numext::abs(exponent));
     // avoid numbers that can't be verified with std::pow
-    double double_threshold = calc_overflow_threshold<double, Exponent>(numext::abs(exponent));
+    double double_threshold = calc_overflow_threshold<double , Exponent>(numext::abs(exponent));
     // use the lesser of these two thresholds
     Base testing_threshold = threshold < double_threshold ? threshold : static_cast<Base>(double_threshold);
     // test both vectorized and non-vectorized code paths
@@ -164,19 +164,18 @@ void test_exponent(Exponent exponent) {
     ArrayX<Base> x(array_size), y(array_size);
 
     bool all_pass = true;
-
     for (Base base = min_base; base <= max_base; base++) {
-        if (exponent < 0 && base == 0) continue;
-        x.setConstant(base);
-        y = x.pow(exponent);
-        Base e = pow(base, exponent);
-        for (Base a : y) {
-            bool pass = a == e;
-            all_pass &= pass;
-            if (!pass) {
-                std::cout << "pow(" << base << "," << exponent << ")   =   " << a << " !=  " << e << std::endl;
-            }
+      if (exponent < 0 && base == 0) continue;
+      x.setConstant(base);
+      y = x.pow(exponent);
+      Base e = pow(base, exponent);
+      for (Base a : y) {
+        bool pass = (a == e);
+        all_pass &= pass;
+        if (!pass) {
+          std::cout << "pow(" << base << "," << exponent << ")   =   " << a << " !=  " << e << std::endl;
         }
+      }
     }
 
     VERIFY(all_pass);
