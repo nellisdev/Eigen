@@ -156,7 +156,7 @@ void exponentialIdentity() {
   VERIFY((2*EIGEN_PI*v2).asSkewSymmetric().exponential().isIdentity());
 
   Vector v3;
-  const auto precision = 1.1*NumTraits<Scalar>::dummy_precision();
+  const auto precision = static_cast<Scalar>(1.1)*NumTraits<Scalar>::dummy_precision();
   v3 << 0, 0, precision;
   VERIFY(v3.asSkewSymmetric().exponential().isIdentity(precision));
 }
