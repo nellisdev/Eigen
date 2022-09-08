@@ -127,7 +127,7 @@ void pow_test() {
 }
 
 template <typename Scalar, typename ScalarExponent>
-    Scalar calc_overflow_threshold(const Scalar base_max_value,  const ScalarExponent exponent) {
+    Scalar calc_overflow_threshold(const ScalarExponent exponent) {
     EIGEN_USING_STD(exp2);
     EIGEN_USING_STD(log2);
     EIGEN_STATIC_ASSERT((NumTraits<Scalar>::digits() < 2 * NumTraits<double>::digits()), BASE_TYPE_IS_TOO_BIG);
@@ -135,9 +135,12 @@ template <typename Scalar, typename ScalarExponent>
     if (exponent < 2)
       return base_max_value;
     else {
-      // base^e <= highest ==> base <= 2^(log2(highest)/e)
-      return static_cast<Scalar>(
-          numext::floor(exp2(log2(base_max_value) / static_cast<double>(exponent))));
+        // base^e <= highest ==> base <= 2^(log2(highest)/e)
+        // For floating-point types, consider the bound for integer values that can be reproduced exactly = 2 ^ digits
+        double highest_bits = numext::mini(static_cast<double>(NumTraits<Scalar>::digits()),
+                                           log2(NumTraits<Scalar>::highest()));
+        return static_cast<Scalar>(
+          numext::floor(exp2(highest_bits / static_cast<double>(exponent))));
     }
 }
 
@@ -147,10 +150,9 @@ void test_exponent(Exponent exponent) {
 
     const Base max_abs_bases = 10000;
     // avoid integer overflow in Base type
-    Base threshold = calc_overflow_threshold<Base, Exponent>(NumTraits<Base>::highest(), numext::abs(exponent));
+    Base threshold = calc_overflow_threshold<Base, Exponent>(numext::abs(exponent));
     // avoid numbers that can't be verified with std::pow
-    double double_threshold = calc_overflow_threshold<double , Exponent>(numext::floor(1.0/NumTraits<double>::epsilon()),
-                                                                                      numext::abs(exponent));
+    double double_threshold = calc_overflow_threshold<double , Exponent>(numext::abs(exponent));
     // use the lesser of these two thresholds
     Base testing_threshold = threshold < double_threshold ? threshold : static_cast<Base>(double_threshold);
     // test both vectorized and non-vectorized code paths
