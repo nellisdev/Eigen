@@ -84,8 +84,8 @@ class SkewSymmetricBase : public EigenBase<Derived>
         return retVal;
       }
       const Scalar norm2 = v.squaredNorm();
-      const Scalar norm = std::sqrt(norm2);
-      retVal += ((((1 - std::cos(norm))/norm2)*derived())*derived()) + (std::sin(norm)/norm)*derived().toDenseMatrix();
+      const Scalar norm = numext::sqrt(norm2);
+      retVal += ((((1 - numext::cos(norm))/norm2)*derived())*derived()) + (numext::sin(norm)/norm)*derived().toDenseMatrix();
       return retVal;
     }
 
