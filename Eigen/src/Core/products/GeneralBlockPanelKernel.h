@@ -87,8 +87,18 @@ struct CacheSizes {
 /** \internal */
 inline void manage_caching_sizes(Action action, std::ptrdiff_t* l1, std::ptrdiff_t* l2, std::ptrdiff_t* l3)
 {
+#ifdef __NVCOMPILER
+  if(action==GetAction)
+  {
+    // Volta, Turing, or newer
+    //   - the L1 cache is configurable at runtime, with a minimum of 32 KB/SM
+    //   - the L2 cache depends on the actual card, with a minimum of 64 KB/SM
+    *l1 =   32 * 1024;
+    *l2 =   64 * 1024;
+    *l3 =           0;
+  }
+#else
   static CacheSizes m_cacheSizes;
-
   if(action==SetAction)
   {
     // set the cpu cache size and cache all block sizes from a global cache size in byte
@@ -104,6 +114,7 @@ inline void manage_caching_sizes(Action action, std::ptrdiff_t* l1, std::ptrdiff
     *l2 = m_cacheSizes.m_l2;
     *l3 = m_cacheSizes.m_l3;
   }
+#endif
   else
   {
     eigen_internal_assert(false);
