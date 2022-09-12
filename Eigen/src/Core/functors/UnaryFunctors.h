@@ -1071,10 +1071,10 @@ struct functor_traits<scalar_logistic_op<T> > {
 };
 
 template <typename Scalar, typename ExponentScalar, 
-          bool BaseIsInteger = NumTraits<Scalar>::IsInteger,
-          bool ExponentIsInteger = NumTraits<ExponentScalar>::IsInteger,
-          bool BaseIsComplex = NumTraits<Scalar>::IsComplex,
-          bool ExponentIsComplex = NumTraits<ExponentScalar>::IsComplex>
+          bool IsBaseInteger = NumTraits<Scalar>::IsInteger,
+          bool IsExponentInteger = NumTraits<ExponentScalar>::IsInteger,
+          bool IsBaseComplex = NumTraits<Scalar>::IsComplex,
+          bool IsExponentComplex = NumTraits<ExponentScalar>::IsComplex>
 struct scalar_unary_pow_op {
   typedef typename internal::promote_scalar_arg<
       Scalar, ExponentScalar,
@@ -1107,7 +1107,7 @@ struct is_floating_exactly_representable {
 };
 
 
-// Specialization for real, non-integer types.
+// Specialization for real, non-integer types, non-complex types.
 template <typename Scalar, typename ExponentScalar>
 struct scalar_unary_pow_op<Scalar, ExponentScalar, false, false, false, false> {
   template <bool IsExactlyRepresentable = is_floating_exactly_representable<ExponentScalar, Scalar>::value>
