@@ -1099,31 +1099,37 @@ constexpr int exponent_digits() {
 }
 
 template<typename From, typename To>
-struct is_representable {
-  static constexpr bool value = (int(NumTraits<To>::IsInteger) == int(NumTraits<From>::IsInteger)) &&
-                                (NumTraits<To>::IsSigned || !NumTraits<From>::IsSigned) &&
-                                // TODO(rmlarsen): Add radix to NumTraits and enable this check.
-                                // (NumTraits<To>::radix == NumTraits<From>::radix) &&
-                                (exponent_digits<To>() >= exponent_digits<From>()) &&
-                                (NumTraits<To>::digits() >= NumTraits<From>::digits());
+struct is_floating_exactly_representable {
+  // TODO(rmlarsen): Add radix to NumTraits and enable this check.
+  // (NumTraits<To>::radix == NumTraits<From>::radix) &&
+  static constexpr bool value = (exponent_digits<To>() >= exponent_digits<From>() &&
+                                  NumTraits<To>::digits() >= NumTraits<From>::digits());
 };
+
 
 // Specialization for real, non-integer types.
 template <typename Scalar, typename ExponentScalar>
 struct scalar_unary_pow_op<Scalar, ExponentScalar, false, false, false, false> {
-  // using Scalar = std::remove_const_t<Scalar_>;
-  // using ExponentScalar = std::remove_const_t<ExponentScalar_>;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(static_cast<Scalar>(exponent)) {
+  template <bool IsExactlyRepresentable = is_floating_exactly_representable<ExponentScalar, Scalar>::value>
+  std::enable_if_t<IsExactlyRepresentable, void> check_is_representable() const {}
+
+  // Issue a deprecation warning if we do a narrowing conversion on the exponent.
+  template <bool IsExactlyRepresentable = is_floating_exactly_representable<ExponentScalar, Scalar>::value>
+  EIGEN_DEPRECATED std::enable_if_t<!IsExactlyRepresentable, void> check_is_representable() const {}
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+      scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(static_cast<Scalar>(exponent)) {
     EIGEN_STATIC_ASSERT((is_arithmetic<ExponentScalar>::value), EXPONENT_MUST_BE_ARITHMETIC);
-    EIGEN_STATIC_ASSERT((is_representable<ExponentScalar, Scalar>::value), NON_EXPONENT_MUST_BE_EXACTLY_REPRESENTABLE_BASE_SCALAR_TYPE);
+    check_is_representable();
   }
+
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar operator()(const Scalar& a) const {
     EIGEN_USING_STD(pow);
     return static_cast<Scalar>(pow(a, m_exponent));
   }
   template <typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a) const {
-    return unary_pow_impl<Packet, ExponentScalar>::run(a, m_exponent);
+    return unary_pow_impl<Packet, Scalar>::run(a, m_exponent);
   }
 
  private:

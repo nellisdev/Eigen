@@ -146,7 +146,7 @@ Scalar calc_overflow_threshold(const ScalarExponent exponent) {
 
 template <typename Base, typename Exponent>
 void test_exponent(Exponent exponent) {
-  const Base max_abs_bases = 10000;
+  const Base max_abs_bases = static_cast<Base>(10000);
   // avoid integer overflow in Base type
   Base threshold = calc_overflow_threshold<Base, Exponent>(numext::abs(exponent));
   // avoid numbers that can't be verified with std::pow
@@ -158,7 +158,7 @@ void test_exponent(Exponent exponent) {
   const Index array_size = 2 * internal::packet_traits<Base>::size + 1;
 
   Base max_base = numext::mini(testing_threshold, max_abs_bases);
-  Base min_base = NumTraits<Base>::IsSigned ? -max_base : 0;
+  Base min_base = NumTraits<Base>::IsSigned ? -max_base : Base(0);
 
   ArrayX<Base> x(array_size), y(array_size);
   bool all_pass = true;
@@ -167,7 +167,7 @@ void test_exponent(Exponent exponent) {
     x.setConstant(base);
     y = x.pow(exponent);
     EIGEN_USING_STD(pow);
-    Base e = pow(base, exponent);
+    Base e = pow(base, static_cast<Base>(exponent));
     for (Base a : y) {
       bool pass = (a == e);
       if (!NumTraits<Base>::IsInteger) {
@@ -194,14 +194,25 @@ void unary_pow_test() {
 };
 
 void mixed_pow_test() {
-  unary_pow_test<long long, int>();
-  unary_pow_test<int, unsigned int>();
-  unary_pow_test<unsigned int, int>();
-  unary_pow_test<long long, unsigned long long>();
-  unary_pow_test<unsigned long long, long long>();
-  unary_pow_test<long long, int>();
+  // The following cases will test promoting a smaller exponent type
+  // to a wider base type.
+  unary_pow_test<double, int>();
   unary_pow_test<double, float>();
-  // TODO(rmlarsen): Make this work for <double, half> <double, bfloat16> etc.
+  unary_pow_test<float, half>();
+  unary_pow_test<double, half>();
+  unary_pow_test<float, bfloat16>();
+  unary_pow_test<double, bfloat16>();
+
+  // Although in the following cases the exponent cannot be represented exactly
+  // in the base type, we do not perform a conversion, but implement
+  // the operation using repeated squaring.
+  unary_pow_test<float, int>();
+  unary_pow_test<double, long long>();
+
+  // The following cases will test promoting a wider exponent type
+  // to a narrower base type. This should compile but generate a
+  // deprecation warning:
+  unary_pow_test<float, double>();
 }
 
 void int_pow_test() {
@@ -209,6 +220,16 @@ void int_pow_test() {
   unary_pow_test<unsigned int, unsigned int>();
   unary_pow_test<long long, long long>();
   unary_pow_test<unsigned long long, unsigned long long>();
+
+  // Although in the following cases the exponent cannot be represented exactly
+  // in the base type, we do not perform a conversion, but implement the
+  // operation using repeated squaring.
+  unary_pow_test<long long, int>();
+  unary_pow_test<int, unsigned int>();
+  unary_pow_test<unsigned int, int>();
+  unary_pow_test<long long, unsigned long long>();
+  unary_pow_test<unsigned long long, long long>();
+  unary_pow_test<long long, int>();
 }
 
 template<typename ArrayType> void array(const ArrayType& m)
@@ -837,8 +858,8 @@ EIGEN_DECLARE_TEST(array_cwise)
   }
 
   for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST_6( int_pow_test() );
     CALL_SUBTEST_7( mixed_pow_test() );
-    CALL_SUBTEST_8( int_pow_test() );
   }
 
   VERIFY((internal::is_same< internal::global_math_functions_filtering_base<int>::type, int >::value));
