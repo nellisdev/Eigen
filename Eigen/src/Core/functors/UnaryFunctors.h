@@ -1080,9 +1080,7 @@ struct scalar_unary_pow_op {
       Scalar, ExponentScalar,
       internal::has_ReturnType<ScalarBinaryOpTraits<Scalar,ExponentScalar,scalar_unary_pow_op> >::value>::type PromotedExponent;
   typedef typename ScalarBinaryOpTraits<Scalar, PromotedExponent, scalar_unary_pow_op>::ReturnType result_type;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(exponent) {
-    EIGEN_STATIC_ASSERT((is_arithmetic<typename NumTraits<ExponentScalar>::Real>::value), EXPONENT_MUST_BE_ARITHMETIC_OR_COMPLEX);
-  }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(exponent) {}
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator()(const Scalar& a) const {
     EIGEN_USING_STD(pow);
     return static_cast<result_type>(pow(a, m_exponent));
@@ -1119,7 +1117,6 @@ struct scalar_unary_pow_op<Scalar, ExponentScalar, false, false, false, false> {
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
       scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(static_cast<Scalar>(exponent)) {
-    EIGEN_STATIC_ASSERT((is_arithmetic<ExponentScalar>::value), EXPONENT_MUST_BE_ARITHMETIC);
     check_is_representable();
   }
 
@@ -1139,9 +1136,7 @@ struct scalar_unary_pow_op<Scalar, ExponentScalar, false, false, false, false> {
 
 template <typename Scalar, typename ExponentScalar, bool BaseIsInteger>
 struct scalar_unary_pow_op<Scalar, ExponentScalar, BaseIsInteger, true, false, false> {
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(exponent) {
-    EIGEN_STATIC_ASSERT((is_arithmetic<ExponentScalar>::value), EXPONENT_MUST_BE_ARITHMETIC);
-  }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ExponentScalar& exponent) : m_exponent(exponent) {}
   // TODO: error handling logic for complex^real_integer
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar operator()(const Scalar& a) const {
     return unary_pow_impl<Scalar, ExponentScalar>::run(a, m_exponent);
