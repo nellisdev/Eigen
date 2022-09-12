@@ -134,41 +134,21 @@ absolute_difference
   */
 EIGEN_MAKE_CWISE_BINARY_OP(pow,pow)
 
-#ifndef EIGEN_PARSED_BY_DOXYGEN
-EIGEN_MAKE_SCALAR_BINARY_OP_ONTHERIGHT(pow,pow)
-#else
-/** \returns an expression of the coefficients of \c *this rasied to the constant power \a exponent
-  *
-  * \tparam T is the scalar type of \a exponent. It must be compatible with the scalar type of the given expression.
-  *
-  * This function computes the coefficient-wise power. The function MatrixBase::pow() in the
-  * unsupported module MatrixFunctions computes the matrix power.
-  *
-  * Example: \include Cwise_pow.cpp
-  * Output: \verbinclude Cwise_pow.out
-  *
-  * \sa ArrayBase::pow(ArrayBase), square(), cube(), exp(), log()
-  */
-template<typename T>
-const CwiseBinaryOp<internal::scalar_pow_op<Scalar,T>,Derived,Constant<T> > pow(const T& exponent) const;
-#endif
-
-
 // TODO code generating macros could be moved to Macros.h and could include generation of documentation
 #define EIGEN_MAKE_CWISE_COMP_OP(OP, COMPARATOR) \
 template<typename OtherDerived> \
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_cmp_op<Scalar, typename OtherDerived::Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const OtherDerived> \
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR const CwiseBinaryOp<internal::scalar_cmp_op<Scalar, typename OtherDerived::Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const OtherDerived> \
 OP(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const \
 { \
   return CwiseBinaryOp<internal::scalar_cmp_op<Scalar, typename OtherDerived::Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const OtherDerived>(derived(), other.derived()); \
 }\
 typedef CwiseBinaryOp<internal::scalar_cmp_op<Scalar,Scalar, internal::cmp_ ## COMPARATOR>, const Derived, const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> > Cmp ## COMPARATOR ## ReturnType; \
 typedef CwiseBinaryOp<internal::scalar_cmp_op<Scalar,Scalar, internal::cmp_ ## COMPARATOR>, const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject>, const Derived > RCmp ## COMPARATOR ## ReturnType; \
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Cmp ## COMPARATOR ## ReturnType \
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR const Cmp ## COMPARATOR ## ReturnType \
 OP(const Scalar& s) const { \
   return this->OP(Derived::PlainObject::Constant(rows(), cols(), s)); \
 } \
-EIGEN_DEVICE_FUNC friend EIGEN_STRONG_INLINE const RCmp ## COMPARATOR ## ReturnType \
+EIGEN_DEVICE_FUNC friend EIGEN_STRONG_INLINE EIGEN_CONSTEXPR const RCmp ## COMPARATOR ## ReturnType \
 OP(const Scalar& s, const EIGEN_CURRENT_STORAGE_BASE_CLASS<Derived>& d) { \
   return Derived::PlainObject::Constant(d.rows(), d.cols(), s).OP(d); \
 }
