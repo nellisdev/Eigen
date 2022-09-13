@@ -22,7 +22,7 @@ namespace internal {
   * \sa class CwiseUnaryOp, MatrixBase::operator-
   */
 template<typename Scalar> struct scalar_opposite_op {
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return -a; }
+  EIGEN_CONSTEXPR EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const { return -a; }
   template<typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
   { return internal::pnegate(a); }
@@ -88,7 +88,7 @@ template<typename Scalar> struct abs_knowing_score<Scalar, typename scalar_score
   */
 template<typename Scalar> struct scalar_abs2_op {
   typedef typename NumTraits<Scalar>::Real result_type;
-  EIGEN_DEVICE_FUNC
+  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
   EIGEN_STRONG_INLINE const result_type operator() (const Scalar& a) const { return numext::abs2(a); }
   template<typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const
@@ -154,7 +154,7 @@ struct functor_traits<scalar_arg_op<Scalar> >
 template<typename Scalar, typename NewType>
 struct scalar_cast_op {
   typedef NewType result_type;
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const NewType operator() (const Scalar& a) const { return cast<Scalar, NewType>(a); }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR const NewType operator() (const Scalar& a) const { return cast<Scalar, NewType>(a); }
 };
 template<typename Scalar, typename NewType>
 struct functor_traits<scalar_cast_op<Scalar,NewType> >
@@ -1070,15 +1070,22 @@ struct functor_traits<scalar_logistic_op<T> > {
   };
 };
 
-template <typename Scalar, typename ScalarExponent, bool BaseIsIntegerType = NumTraits<Scalar>::IsInteger,
-          bool ExponentIsIntegerType = NumTraits<ScalarExponent>::IsInteger>
+template <typename Scalar, typename ScalarExponent, 
+          bool BaseIsInteger = NumTraits<Scalar>::IsInteger,
+          bool ExponentIsInteger = NumTraits<ScalarExponent>::IsInteger,
+          bool BaseIsComplex = NumTraits<Scalar>::IsComplex,
+          bool ExponentIsComplex = NumTraits<ScalarExponent>::IsComplex>
 struct scalar_unary_pow_op {
+  typedef typename internal::promote_scalar_arg<
+      Scalar, ScalarExponent,
+      internal::has_ReturnType<ScalarBinaryOpTraits<Scalar,ScalarExponent,scalar_unary_pow_op> >::value>::type PromotedExponent;
+  typedef typename ScalarBinaryOpTraits<Scalar, PromotedExponent, scalar_unary_pow_op>::ReturnType result_type;
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ScalarExponent& exponent) : m_exponent(exponent) {
-    EIGEN_STATIC_ASSERT((is_arithmetic<ScalarExponent>::value), EXPONENT_MUST_BE_ARITHMETIC);
+    EIGEN_STATIC_ASSERT((is_arithmetic<typename NumTraits<ScalarExponent>::Real>::value), EXPONENT_MUST_BE_ARITHMETIC_OR_COMPLEX);
   }
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE result_type operator()(const Scalar& a) const {
     EIGEN_USING_STD(pow);
-    return pow(a, m_exponent);
+    return static_cast<result_type>(pow(a, m_exponent));
   }
 
  private:
@@ -1087,17 +1094,17 @@ struct scalar_unary_pow_op {
 };
 
 template <typename Scalar, typename ScalarExponent>
-struct scalar_unary_pow_op<Scalar, ScalarExponent, false, false> {
+struct scalar_unary_pow_op<Scalar, ScalarExponent, false, false, false, false> {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ScalarExponent& exponent) : m_exponent(exponent) {
-    EIGEN_STATIC_ASSERT((is_same<Scalar, ScalarExponent>::value), NON_INTEGER_EXPONENT_MUST_BE_SAME_TYPE_AS_BASE);
+    EIGEN_STATIC_ASSERT((is_same<std::remove_const_t<Scalar>, std::remove_const_t<ScalarExponent>>::value), NON_INTEGER_EXPONENT_MUST_BE_SAME_TYPE_AS_BASE);
     EIGEN_STATIC_ASSERT((is_arithmetic<ScalarExponent>::value), EXPONENT_MUST_BE_ARITHMETIC);
   }
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar operator()(const Scalar& a) const {
     EIGEN_USING_STD(pow);
-    return pow(a, m_exponent);
+    return static_cast<Scalar>(pow(a, m_exponent));
   }
   template <typename Packet>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a) const {
     return unary_pow_impl<Packet, ScalarExponent>::run(a, m_exponent);
   }
 
@@ -1106,16 +1113,17 @@ struct scalar_unary_pow_op<Scalar, ScalarExponent, false, false> {
   scalar_unary_pow_op() {}
 };
 
-template <typename Scalar, typename ScalarExponent>
-struct scalar_unary_pow_op<Scalar, ScalarExponent, false, true> {
+template <typename Scalar, typename ScalarExponent, bool BaseIsInteger>
+struct scalar_unary_pow_op<Scalar, ScalarExponent, BaseIsInteger, true, false, false> {
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE scalar_unary_pow_op(const ScalarExponent& exponent) : m_exponent(exponent) {
     EIGEN_STATIC_ASSERT((is_arithmetic<ScalarExponent>::value), EXPONENT_MUST_BE_ARITHMETIC);
   }
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+  // TODO: error handling logic for complex^real_integer
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar operator()(const Scalar& a) const {
     return unary_pow_impl<Scalar, ScalarExponent>::run(a, m_exponent);
   }
   template <typename Packet>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet packetOp(const Packet& a) const {
     return unary_pow_impl<Packet, ScalarExponent>::run(a, m_exponent);
   }
 
@@ -1128,7 +1136,7 @@ template <typename Scalar, typename ScalarExponent>
 struct functor_traits<scalar_unary_pow_op<Scalar, ScalarExponent>> {
   enum {
     GenPacketAccess = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::PacketAccess,
-    IntPacketAccess = !NumTraits<Scalar>::IsComplex && !NumTraits<Scalar>::IsInteger && packet_traits<Scalar>::HasMul && packet_traits<Scalar>::HasDiv && packet_traits<Scalar>::HasCmp,
+    IntPacketAccess = !NumTraits<Scalar>::IsComplex && packet_traits<Scalar>::HasMul && (packet_traits<Scalar>::HasDiv || NumTraits<Scalar>::IsInteger) && packet_traits<Scalar>::HasCmp,
     PacketAccess = NumTraits<ScalarExponent>::IsInteger ? IntPacketAccess : (IntPacketAccess && GenPacketAccess),
     Cost = functor_traits<scalar_pow_op<Scalar, ScalarExponent>>::Cost
   };

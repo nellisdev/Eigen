@@ -126,6 +126,71 @@ void pow_test() {
   VERIFY(all_pass);
 }
 
+template <typename Scalar, typename ScalarExponent>
+Scalar calc_overflow_threshold(const ScalarExponent exponent) {
+    EIGEN_USING_STD(exp2);
+    EIGEN_USING_STD(log2);
+    EIGEN_STATIC_ASSERT((NumTraits<Scalar>::digits() < 2 * NumTraits<double>::digits()), BASE_TYPE_IS_TOO_BIG);
+
+    if (exponent < 2)
+        return NumTraits<Scalar>::highest();
+    else {
+        // base^e <= highest ==> base <= 2^(log2(highest)/e)
+        // For floating-point types, consider the bound for integer values that can be reproduced exactly = 2 ^ digits
+        double highest_bits = numext::mini(static_cast<double>(NumTraits<Scalar>::digits()),
+                                           log2(NumTraits<Scalar>::highest()));
+        return static_cast<Scalar>(
+          numext::floor(exp2(highest_bits / static_cast<double>(exponent))));
+    }
+}
+
+template <typename Base, typename Exponent>
+void test_exponent(Exponent exponent) {
+    EIGEN_USING_STD(pow);
+
+    const Base max_abs_bases = 10000;
+    // avoid integer overflow in Base type
+    Base threshold = calc_overflow_threshold<Base, Exponent>(numext::abs(exponent));
+    // avoid numbers that can't be verified with std::pow
+    double double_threshold = calc_overflow_threshold<double, Exponent>(numext::abs(exponent));
+    // use the lesser of these two thresholds
+    Base testing_threshold = threshold < double_threshold ? threshold : static_cast<Base>(double_threshold);
+    // test both vectorized and non-vectorized code paths
+    const Index array_size = 2 * internal::packet_traits<Base>::size + 1;
+
+    Base max_base = numext::mini(testing_threshold, max_abs_bases);
+    Base min_base = NumTraits<Base>::IsSigned ? -max_base : 0;
+
+    ArrayX<Base> x(array_size), y(array_size);
+
+    bool all_pass = true;
+
+    for (Base base = min_base; base <= max_base; base++) {
+        if (exponent < 0 && base == 0) continue;
+        x.setConstant(base);
+        y = x.pow(exponent);
+        Base e = pow(base, exponent);
+        for (Base a : y) {
+            bool pass = a == e;
+            all_pass &= pass;
+            if (!pass) {
+                std::cout << "pow(" << base << "," << exponent << ")   =   " << a << " !=  " << e << std::endl;
+            }
+        }
+    }
+
+    VERIFY(all_pass);
+}
+template <typename Base, typename Exponent>
+void int_pow_test() {
+    Exponent max_exponent = NumTraits<Base>::digits();
+    Exponent min_exponent = NumTraits<Exponent>::IsSigned ? -max_exponent : 0;
+
+    for (Exponent exponent = min_exponent; exponent < max_exponent; exponent++) {
+        test_exponent<Base, Exponent>(exponent);
+    }
+}
+
 template<typename ArrayType> void array(const ArrayType& m)
 {
   typedef typename ArrayType::Scalar Scalar;
@@ -136,8 +201,20 @@ template<typename ArrayType> void array(const ArrayType& m)
   Index rows = m.rows();
   Index cols = m.cols();
 
-  ArrayType m1 = ArrayType::Random(rows, cols),
-             m2 = ArrayType::Random(rows, cols),
+  ArrayType m1 = ArrayType::Random(rows, cols);
+  if (NumTraits<RealScalar>::IsInteger && NumTraits<RealScalar>::IsSigned
+      && !NumTraits<Scalar>::IsComplex) {
+    // Here we cap the size of the values in m1 such that pow(3)/cube()
+    // doesn't overflow and result in undefined behavior. Notice that because
+    // pow(int, int) promotes its inputs and output to double (according to
+    // the C++ standard), we hvae to make sure that the result fits in 53 bits
+    // for int64,
+    RealScalar max_val =
+        numext::mini(RealScalar(std::cbrt(NumTraits<RealScalar>::highest())),
+                     RealScalar(std::cbrt(1LL << 53)))/2;
+    m1.array() = (m1.abs().array() <= max_val).select(m1, Scalar(max_val));
+  }
+  ArrayType  m2 = ArrayType::Random(rows, cols),
              m3(rows, cols);
   ArrayType m4 = m1; // copy constructor
   VERIFY_IS_APPROX(m1, m4);
@@ -163,23 +240,23 @@ template<typename ArrayType> void array(const ArrayType& m)
   VERIFY_IS_APPROX(m3, m1 - s1);
 
   // scalar operators via Maps
-  m3 = m1;
-  ArrayType::Map(m1.data(), m1.rows(), m1.cols()) -= ArrayType::Map(m2.data(), m2.rows(), m2.cols());
-  VERIFY_IS_APPROX(m1, m3 - m2);
+  m3 = m1;  m4 = m1;
+  ArrayType::Map(m4.data(), m4.rows(), m4.cols()) -= ArrayType::Map(m2.data(), m2.rows(), m2.cols());
+  VERIFY_IS_APPROX(m4, m3 - m2);
 
-  m3 = m1;
-  ArrayType::Map(m1.data(), m1.rows(), m1.cols()) += ArrayType::Map(m2.data(), m2.rows(), m2.cols());
-  VERIFY_IS_APPROX(m1, m3 + m2);
+  m3 = m1;  m4 = m1;
+  ArrayType::Map(m4.data(), m4.rows(), m4.cols()) += ArrayType::Map(m2.data(), m2.rows(), m2.cols());
+  VERIFY_IS_APPROX(m4, m3 + m2);
 
-  m3 = m1;
-  ArrayType::Map(m1.data(), m1.rows(), m1.cols()) *= ArrayType::Map(m2.data(), m2.rows(), m2.cols());
-  VERIFY_IS_APPROX(m1, m3 * m2);
+  m3 = m1; m4 = m1;
+  ArrayType::Map(m4.data(), m4.rows(), m4.cols()) *= ArrayType::Map(m2.data(), m2.rows(), m2.cols());
+  VERIFY_IS_APPROX(m4, m3 * m2);
 
-  m3 = m1;
+  m3 = m1; m4 = m1;
   m2 = ArrayType::Random(rows,cols);
   m2 = (m2==0).select(1,m2);
-  ArrayType::Map(m1.data(), m1.rows(), m1.cols()) /= ArrayType::Map(m2.data(), m2.rows(), m2.cols());
-  VERIFY_IS_APPROX(m1, m3 / m2);
+  ArrayType::Map(m4.data(), m4.rows(), m4.cols()) /= ArrayType::Map(m2.data(), m2.rows(), m2.cols());
+  VERIFY_IS_APPROX(m4, m3 / m2);
 
   // reductions
   VERIFY_IS_APPROX(m1.abs().colwise().sum().sum(), m1.abs().sum());
@@ -487,6 +564,14 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   m3 = (m1.square()<NumTraits<Scalar>::epsilon()).select(Scalar(1),m3);
   VERIFY_IS_APPROX(m3.pow(RealScalar(-2)), m3.square().inverse());
   pow_test<Scalar>();
+
+  typedef typename internal::make_integer<Scalar>::type SignedInt;
+  typedef typename std::make_unsigned<SignedInt>::type UnsignedInt;
+
+  int_pow_test<SignedInt, SignedInt>();
+  int_pow_test<SignedInt, UnsignedInt>();
+  int_pow_test<UnsignedInt, SignedInt>();
+  int_pow_test<UnsignedInt, UnsignedInt>();
 
   VERIFY_IS_APPROX(log10(m3), log(m3)/numext::log(Scalar(10)));
   VERIFY_IS_APPROX(log2(m3), log(m3)/numext::log(Scalar(2)));

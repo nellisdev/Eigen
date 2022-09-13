@@ -168,6 +168,9 @@ struct packet_traits<float> : default_packet_traits {
     HasAbs = 1,
     HasSin = EIGEN_FAST_MATH,
     HasCos = EIGEN_FAST_MATH,
+    HasACos = 1,
+    HasASin = 1,
+    HasATan = 1,
     HasLog = 1,
     HasExp = 1,
 #ifdef __VSX__
@@ -253,7 +256,8 @@ struct packet_traits<int> : default_packet_traits {
     HasShift = 1,
     HasMul   = 1,
     HasDiv   = 0,
-    HasBlend = 1
+    HasBlend = 1,
+    HasCmp = 1
   };
 };
 
@@ -271,7 +275,8 @@ struct packet_traits<short int> : default_packet_traits {
     HasSub  = 1,
     HasMul  = 1,
     HasDiv  = 0,
-    HasBlend = 1
+    HasBlend = 1,
+    HasCmp = 1
   };
 };
 
@@ -289,7 +294,8 @@ struct packet_traits<unsigned short int> : default_packet_traits {
     HasSub  = 1,
     HasMul  = 1,
     HasDiv  = 0,
-    HasBlend = 1
+    HasBlend = 1,
+    HasCmp = 1
   };
 };
 
@@ -307,7 +313,8 @@ struct packet_traits<signed char> : default_packet_traits {
     HasSub  = 1,
     HasMul  = 1,
     HasDiv  = 0,
-    HasBlend = 1
+    HasBlend = 1,
+    HasCmp = 1
   };
 };
 
@@ -325,7 +332,8 @@ struct packet_traits<unsigned char> : default_packet_traits {
     HasSub  = 1,
     HasMul  = 1,
     HasDiv  = 0,
-    HasBlend = 1
+    HasBlend = 1,
+    HasCmp = 1
   };
 };
 

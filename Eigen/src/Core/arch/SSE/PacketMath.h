@@ -139,6 +139,9 @@ struct packet_traits<float> : default_packet_traits {
     HasReciprocal = EIGEN_FAST_MATH,
     HasSin = EIGEN_FAST_MATH,
     HasCos = EIGEN_FAST_MATH,
+    HasACos = 1,
+    HasASin = 1,
+    HasATan = 1,
     HasLog = 1,
     HasLog1p = 1,
     HasExpm1 = 1,
@@ -191,6 +194,7 @@ template<> struct packet_traits<int>    : default_packet_traits
   enum {
     Vectorizable = 1,
     AlignedOnScalar = 1,
+    HasCmp = 1,
     size=4,
 
     HasShift = 1,
@@ -207,7 +211,7 @@ template<> struct packet_traits<bool> : default_packet_traits
     AlignedOnScalar = 1,
     HasHalfPacket = 0,
     size=16,
-
+    
     HasAdd       = 1,
     HasSub       = 1,
     HasShift     = 0,
@@ -218,8 +222,8 @@ template<> struct packet_traits<bool> : default_packet_traits
     HasMin       = 0,
     HasMax       = 0,
     HasConj      = 0,
-    HasSign      = 0,
-    HasSqrt      = 1
+    HasSqrt      = 1,
+    HasSign      = 0   // Don't try to vectorize psign<bool> = identity.
   };
 };
 

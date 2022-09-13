@@ -41,7 +41,7 @@ EIGEN_DOC_UNARY_ADDONS(cwiseAbs2,squared absolute value)
 ///
 /// \sa cwiseAbs()
 ///
-EIGEN_DEVICE_FUNC
+EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
 EIGEN_STRONG_INLINE const CwiseAbs2ReturnType
 cwiseAbs2() const { return CwiseAbs2ReturnType(derived()); }
 
@@ -96,7 +96,7 @@ cwiseArg() const { return CwiseArgReturnType(derived()); }
 
 template <typename ScalarExponent>
 using CwisePowReturnType =
-    std::enable_if_t<internal::is_arithmetic<ScalarExponent>::value,
+    std::enable_if_t<internal::is_arithmetic<typename NumTraits<ScalarExponent>::Real>::value,
                      CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>;
 
 template <typename ScalarExponent>
