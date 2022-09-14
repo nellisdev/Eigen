@@ -195,6 +195,7 @@ template<> struct packet_traits<int>    : default_packet_traits
     Vectorizable = 1,
     AlignedOnScalar = 1,
     HasCmp = 1,
+    HasDiv = 1,
     size=4,
 
     HasShift = 1,
@@ -363,6 +364,8 @@ template<> EIGEN_STRONG_INLINE Packet4i pmul<Packet4i>(const Packet4i& a, const 
             0,2,1,3);
 #endif
 }
+
+template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const Packet4i& b) { return int_div_impl(a, b); }
 
 template<> EIGEN_STRONG_INLINE Packet16b pmul<Packet16b>(const Packet16b& a, const Packet16b& b) { return _mm_and_si128(a,b); }
 
