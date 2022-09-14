@@ -178,6 +178,7 @@ template<> struct packet_traits<int> : default_packet_traits
     Vectorizable = 1,
     AlignedOnScalar = 1,
     HasCmp = 1,
+	HasDiv = 1,
     size=16
   };
 };
@@ -383,7 +384,11 @@ EIGEN_STRONG_INLINE Packet16i pmul<Packet16i>(const Packet16i& a,
                                               const Packet16i& b) {
   return _mm512_mullo_epi32(a, b);
 }
-
+template<> 
+EIGEN_STRONG_INLINE Packet16i pdiv<Packet16i>(const Packet16i& a, 
+                                              const Packet16i& b) { 
+  return int_div_impl(a, b); 
+}
 template <>
 EIGEN_STRONG_INLINE Packet16f pdiv<Packet16f>(const Packet16f& a,
                                               const Packet16f& b) {

@@ -255,7 +255,7 @@ struct packet_traits<int> : default_packet_traits {
     HasSub   = 1,
     HasShift = 1,
     HasMul   = 1,
-    HasDiv   = 0,
+    HasDiv   = 1,
     HasBlend = 1,
     HasCmp = 1
   };
@@ -274,7 +274,7 @@ struct packet_traits<short int> : default_packet_traits {
     HasAdd  = 1,
     HasSub  = 1,
     HasMul  = 1,
-    HasDiv  = 0,
+    HasDiv  = 1,
     HasBlend = 1,
     HasCmp = 1
   };
@@ -293,7 +293,7 @@ struct packet_traits<unsigned short int> : default_packet_traits {
     HasAdd  = 1,
     HasSub  = 1,
     HasMul  = 1,
-    HasDiv  = 0,
+    HasDiv  = 1,
     HasBlend = 1,
     HasCmp = 1
   };
@@ -312,7 +312,7 @@ struct packet_traits<signed char> : default_packet_traits {
     HasAdd  = 1,
     HasSub  = 1,
     HasMul  = 1,
-    HasDiv  = 0,
+    HasDiv  = 1,
     HasBlend = 1,
     HasCmp = 1
   };
@@ -331,7 +331,7 @@ struct packet_traits<unsigned char> : default_packet_traits {
     HasAdd  = 1,
     HasSub  = 1,
     HasMul  = 1,
-    HasDiv  = 0,
+    HasDiv  = 1,
     HasBlend = 1,
     HasCmp = 1
   };
@@ -1043,10 +1043,11 @@ template<> EIGEN_STRONG_INLINE Packet4f pdiv<Packet4f>(const Packet4f& a, const 
 #endif
 }
 
-template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& /*a*/, const Packet4i& /*b*/)
-{ eigen_assert(false && "packet integer division are not supported by AltiVec");
-  return pset1<Packet4i>(0);
-}
+template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const Packet4i& b) { return int_div_impl(a,b); }
+template<> EIGEN_STRONG_INLINE Packet8s   pdiv<Packet8s>  (const Packet8s&   a, const Packet8s&   b) { return int_div_impl(a,b); }
+template<> EIGEN_STRONG_INLINE Packet8us  pdiv<Packet8us> (const Packet8us&  a, const Packet8us&  b) { return int_div_impl(a,b); }
+template<> EIGEN_STRONG_INLINE Packet16c  pdiv<Packet16c> (const Packet16c&  a, const Packet16c&  b) { return int_div_impl(a,b); }
+template<> EIGEN_STRONG_INLINE Packet16uc pdiv<Packet16uc>(const Packet16uc& a, const Packet16uc& b) { return int_div_impl(a,b); }
 
 // for some weird raisons, it has to be overloaded for packet of integers
 template<> EIGEN_STRONG_INLINE Packet4f pmadd(const Packet4f& a, const Packet4f& b, const Packet4f& c) { return vec_madd(a,b,c); }
