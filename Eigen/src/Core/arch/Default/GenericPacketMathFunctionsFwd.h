@@ -116,6 +116,10 @@ Packet pdiv_complex(const Packet& x, const Packet& y);
 
 template <typename Packet, int N> struct ppolevl;
 
+template <typename Packet>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+Packet int_div_impl(Packet a, Packet b);
+
 
 } // end namespace internal
 } // end namespace Eigen

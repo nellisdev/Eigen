@@ -2103,7 +2103,7 @@ struct unary_pow_impl<Packet, ScalarExponent, true, true> {
 };
 
 template <typename Packet>
-Packet int_div_impl(Packet a, Packet b) {
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet int_div_impl(Packet a, Packet b) {
   // Computes the integer quotient a / b using binary search
   typedef typename unpacket_traits<Packet>::type Scalar;
   EIGEN_STATIC_ASSERT((NumTraits<Scalar>::IsInteger), INTEGER_TYPES_ONLY);
@@ -2115,18 +2115,15 @@ Packet int_div_impl(Packet a, Packet b) {
   Packet lo = pzero(b);
   Packet hi = dividend;
 
-  while (predux_any(pcmp_le(lo, hi))) {  // while lo <= hi
-    const Packet mid =
-        parithmetic_shift_right<1>(padd(lo, hi));  // mid = (lo + hi) / 2
-    const Packet comp =
-        pcmp_le(pmul(divisor, mid), dividend);   // comp = divisor * mid <= dividend
-    quotient = pselect(comp, mid, quotient);     // if comp then quotient = mid
-    lo = pselect(comp, padd(mid, cst_one), lo);  // if comp then lo = mid+1
-    hi = pselect(comp, hi, psub(mid, cst_one));  // if !comp then hi = mid-1
+  while (predux_any(pcmp_le(lo, hi))) {                           // while lo <= hi
+    const Packet mid = parithmetic_shift_right<1>(padd(lo, hi));  // mid = (lo + hi) / 2
+    const Packet comp = pcmp_le(pmul(divisor, mid), dividend);    // comp = divisor * mid <= dividend
+    quotient = pselect(comp, mid, quotient);                      // if comp then quotient = mid
+    lo = pselect(comp, padd(mid, cst_one), lo);                   // if comp then lo = mid+1
+    hi = pselect(comp, hi, psub(mid, cst_one));                   // if !comp then hi = mid-1
   }
-  return pselect(
-      pcmp_eq(psign(a), psign(b)), quotient,
-      pnegate(quotient));  // return sign(a) == sign(b) ? quotient : -quotient
+  return pselect(pcmp_eq(psign(a), psign(b)), quotient,
+                 pnegate(quotient));  // return sign(a) == sign(b) ? quotient : -quotient
 }
 
 } // end namespace internal
