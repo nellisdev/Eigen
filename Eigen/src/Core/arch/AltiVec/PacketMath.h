@@ -1043,7 +1043,7 @@ template<> EIGEN_STRONG_INLINE Packet4f pdiv<Packet4f>(const Packet4f& a, const 
 #endif
 }
 
-template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const Packet4i& b) { return int_div_impl(a,b); }
+template<> EIGEN_STRONG_INLINE Packet4i   pdiv<Packet4i>  (const Packet4i&   a, const Packet4i&   b) { return int_div_impl(a,b); }
 template<> EIGEN_STRONG_INLINE Packet8s   pdiv<Packet8s>  (const Packet8s&   a, const Packet8s&   b) { return int_div_impl(a,b); }
 template<> EIGEN_STRONG_INLINE Packet8us  pdiv<Packet8us> (const Packet8us&  a, const Packet8us&  b) { return int_div_impl(a,b); }
 template<> EIGEN_STRONG_INLINE Packet16c  pdiv<Packet16c> (const Packet16c&  a, const Packet16c&  b) { return int_div_impl(a,b); }

@@ -178,7 +178,7 @@ template<> struct packet_traits<int> : default_packet_traits
     Vectorizable = 1,
     AlignedOnScalar = 1,
     HasCmp = 1,
-	HasDiv = 1,
+    HasDiv = 1,
     size=16
   };
 };
