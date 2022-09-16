@@ -212,6 +212,7 @@ template<> struct packet_traits<int> : default_packet_traits
     Vectorizable = 1,
     AlignedOnScalar = 1,
     HasCmp = 1,
+    HasDiv = 1,
     size=8
   };
 };
@@ -545,9 +546,10 @@ template<> EIGEN_STRONG_INLINE Packet8i pmul<Packet8i>(const Packet8i& a, const 
 
 template<> EIGEN_STRONG_INLINE Packet8f pdiv<Packet8f>(const Packet8f& a, const Packet8f& b) { return _mm256_div_ps(a,b); }
 template<> EIGEN_STRONG_INLINE Packet4d pdiv<Packet4d>(const Packet4d& a, const Packet4d& b) { return _mm256_div_pd(a,b); }
-template<> EIGEN_STRONG_INLINE Packet8i pdiv<Packet8i>(const Packet8i& /*a*/, const Packet8i& /*b*/)
-{ eigen_assert(false && "packet integer division are not supported by AVX");
-  return pset1<Packet8i>(0);
+template<> EIGEN_STRONG_INLINE Packet8i pdiv<Packet8i>(const Packet8i& a, const Packet8i& b) {
+  Packet4i lo = pdiv(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0));
+  Packet4i hi = pdiv(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1));
+  return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), hi, 1);
 }
 
 #ifdef EIGEN_VECTORIZE_FMA
@@ -865,6 +867,36 @@ template<int N> EIGEN_STRONG_INLINE Packet8i plogical_shift_left(Packet8i a) {
   __m128i lo = _mm_slli_epi32(_mm256_extractf128_si256(a, 0), N);
   __m128i hi = _mm_slli_epi32(_mm256_extractf128_si256(a, 1), N);
   return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
+#endif
+}
+
+EIGEN_STRONG_INLINE Packet8i parithmetic_shift_right(Packet8i a, Packet8i count) {
+#ifdef EIGEN_VECTORIZE_AVX2
+    return _mm256_srav_epi32(a, count);
+#else
+    __m128i lo = parithmetic_shift_right(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(count, 0));
+    __m128i hi = parithmetic_shift_right(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(count, 1));
+    return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
+#endif
+}
+
+EIGEN_STRONG_INLINE Packet8i plogical_shift_right(Packet8i a, Packet8i count) {
+#ifdef EIGEN_VECTORIZE_AVX2
+    return _mm256_srlv_epi32(a, count);
+#else
+    __m128i lo = plogical_shift_right(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(count, 0));
+    __m128i hi = plogical_shift_right(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(count, 1));
+    return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
+#endif
+}
+
+EIGEN_STRONG_INLINE Packet8i plogical_shift_left(Packet8i a, Packet8i count) {
+#ifdef EIGEN_VECTORIZE_AVX2
+    return _mm256_sllv_epi32(a, count);
+#else
+    __m128i lo = plogical_shift_left(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(count, 0));
+    __m128i hi = plogical_shift_left(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(count, 1));
+    return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
 #endif
 }
 
