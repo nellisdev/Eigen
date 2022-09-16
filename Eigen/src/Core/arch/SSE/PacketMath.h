@@ -368,24 +368,11 @@ template<> EIGEN_STRONG_INLINE Packet16b pmul<Packet16b>(const Packet16b& a, con
 
 template<> EIGEN_STRONG_INLINE Packet4f pdiv<Packet4f>(const Packet4f& a, const Packet4f& b) { return _mm_div_ps(a,b); }
 template<> EIGEN_STRONG_INLINE Packet2d pdiv<Packet2d>(const Packet2d& a, const Packet2d& b) { return _mm_div_pd(a,b); }
-template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const Packet4i& b) {
 #ifdef EIGEN_VECTORIZE_AVX
+template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const Packet4i& b) {
   return _mm256_cvttpd_epi32(_mm256_div_pd(_mm256_cvtepi32_pd(a), _mm256_cvtepi32_pd(b)));
-#else
-  // This code is on par with non-vectorized division, and is provided for convenience
-  // pdiv<Packet4i> won't be called automatically if AVX is not available (HasDiv == 0)
-
-  Packet2d alo = _mm_cvtepi32_pd(a);
-  Packet2d blo = _mm_cvtepi32_pd(b);
-  Packet4i divlo = _mm_cvttpd_epi32(_mm_div_pd(alo, blo));
-
-  Packet2d ahi = _mm_cvtepi32_pd(_mm_shuffle_epi32(a, _MM_SHUFFLE(1, 0, 3, 2)));
-  Packet2d bhi = _mm_cvtepi32_pd(_mm_shuffle_epi32(b, _MM_SHUFFLE(1, 0, 3, 2)));
-  Packet4i divhi = _mm_cvttpd_epi32(_mm_div_pd(ahi, bhi));
-
-  return _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(divlo), _mm_castsi128_ps(divhi), _MM_SHUFFLE(1, 0, 1, 0)));
-#endif
 }
+#endif
 
 // for some weird raisons, it has to be overloaded for packet of integers
 template<> EIGEN_STRONG_INLINE Packet4i pmadd(const Packet4i& a, const Packet4i& b, const Packet4i& c) { return padd(pmul(a,b), c); }
