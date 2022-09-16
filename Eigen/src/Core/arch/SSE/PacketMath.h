@@ -374,8 +374,7 @@ template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const 
 #else
   // This code is on par with non-vectorized division, and is provided for convenience
   // pdiv<Packet4i> won't be called automatically if AVX is not available (HasDiv == 0)
-  // if arguments are small or some loss of precision is tolerable, consider casting to float
-  // _mm_cvttps_epi32(_mm_div_ps(_mm_cvtepi32_ps(a), _mm_cvtepi32_ps(b)))
+
   Packet2d alo = _mm_cvtepi32_pd(a);
   Packet2d blo = _mm_cvtepi32_pd(b);
   Packet4i divlo = _mm_cvttpd_epi32(_mm_div_pd(alo, blo));
