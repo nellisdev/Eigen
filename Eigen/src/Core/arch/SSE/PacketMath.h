@@ -615,9 +615,6 @@ EIGEN_STRONG_INLINE Packet2d pmax<PropagateNaN, Packet2d>(const Packet2d& a, con
 template<int N> EIGEN_STRONG_INLINE Packet4i parithmetic_shift_right(const Packet4i& a) { return _mm_srai_epi32(a,N); }
 template<int N> EIGEN_STRONG_INLINE Packet4i plogical_shift_right   (const Packet4i& a) { return _mm_srli_epi32(a,N); }
 template<int N> EIGEN_STRONG_INLINE Packet4i plogical_shift_left    (const Packet4i& a) { return _mm_slli_epi32(a,N); }
-EIGEN_STRONG_INLINE Packet4i parithmetic_shift_right(const Packet4i& a, const Packet4i& count) { return _mm_sra_epi32(a, count); }
-EIGEN_STRONG_INLINE Packet4i plogical_shift_right(const Packet4i& a, const Packet4i& count) { return _mm_srl_epi32(a, count); }
-EIGEN_STRONG_INLINE Packet4i plogical_shift_left(const Packet4i& a, const Packet4i& count) { return _mm_sll_epi32(a, count); }
 
 template<> EIGEN_STRONG_INLINE Packet4f pabs(const Packet4f& a)
 {

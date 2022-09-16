@@ -870,36 +870,6 @@ template<int N> EIGEN_STRONG_INLINE Packet8i plogical_shift_left(Packet8i a) {
 #endif
 }
 
-EIGEN_STRONG_INLINE Packet8i parithmetic_shift_right(Packet8i a, Packet8i count) {
-#ifdef EIGEN_VECTORIZE_AVX2
-    return _mm256_srav_epi32(a, count);
-#else
-    __m128i lo = parithmetic_shift_right(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(count, 0));
-    __m128i hi = parithmetic_shift_right(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(count, 1));
-    return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
-#endif
-}
-
-EIGEN_STRONG_INLINE Packet8i plogical_shift_right(Packet8i a, Packet8i count) {
-#ifdef EIGEN_VECTORIZE_AVX2
-    return _mm256_srlv_epi32(a, count);
-#else
-    __m128i lo = plogical_shift_right(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(count, 0));
-    __m128i hi = plogical_shift_right(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(count, 1));
-    return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
-#endif
-}
-
-EIGEN_STRONG_INLINE Packet8i plogical_shift_left(Packet8i a, Packet8i count) {
-#ifdef EIGEN_VECTORIZE_AVX2
-    return _mm256_sllv_epi32(a, count);
-#else
-    __m128i lo = plogical_shift_left(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(count, 0));
-    __m128i hi = plogical_shift_left(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(count, 1));
-    return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 1);
-#endif
-}
-
 template<> EIGEN_STRONG_INLINE Packet8f pload<Packet8f>(const float*   from) { EIGEN_DEBUG_ALIGNED_LOAD return _mm256_load_ps(from); }
 template<> EIGEN_STRONG_INLINE Packet4d pload<Packet4d>(const double*  from) { EIGEN_DEBUG_ALIGNED_LOAD return _mm256_load_pd(from); }
 template<> EIGEN_STRONG_INLINE Packet8i pload<Packet8i>(const int*     from) { EIGEN_DEBUG_ALIGNED_LOAD return _mm256_load_si256(reinterpret_cast<const __m256i*>(from)); }
