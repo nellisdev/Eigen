@@ -376,7 +376,7 @@ template <>
 EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a,
                                             const Packet4i& b) {
 #ifdef EIGEN_VECTORIZE_SSE4_1
-  if (_mm_testz_si128(b, b)) {
+  if (_mm_test_all_zeros(b, b)) {
 #else
   if (predux_any(pcmp_eq(b, pzero(b)))) {
 #endif
