@@ -381,7 +381,7 @@ struct maybe_raise_div_by_zero {
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(Packet x) { }
 };
 
-#ifndef EIGEN_GPUCC
+#ifndef EIGEN_GPU_COMPILE_PHASE
 template <typename Packet>
 struct maybe_raise_div_by_zero<Packet, true> {
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(Packet x) {
