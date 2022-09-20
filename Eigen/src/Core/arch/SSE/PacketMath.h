@@ -372,19 +372,11 @@ template<> EIGEN_STRONG_INLINE Packet2d pdiv<Packet2d>(const Packet2d& a, const 
 
 template<> EIGEN_STRONG_INLINE Packet4i pcmp_eq(const Packet4i& a, const Packet4i& b);
 
+
+template<> EIGEN_STRONG_INLINE bool predux_any(const Packet4i& x);
 template <>
 EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a,
                                             const Packet4i& b) {
-#ifdef EIGEN_VECTORIZE_SSE4_1
-  if (EIGEN_PREDICT_FALSE(_mm_test_all_zeros(b, b))) {
-#else
-  if (EIGEN_PREDICT_FALSE(predux_any(pcmp_eq(b, pzero(b))))) {
-#endif
-    volatile int x = 1;
-    volatile int y = 0;
-    volatile int z = x / y;
-    EIGEN_UNUSED_VARIABLE(z);
-  }
 #ifdef EIGEN_VECTORIZE_AVX
   return _mm256_cvttpd_epi32(
       _mm256_div_pd(_mm256_cvtepi32_pd(a), _mm256_cvtepi32_pd(b)));
@@ -1169,6 +1161,11 @@ template<> EIGEN_STRONG_INLINE int predux_max<Packet4i>(const Packet4i& a)
 template<> EIGEN_STRONG_INLINE bool predux_any(const Packet4f& x)
 {
   return _mm_movemask_ps(x) != 0x0;
+}
+
+template<> EIGEN_STRONG_INLINE bool predux_any(const Packet4i& x)
+{
+  return _mm_movemask_ps(_mm_castsi128_ps(x)) != 0x0;
 }
 
 EIGEN_DEVICE_FUNC inline void
