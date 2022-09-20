@@ -371,13 +371,9 @@ template<> EIGEN_STRONG_INLINE Packet4f pdiv<Packet4f>(const Packet4f& a, const 
 template<> EIGEN_STRONG_INLINE Packet2d pdiv<Packet2d>(const Packet2d& a, const Packet2d& b) { return _mm_div_pd(a,b); }
 
 template <>
-EIGEN_STRONG_INLINE Packet4i pcmp_eq<Packet4i>(const Packet4i& a,
-                                            const Packet4i& b);
-
-template <>
 EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a,
                                             const Packet4i& b) {
-  if (predux_any(pcmp_eq(b, pzero(b)))) {
+  if (_mm_testz_si128(b, b)) {
     volatile int x = 1;
     volatile int y = 0;
     volatile int z = x / y;

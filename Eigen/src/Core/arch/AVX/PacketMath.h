@@ -547,8 +547,7 @@ template<> EIGEN_STRONG_INLINE Packet8i pmul<Packet8i>(const Packet8i& a, const 
 template<> EIGEN_STRONG_INLINE Packet8f pdiv<Packet8f>(const Packet8f& a, const Packet8f& b) { return _mm256_div_ps(a,b); }
 template<> EIGEN_STRONG_INLINE Packet4d pdiv<Packet4d>(const Packet4d& a, const Packet4d& b) { return _mm256_div_pd(a,b); }
 
-template<> EIGEN_STRONG_INLINE Packet8i pdiv<Packet8i>(const Packet8i& a, const Packet8i& b)
-{ 
+template<> EIGEN_STRONG_INLINE Packet8i pdiv<Packet8i>(const Packet8i& a, const Packet8i& b) {
   Packet4i lo = pdiv<Packet4i>(_mm256_extractf128_si256(a, 0), _mm256_extractf128_si256(b, 0));
   Packet4i hi = pdiv<Packet4i>(_mm256_extractf128_si256(a, 1), _mm256_extractf128_si256(b, 1));
   return _mm256_insertf128_si256(_mm256_castsi128_si256(lo), hi, 1);
