@@ -378,7 +378,9 @@ struct functor_traits<scalar_difference_op<LhsScalar,RhsScalar> > {
 
 template <typename Packet, bool IsInteger = NumTraits<typename unpacket_traits<Packet>::type>::IsInteger>
 struct maybe_raise_div_by_zero {
-  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(Packet x) { }
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void run(Packet x) {
+    EIGEN_UNUSED_VARIABLE(x);
+  }
 };
 
 #ifndef EIGEN_GPU_COMPILE_PHASE
