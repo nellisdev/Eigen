@@ -373,7 +373,11 @@ template<> EIGEN_STRONG_INLINE Packet2d pdiv<Packet2d>(const Packet2d& a, const 
 template <>
 EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a,
                                             const Packet4i& b) {
+#ifdef EIGEN_VECTORIZE_SSE4_1
   if (_mm_testz_si128(b, b)) {
+#else
+    if (predux_any(pcmp_eq(b,pzero(b)))) {
+#endif
     volatile int x = 1;
     volatile int y = 0;
     volatile int z = x / y;
