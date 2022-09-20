@@ -408,9 +408,10 @@ struct scalar_quotient_op  : binary_op_base<LhsScalar,RhsScalar>
 #endif
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const result_type operator() (const LhsScalar& a, const RhsScalar& b) const { return a / b; }
   template<typename Packet>
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const
-  { maybe_raise_div_by_zero<Packet>::run(b);
-    return internal::pdiv(a,b); }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a, const Packet& b) const {
+    maybe_raise_div_by_zero<Packet>::run(b);
+    return internal::pdiv(a,b);
+  }
 };
 template<typename LhsScalar,typename RhsScalar>
 struct functor_traits<scalar_quotient_op<LhsScalar,RhsScalar> > {
