@@ -195,9 +195,7 @@ template<> struct packet_traits<int>    : default_packet_traits
     Vectorizable = 1,
     AlignedOnScalar = 1,
     HasCmp = 1,
-    #ifdef EIGEN_VECTORIZE_AVX
     HasDiv=1,
-    #endif
     size=4,
 
     HasShift = 1,
@@ -372,14 +370,31 @@ template<> EIGEN_STRONG_INLINE Packet16b pmul<Packet16b>(const Packet16b& a, con
 template<> EIGEN_STRONG_INLINE Packet4f pdiv<Packet4f>(const Packet4f& a, const Packet4f& b) { return _mm_div_ps(a,b); }
 template<> EIGEN_STRONG_INLINE Packet2d pdiv<Packet2d>(const Packet2d& a, const Packet2d& b) { return _mm_div_pd(a,b); }
 
-#ifdef EIGEN_VECTORIZE_AVX
+template <>
+EIGEN_STRONG_INLINE Packet4i pcmp_eq<Packet4i>(const Packet4i& a,
+                                            const Packet4i& b);
+
 template <>
 EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a,
                                             const Packet4i& b) {
+  if (predux_any(pcmp_eq(b, pzero(b)))) {
+    volatile int x = 1;
+    volatile int y = 0;
+    volatile int z = x / y;
+    EIGEN_UNUSED_VARIABLE(z);
+  }
+#ifdef EIGEN_VECTORIZE_AVX
   return _mm256_cvttpd_epi32(
       _mm256_div_pd(_mm256_cvtepi32_pd(a), _mm256_cvtepi32_pd(b)));
-}
+#else
+  __m128i q_lo = _mm_cvttpd_epi32(_mm_div_pd(_mm_cvtepi32_pd(a), _mm_cvtepi32_pd(b)));
+  __m128i q_hi =
+      _mm_cvttpd_epi32(_mm_div_pd(_mm_cvtepi32_pd(vec4i_swizzle1(a, 2, 3, 0, 1)),
+                                 _mm_cvtepi32_pd(vec4i_swizzle1(b, 2, 3, 0, 1))));
+  return vec4i_swizzle1(_mm_unpacklo_epi32(q_lo, q_hi), 0, 2, 1, 3);
 #endif
+}
+
 
 // for some weird raisons, it has to be overloaded for packet of integers
 template<> EIGEN_STRONG_INLINE Packet4i pmadd(const Packet4i& a, const Packet4i& b, const Packet4i& c) { return padd(pmul(a,b), c); }
