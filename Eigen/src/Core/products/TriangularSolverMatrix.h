@@ -202,8 +202,8 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(size,blocking.mc());  // cache block size along the M direction
 
-    std::size_t sizeA = kc*mc;
-    std::size_t sizeB = kc*cols;
+    std::size_t sizeA = kc*mc + 512 / sizeof(Scalar);
+    std::size_t sizeB = kc*cols + 512 / sizeof(Scalar);
 
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
@@ -349,8 +349,8 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
 
-    std::size_t sizeA = kc*mc;
-    std::size_t sizeB = kc*size;
+    std::size_t sizeA = kc*mc + 512 / sizeof(Scalar);
+    std::size_t sizeB = kc*size + 512 / sizeof(Scalar);
 
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());

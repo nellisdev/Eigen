@@ -366,8 +366,8 @@ EIGEN_DONT_INLINE void product_selfadjoint_matrix<Scalar,Index,LhsStorageOrder,t
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
     // kc must be smaller than mc
     kc = (std::min)(kc,mc);
-    std::size_t sizeA = kc*mc;
-    std::size_t sizeB = kc*cols;
+    std::size_t sizeA = kc*mc + 512 / sizeof(Scalar);
+    std::size_t sizeB = kc*cols + 512 / sizeof(Scalar);
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
 
@@ -455,8 +455,8 @@ EIGEN_DONT_INLINE void product_selfadjoint_matrix<Scalar,Index,LhsStorageOrder,f
 
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
-    std::size_t sizeA = kc*mc;
-    std::size_t sizeB = kc*cols;
+    std::size_t sizeA = kc*mc + 512 / sizeof(Scalar);
+    std::size_t sizeB = kc*cols + 512 / sizeof(Scalar);
     ei_declare_aligned_stack_constructed_variable(Scalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(Scalar, blockB, sizeB, blocking.blockB());
 

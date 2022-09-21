@@ -93,7 +93,7 @@ static void run(Index rows, Index cols, Index depth,
     LhsScalar* blockA = blocking.blockA();
     eigen_internal_assert(blockA!=0);
 
-    std::size_t sizeB = kc*nc;
+    std::size_t sizeB = kc*nc + 512 / sizeof(RhsScalar);
     ei_declare_aligned_stack_constructed_variable(RhsScalar, blockB, sizeB, 0);
 
     // For each horizontal panel of the rhs, and corresponding vertical panel of the lhs...
@@ -159,8 +159,8 @@ static void run(Index rows, Index cols, Index depth,
     EIGEN_UNUSED_VARIABLE(info);
 
     // this is the sequential version!
-    std::size_t sizeA = kc*mc;
-    std::size_t sizeB = kc*nc;
+    std::size_t sizeA = kc*mc + 512 / sizeof(LhsScalar);
+    std::size_t sizeB = kc*nc + 512 / sizeof(RhsScalar);
 
     ei_declare_aligned_stack_constructed_variable(LhsScalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(RhsScalar, blockB, sizeB, blocking.blockB());
@@ -370,8 +370,8 @@ class gemm_blocking_space<StorageOrder,LhsScalar_,RhsScalar_,MaxRows, MaxCols, M
       eigen_internal_assert(this->m_blockA==0 && this->m_blockB==0);
       Index m = this->m_mc;
       computeProductBlockingSizes<LhsScalar,RhsScalar,KcFactor>(this->m_kc, m, this->m_nc, num_threads);
-      m_sizeA = this->m_mc * this->m_kc;
-      m_sizeB = this->m_kc * this->m_nc;
+      m_sizeA = this->m_mc * this->m_kc + 512 / sizeof(LhsScalar);;
+      m_sizeB = this->m_kc * this->m_nc + 512 / sizeof(RhsScalar);;
     }
 
     void allocateA()

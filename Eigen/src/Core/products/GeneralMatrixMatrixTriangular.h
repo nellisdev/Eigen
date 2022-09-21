@@ -83,8 +83,8 @@ struct general_matrix_matrix_triangular_product<Index,LhsScalar,LhsStorageOrder,
     if(mc > Traits::nr)
       mc = (mc/Traits::nr)*Traits::nr;
 
-    std::size_t sizeA = kc*mc;
-    std::size_t sizeB = kc*size;
+    std::size_t sizeA = kc*mc + 512 / sizeof(LhsScalar);
+    std::size_t sizeB = kc*size + 512 / sizeof(RhsScalar);
 
     ei_declare_aligned_stack_constructed_variable(LhsScalar, blockA, sizeA, blocking.blockA());
     ei_declare_aligned_stack_constructed_variable(RhsScalar, blockB, sizeB, blocking.blockB());
