@@ -181,7 +181,7 @@ namespace Eigen
   }
 #endif
 
-  /** \returns an expression of the coefficient-wise atan2(\a y, \a x). \a x and \a y must be of the same type.
+  /** \returns an expression of the coefficient-wise atan2(\a x, \a y). \a x and \a y must be of the same type.
     *
     * This function computes the coefficient-wise atan2().
     *

@@ -134,9 +134,9 @@ absolute_difference
   */
 EIGEN_MAKE_CWISE_BINARY_OP(pow,pow)
 
-/** \returns an expression of the coefficient-wise atan2(\a y, \a x).
+/** \returns an expression of the coefficient-wise atan2(\c *this, \a y), where \a y is the given array argument.
   *
-  * This function computes the coefficient-wise power.
+  * This function computes the coefficient-wise atan2.
   *
   */
 EIGEN_MAKE_CWISE_BINARY_OP(atan2,atan2)
