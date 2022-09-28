@@ -134,6 +134,14 @@ absolute_difference
   */
 EIGEN_MAKE_CWISE_BINARY_OP(pow,pow)
 
+/** \returns an expression of the coefficient-wise atan2(\a y, \a x).
+  *
+  * This function computes the coefficient-wise power.
+  *
+  */
+EIGEN_MAKE_CWISE_BINARY_OP(atan2,atan2)
+
+
 // TODO code generating macros could be moved to Macros.h and could include generation of documentation
 #define EIGEN_MAKE_CWISE_COMP_OP(OP, COMPARATOR) \
 template<typename OtherDerived> \
