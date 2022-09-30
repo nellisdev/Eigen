@@ -870,7 +870,7 @@ Packet patan_double(const Packet& x_in) {
   typedef typename unpacket_traits<Packet>::type Scalar;
   static_assert(std::is_same<Scalar, double>::value, "Scalar type must be double");
 
-  const Packet cst_one = pset1<Packet>(1.0f);
+  const Packet cst_one = pset1<Packet>(1.0);
   constexpr double kPiOverTwo = static_cast<double>(M_PI_2);
   const Packet cst_pi_over_two = pset1<Packet>(kPiOverTwo);
   constexpr double kPiOverFour = static_cast<double>(M_PI_4);
@@ -896,7 +896,7 @@ Packet patan_double(const Packet& x_in) {
   //   "Large": For x >= tan(3*pi/8), use atan(1/x) = pi/2 - atan(x).
   //   "Medium": For x in [tan(pi/8) : tan(3*pi/8)),
   //             use atan(x) = pi/4 + atan((x-1)/(x+1)).
-  //   "Small": For x < pi/8, approximate atan(x) directly by a polynomial
+  //   "Small": For x < tan(pi/8), approximate atan(x) directly by a polynomial
   //            calculated using Sollya.
   const Packet large_mask = pcmp_lt(cst_large, x);
   x = pselect(large_mask, preciprocal(x), x);
@@ -910,12 +910,12 @@ Packet patan_double(const Packet& x_in) {
   const Packet x4 = pmul(x2, x2);
   Packet q_odd = pmadd(q18, x4, q14);
   Packet q_even = pmadd(q16, x4, q12);
-  q_odd = pmadd(q14, x4, q10);
-  q_even = pmadd(q12, x4, q8);
-  q_odd = pmadd(q10, x4, q6);
-  q_even = pmadd(q8, x4, q4);
-  q_odd = pmadd(q6, x4, q2);
-  q_even = pmadd(q4, x4, q0);
+  q_odd = pmadd(q_odd, x4, q10);
+  q_even = pmadd(q_even, x4, q8);
+  q_odd = pmadd(q_odd, x4, q6);
+  q_even = pmadd(q_even, x4, q4);
+  q_odd = pmadd(q_odd, x4, q2);
+  q_even = pmadd(q_even, x4, q0);
   const Packet q = pmadd(q_odd, x2, q_even);
   Packet p = pmadd(q, pmul(x, x2), x);
 
