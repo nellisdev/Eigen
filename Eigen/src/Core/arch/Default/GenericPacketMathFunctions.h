@@ -905,7 +905,7 @@ Packet patan_double(const Packet& x_in) {
 
   // Approximate atan(x) on [0:tan(pi/8)] by a polynomial of the form
   //   P(x) = x + x^3 * Q(x^2),
-  // where Q(x^2) is a cubic polynomial in x^2.
+  // where Q(x^2) is a 9th order polynomial in x^2.
   const Packet x2 = pmul(x, x);
   const Packet x4 = pmul(x2, x2);
   Packet q_odd = pmadd(q18, x4, q14);
