@@ -815,7 +815,7 @@ Packet pasin_float(const Packet& x_in) {
   return pselect(invalid_mask, pset1<Packet>(std::numeric_limits<float>::quiet_NaN()), p);
 }
 
-// Computes elementwise atan(x) for x in [-1:1].
+// Computes elementwise atan(x) for x in [-1:1] with 2 ulp accuracy.
 template<typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet patan_reduced_float(const Packet& x) {
@@ -868,7 +868,8 @@ Packet patan_float(const Packet& x_in) {
   return pselect(large_mask, psub(large_shift, p), p);
 }
 
-// Computes elementwise atan(x) for x in [-1:1].
+// Computes elementwise atan(x) for x in [-tan(pi/8):tan(pi/8)]
+// with 2 ulp accuracy.
 template <typename Packet>
 EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet
 patan_reduced_double(const Packet& x) {
