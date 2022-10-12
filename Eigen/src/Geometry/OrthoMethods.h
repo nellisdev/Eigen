@@ -15,6 +15,23 @@
 
 namespace Eigen { 
 
+template<typename Derived>
+template<typename OtherDerived, typename DerivedAux>
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+typename std::enable_if_t<DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2, typename internal::traits<Derived>::Scalar>
+#else
+typename MatrixBase<Derived>::Scalar
+#endif
+MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
+  typename internal::nested_eval<Derived,2>::type lhs(derived());
+  typename internal::nested_eval<OtherDerived,2>::type rhs(other.derived());
+  return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
+}
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other
@@ -27,10 +44,10 @@ namespace Eigen {
   * \sa MatrixBase::cross3()
   */
 template<typename Derived>
-template<typename OtherDerived>
+template<typename OtherDerived, typename DerivedAux>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+typename std::enable_if_t<!(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2), typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
 #else
 typename MatrixBase<Derived>::PlainObject
 #endif

@@ -387,6 +387,15 @@ template<typename Derived> class MatrixBase
 
 /////////// Geometry module ///////////
 
+    template<typename OtherDerived, typename DerivedAux=Derived>
+    EIGEN_DEVICE_FUNC
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+    inline typename std::enable_if_t<DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2, typename internal::traits<Derived>::Scalar>
+#else
+    inline Scalar
+#endif
+    cross(const MatrixBase<OtherDerived>& other) const;
+
     #ifndef EIGEN_PARSED_BY_DOXYGEN
     /// \internal helper struct to form the return type of the cross product
     template<typename OtherDerived> struct cross_product_return_type {
@@ -394,10 +403,10 @@ template<typename Derived> class MatrixBase
       typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> type;
     };
     #endif // EIGEN_PARSED_BY_DOXYGEN
-    template<typename OtherDerived>
+    template<typename OtherDerived, typename DerivedAux=Derived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline typename cross_product_return_type<OtherDerived>::type
+    inline typename std::enable_if_t<!(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2), typename cross_product_return_type<OtherDerived>::type>
 #else
     inline PlainObject
 #endif
