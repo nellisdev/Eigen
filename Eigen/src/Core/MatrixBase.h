@@ -390,7 +390,9 @@ template<typename Derived> class MatrixBase
     template<typename OtherDerived, typename DerivedAux=Derived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline std::enable_if_t<DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2, typename internal::traits<Derived>::Scalar>
+    inline std::enable_if_t<
+      DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
+      typename internal::traits<Derived>::Scalar>
 #else
     inline Scalar
 #endif
@@ -406,7 +408,9 @@ template<typename Derived> class MatrixBase
     template<typename OtherDerived, typename DerivedAux=Derived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline std::enable_if_t<!(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2), typename cross_product_return_type<OtherDerived>::type>
+    inline std::enable_if_t<
+      !(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
+      typename cross_product_return_type<OtherDerived>::type>
 #else
     inline PlainObject
 #endif
