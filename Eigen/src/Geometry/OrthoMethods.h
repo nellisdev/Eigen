@@ -15,6 +15,12 @@
 
 namespace Eigen { 
 
+/** \geometry_module \ingroup Geometry_Module
+  *
+  * \returns the cross product of size-2 vectors \c *this and \a other, expressed as a scalar
+  *
+  * This method is only implemented for vectors of size 2 at compile time.
+  */
 template<typename Derived>
 template<typename OtherDerived, typename DerivedAux>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
@@ -37,6 +43,8 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 /** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other
+  *
+  * This method is only implemented for vectors of size 3 at compile time.
   *
   * Here is a very good explanation of cross-product: http://xkcd.com/199/
   * 
