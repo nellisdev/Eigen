@@ -60,7 +60,7 @@ void special_value_pairs(Array<Scalar, Dynamic, Dynamic>& x,
 }
 
 template <typename Scalar, typename Fn, typename RefFn>
-void binary_op_test(Fn fun, RefFn ref) {
+void binary_op_test(std::string name, Fn fun, RefFn ref) {
   const Scalar tol = test_precision<Scalar>();
   Array<Scalar, Dynamic, Dynamic> x;
   Array<Scalar, Dynamic, Dynamic> y;
@@ -75,7 +75,7 @@ void binary_op_test(Fn fun, RefFn ref) {
       bool success = (a==e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
       all_pass &= success;
       if (!success) {
-        std::cout << "pow(" << x(i,j) << "," << y(i,j) << ") = " << a << " !=  " << e << std::endl;
+        std::cout << name << "(" << x(i,j) << "," << y(i,j) << ") = " << a << " !=  " << e << std::endl;
       }
     }
   }
@@ -84,9 +84,11 @@ void binary_op_test(Fn fun, RefFn ref) {
 
 template <typename Scalar>
 void binary_ops_test() {
-  binary_op_test<Scalar>([](auto x, auto y) { return Eigen::pow(x, y); },
+  binary_op_test<Scalar>("pow",
+                         [](auto x, auto y) { return Eigen::pow(x, y); },
                          [](auto x, auto y) { return std::pow(x, y); });
-  binary_op_test<Scalar>([](auto x, auto y) { return Eigen::atan2(x, y); },
+  binary_op_test<Scalar>("atan2",
+                         [](auto x, auto y) { return Eigen::atan2(x, y); },
                          [](auto x, auto y) { return std::atan2(x, y); });
 }
 
