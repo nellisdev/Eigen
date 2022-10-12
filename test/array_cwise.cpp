@@ -59,18 +59,18 @@ void special_value_pairs(Array<Scalar, Dynamic, Dynamic>& x,
   }
 }
 
-template<typename Scalar>
-void pow_test() {
+template <typename Scalar, typename Fn, typename RefFn>
+void binary_op_test(Fn fun, RefFn ref) {
   const Scalar tol = test_precision<Scalar>();
   Array<Scalar, Dynamic, Dynamic> x;
   Array<Scalar, Dynamic, Dynamic> y;
   special_value_pairs(x, y);
 
-  Array<Scalar, Dynamic, Dynamic> actual = x.pow(y);
+  Array<Scalar, Dynamic, Dynamic> actual = fun(x, y);
   bool all_pass = true;
   for (int i = 0; i < x.rows(); ++i) {
     for (int j = 0; j < x.cols(); ++j) {
-      Scalar e = static_cast<Scalar>(std::pow(x(i,j), y(i,j)));
+      Scalar e = static_cast<Scalar>(ref(x(i,j), y(i,j)));
       Scalar a = actual(i, j);
       bool success = (a==e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
       all_pass &= success;
@@ -82,27 +82,12 @@ void pow_test() {
   VERIFY(all_pass);
 }
 
-template<typename Scalar>
-void atan2_test() {
-  const Scalar tol = test_precision<Scalar>();
-  Array<Scalar, Dynamic, Dynamic> x;
-  Array<Scalar, Dynamic, Dynamic> y;
-  special_value_pairs(x, y);
-
-  Array<Scalar, Dynamic, Dynamic> actual = x.atan2(y);
-  bool all_pass = true;
-  for (int i = 0; i < x.rows(); ++i) {
-    for (int j = 0; j < x.cols(); ++j) {
-      Scalar e = static_cast<Scalar>(std::atan2(x(i,j), y(i,j)));
-      Scalar a = actual(i, j);
-      bool success = (a==e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
-      all_pass &= success;
-      if (!success) {
-        std::cout << "atan2(" << x(i,j) << "," << y(i,j) << ") = " << a << " !=  " << e << std::endl;
-      }
-    }
-  }
-  VERIFY(all_pass);
+template <typename Scalar>
+void binary_ops_test() {
+  binary_op_test<Scalar>([](auto x, auto y) { return Eigen::pow(x, y); },
+                         [](auto x, auto y) { return std::pow(x, y); });
+  binary_op_test<Scalar>([](auto x, auto y) { return Eigen::atan2(x, y); },
+                         [](auto x, auto y) { return std::atan2(x, y); });
 }
 
 template <typename Scalar>
@@ -654,9 +639,8 @@ template<typename ArrayType> void array_real(const ArrayType& m)
   VERIFY_IS_APPROX(m3.pow(RealScalar(-2)), m3.square().inverse());
 
   // Test pow and atan2 on special IEEE values.
-  pow_test<Scalar>();
+  binary_ops_test<Scalar>();
   pow_scalar_exponent_test<Scalar>();
-  atan2_test<Scalar>();
 
   VERIFY_IS_APPROX(log10(m3), log(m3)/numext::log(Scalar(10)));
   VERIFY_IS_APPROX(log2(m3), log(m3)/numext::log(Scalar(2)));
