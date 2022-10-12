@@ -59,8 +59,6 @@ void special_value_pairs(Array<Scalar, Dynamic, Dynamic>& x,
   }
 }
 
-
-// Test the corner cases of pow(x, y) for real types.
 template<typename Scalar>
 void pow_test() {
   const Scalar tol = test_precision<Scalar>();
@@ -84,7 +82,6 @@ void pow_test() {
   VERIFY(all_pass);
 }
 
-// Test the corner cases of pow(x, y) for real types.
 template<typename Scalar>
 void atan2_test() {
   const Scalar tol = test_precision<Scalar>();
