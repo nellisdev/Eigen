@@ -97,7 +97,7 @@ template<typename Scalar> void orthomethods_2()
   RealVector2 rv21 = RealVector2::Random();
   v21 = rv21.template cast<Scalar>();
   VERIFY_IS_APPROX(v20.cross(v21), v20.cross(rv21));
-  // VERIFY_IS_APPROX(v21.cross(v20), rv21.cross(v20));
+  VERIFY_IS_APPROX(v21.cross(v20), rv21.cross(v20));
 }
 
 template<typename Scalar, int Size> void orthomethods(int size=Size)

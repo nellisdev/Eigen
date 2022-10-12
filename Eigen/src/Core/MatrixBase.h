@@ -392,19 +392,19 @@ template<typename Derived> class MatrixBase
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     inline std::enable_if_t<
       DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-      typename internal::traits<Derived>::Scalar>
+      typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType>
 #else
-    inline Scalar
+    inline typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
 #endif
     cross(const MatrixBase<OtherDerived>& other) const;
 
-    #ifndef EIGEN_PARSED_BY_DOXYGEN
+#ifndef EIGEN_PARSED_BY_DOXYGEN
     /// \internal helper struct to form the return type of the cross product
     template<typename OtherDerived> struct cross_product_return_type {
       typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
       typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> type;
     };
-    #endif // EIGEN_PARSED_BY_DOXYGEN
+#endif // EIGEN_PARSED_BY_DOXYGEN
     template<typename OtherDerived, typename DerivedAux=Derived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN

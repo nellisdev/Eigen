@@ -21,9 +21,9 @@ template<typename OtherDerived, typename DerivedAux>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 std::enable_if_t<
   DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-  typename internal::traits<Derived>::Scalar>
+  typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType>
 #else
-typename MatrixBase<Derived>::Scalar
+typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
