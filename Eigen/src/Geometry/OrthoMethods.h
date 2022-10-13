@@ -15,25 +15,6 @@
 
 namespace Eigen { 
 
-template<typename Derived>
-template<typename OtherDerived, typename DerivedAux>
-#ifndef EIGEN_PARSED_BY_DOXYGEN
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-  typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType>
-#else
-typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
-#endif
-MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
-  typename internal::nested_eval<Derived,2>::type lhs(derived());
-  typename internal::nested_eval<OtherDerived,2>::type rhs(other.derived());
-  return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
-}
-
 /** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other, either a scalar or a vector, depending on the input sizes.
@@ -77,6 +58,26 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
     numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
     numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
   );
+}
+
+// Not directly documented due tue issues with ingroup (up to Doxygen version 1.9.5), see doc for vector version
+template<typename Derived>
+template<typename OtherDerived, typename DerivedAux>
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+std::enable_if_t<
+  DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
+  typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType>
+#else
+typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
+#endif
+MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
+  typename internal::nested_eval<Derived,2>::type lhs(derived());
+  typename internal::nested_eval<OtherDerived,2>::type rhs(other.derived());
+  return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
 }
 
 namespace internal {
