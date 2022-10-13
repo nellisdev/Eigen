@@ -41,8 +41,8 @@ std::enable_if_t<
 #else
 std::conditional_t<
   DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-  typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType,
-  typename MatrixBase<Derived>::PlainObject>
+  Scalar,
+  PlainObject>
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
