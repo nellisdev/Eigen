@@ -90,8 +90,16 @@ template<typename Scalar> void orthomethods_2()
   Vector2 v21 = v31.template head<2>();
 
   VERIFY_IS_MUCH_SMALLER_THAN(v20.cross(v20), Scalar(1));
+  VERIFY_IS_MUCH_SMALLER_THAN(v21.cross(v21), Scalar(1));
   VERIFY_IS_APPROX(v20.cross(v21), v30.cross(v31).z());
   
+  Vector2 v20Rot90(numext::conj(-v20.y()), numext::conj(v20.x()));
+  VERIFY_IS_APPROX(v20.cross( v20Rot90),  v20.squaredNorm());
+  VERIFY_IS_APPROX(v20.cross(-v20Rot90), -v20.squaredNorm());
+  Vector2 v21Rot90(numext::conj(-v21.y()), numext::conj(v21.x()));
+  VERIFY_IS_APPROX(v21.cross( v21Rot90),  v21.squaredNorm());
+  VERIFY_IS_APPROX(v21.cross(-v21Rot90), -v21.squaredNorm());
+
   // check mixed product
   typedef Matrix<RealScalar, 2, 1> RealVector2;
   RealVector2 rv21 = RealVector2::Random();
