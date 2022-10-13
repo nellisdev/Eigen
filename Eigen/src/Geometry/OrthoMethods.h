@@ -15,12 +15,6 @@
 
 namespace Eigen { 
 
-/** \geometry_module \ingroup Geometry_Module
-  *
-  * \returns the cross product of size-2 vectors \c *this and \a other, expressed as a scalar
-  *
-  * This method is only implemented for vectors of size 2 at compile time.
-  */
 template<typename Derived>
 template<typename OtherDerived, typename DerivedAux>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
@@ -42,9 +36,12 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 
 /** \geometry_module \ingroup Geometry_Module
   *
-  * \returns the cross product of \c *this and \a other
+  * \returns the cross product of \c *this and \a other, either a scalar or a vector, depending on the input sizes.
   *
-  * This method is only implemented for vectors of size 3 at compile time.
+  * This method implemented both for vectors of fixed size 2 and those of fixed size 3. No size mixing is allowed.
+  * For size-3 vectors, the output is simply the traditional cross product.
+  * For size-2 vectors, the z-component of both inputs is assumed to be zero,
+  * and the z-component of the corresponding cross product is returned as a scalar.
   *
   * Here is a very good explanation of cross-product: http://xkcd.com/199/
   * 
@@ -61,7 +58,10 @@ std::enable_if_t<
   !(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
   typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
 #else
-typename MatrixBase<Derived>::PlainObject
+std::conditional_t<
+  DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
+  typename MatrixBase<Derived>::PlainObject,
+  typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType>
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
