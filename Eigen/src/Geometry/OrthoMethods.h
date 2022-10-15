@@ -35,16 +35,23 @@ template<typename Derived>
 template<typename OtherDerived, typename DerivedAux>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  !(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
+std::conditional_t<
+  (DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
+  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::Scalar,
   typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
 #else
-std::conditional_t<
-  DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-  Scalar,
-  PlainObject>
+typename MatrixBase<Derived>::PlainObject
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
+{
+  return cross_impl(other);
+}
+
+template<typename Derived>
+template<typename OtherDerived, typename DerivedAux, typename EnableIf>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
@@ -62,16 +69,10 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 
 // Not directly documented due tue issues with ingroup (up to Doxygen version 1.9.5), see doc for vector version
 template<typename Derived>
-template<typename OtherDerived, typename DerivedAux>
-#ifndef EIGEN_PARSED_BY_DOXYGEN
+template<typename OtherDerived, typename DerivedAux, typename EnableIf>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::Scalar>
-#else
-typename MatrixBase<Derived>::PlainObject::Scalar
-#endif
-MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
+typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::Scalar
+MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);

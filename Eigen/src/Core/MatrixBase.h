@@ -395,27 +395,31 @@ template<typename Derived> class MatrixBase
     };
 #endif // EIGEN_PARSED_BY_DOXYGEN
 
-    template<typename OtherDerived, typename DerivedAux=Derived>
+    template<typename OtherDerived, typename DerivedAux = Derived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline std::enable_if_t<
-      !(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
+    inline std::conditional_t<
+      (DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
+      typename cross_product_return_type<OtherDerived>::Scalar,
       typename cross_product_return_type<OtherDerived>::type>
 #else
     inline PlainObject
 #endif
     cross(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename DerivedAux=Derived>
+    template<typename OtherDerived, typename DerivedAux = Derived, typename EnableIf = std::enable_if_t<DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2> >
+    EIGEN_DEVICE_FUNC
+    inline typename cross_product_return_type<OtherDerived>::Scalar
+    cross_impl(const MatrixBase<OtherDerived>& other) const;
+
+    template<typename OtherDerived, typename DerivedAux = Derived,  typename EnableIf = std::enable_if_t<!(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2)> >
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline std::enable_if_t<
-      DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2,
-      typename cross_product_return_type<OtherDerived>::Scalar>
+    inline typename cross_product_return_type<OtherDerived>::type
 #else
-    inline typename PlainObject::Scalar
+    inline PlainObject
 #endif
-    cross(const MatrixBase<OtherDerived>& other) const;
+    cross_impl(const MatrixBase<OtherDerived>& other) const;
 
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
