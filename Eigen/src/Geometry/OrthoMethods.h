@@ -15,14 +15,28 @@
 
 namespace Eigen { 
 
+/** \geometry_module \ingroup Geometry_Module
+  * Helper struct to form the return type of the cross product.
+  * This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
+  */
+template<typename Derived, typename OtherDerived> struct cross_product_return_type {
+  typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
+  typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> VectorType;
+  enum
+  {
+    IsScalar = Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2
+  };
+  typedef std::conditional_t<IsScalar, Scalar, VectorType> type;
+};
+
 namespace internal {
 
 // Vector3 version
 template<typename Derived, typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 std::enable_if_t<
-  !MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
+  !cross_product_return_type<Derived, OtherDerived>::IsScalar,
+  typename cross_product_return_type<Derived, OtherDerived>::type>
 cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
@@ -32,7 +46,7 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
   // optimize such a small temporary very well (even within a complex expression)
   typename internal::nested_eval<Derived,2>::type lhs(first.derived());
   typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
-  return typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type(
+  return typename cross_product_return_type<Derived, OtherDerived>::type(
     numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
     numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
     numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
@@ -43,8 +57,8 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
 template<typename Derived, typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 std::enable_if_t<
-  MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
+  cross_product_return_type<Derived, OtherDerived>::IsScalar,
+  typename cross_product_return_type<Derived, OtherDerived>::type>
 cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
@@ -75,7 +89,7 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
 template<typename Derived>
 template<typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+typename cross_product_return_type<Derived, OtherDerived>::type
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
   return internal::cross_impl(*this, other);

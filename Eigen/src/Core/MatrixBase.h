@@ -387,22 +387,9 @@ template<typename Derived> class MatrixBase
 
 /////////// Geometry module ///////////
 
-    /** Helper struct to form the return type of the cross product.
-      * This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
-      */
-    template<typename OtherDerived> struct cross_product_return_type {
-      typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
-      typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> VectorType;
-      enum
-      {
-        IsScalar = Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2
-      };
-      typedef std::conditional_t<IsScalar, Scalar, VectorType> type;
-    };
-
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    inline typename cross_product_return_type<OtherDerived>::type
+    inline typename cross_product_return_type<Derived, OtherDerived>::type
     cross(const MatrixBase<OtherDerived>& other) const;
 
     template<typename OtherDerived>
