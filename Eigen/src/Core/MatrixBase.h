@@ -411,14 +411,18 @@ template<typename Derived> class MatrixBase
 #endif
     cross(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived,typename EnableIf = std::enable_if_t<cross_product_return_type<OtherDerived>::IsScalar> >
+    template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    inline typename cross_product_return_type<OtherDerived>::Scalar
+    inline std::enable_if_t<
+      cross_product_return_type<OtherDerived>::IsScalar,
+      typename cross_product_return_type<OtherDerived>::type>
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename EnableIf = std::enable_if_t<!cross_product_return_type<OtherDerived>::IsScalar> >
+    template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    inline typename cross_product_return_type<OtherDerived>::VectorType
+    inline std::enable_if_t<
+      !cross_product_return_type<OtherDerived>::IsScalar,
+      typename cross_product_return_type<OtherDerived>::type>
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
     template<typename OtherDerived>

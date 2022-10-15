@@ -46,9 +46,11 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 
 // Vector3 version
 template<typename Derived>
-template<typename OtherDerived, typename EnableIf>
+template<typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::VectorType
+std::enable_if_t<
+  !MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
+  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
 MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
@@ -67,9 +69,11 @@ MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 
 // Vector2 version
 template<typename Derived>
-template<typename OtherDerived, typename EnableIf>
+template<typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::Scalar
+std::enable_if_t<
+  MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
+  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
 MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
