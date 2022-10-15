@@ -15,6 +15,8 @@
 
 namespace Eigen { 
 
+namespace internal {
+
 // Vector3 version
 template<typename Derived, typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -52,6 +54,8 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
   return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
 }
 
+}
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other, either a scalar or a vector, depending on the input sizes.
@@ -78,7 +82,7 @@ typename MatrixBase<Derived>::PlainObject
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
-  return cross_impl(*this, other);
+  return internal::cross_impl(*this, other);
 }
 
 namespace internal {
