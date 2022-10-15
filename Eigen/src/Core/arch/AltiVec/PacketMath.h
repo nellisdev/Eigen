@@ -1575,6 +1575,11 @@ template<> EIGEN_STRONG_INLINE Packet8bf  pabs(const Packet8bf& a) {
   return pand<Packet8us>(p8us_abs_mask, a);
 }
 
+template<> EIGEN_STRONG_INLINE Packet8bf psignbit(const Packet8bf& a) {
+    return reinterpret_cast<Packet8bf>(vec_sra(reinterpret_cast<Packet8s>(a), pset1<Packet8us>(15))); }
+template<> EIGEN_STRONG_INLINE Packet4f  psignbit(const Packet4f&  a) { 
+    return reinterpret_cast<Packet4f> (vec_sra(reinterpret_cast<Packet4i>(a), pset1<Packet4ui>(31))); }
+
 template<int N> EIGEN_STRONG_INLINE Packet4i parithmetic_shift_right(const Packet4i& a)
 { return vec_sra(a,reinterpret_cast<Packet4ui>(pset1<Packet4i>(N))); }
 template<int N> EIGEN_STRONG_INLINE Packet4i plogical_shift_right(const Packet4i& a)

@@ -2372,6 +2372,9 @@ template<> EIGEN_STRONG_INLINE Packet2l pabs(const Packet2l& a) {
 }
 template<> EIGEN_STRONG_INLINE Packet2ul pabs(const Packet2ul& a) { return a; }
 
+template<> EIGEN_STRONG_INLINE Packet2f psignbit(const Packet2f& a) {  vreinterpret_f32_s32( vshr_n_s32( vreinterpret_s32_f32(a), 31)); }
+template<> EIGEN_STRONG_INLINE Packet4f psignbit(const Packet4f& a) { vreinterpretq_f32_s32(vshrq_n_s32(vreinterpretq_s32_f32(a), 31)); }
+
 template<> EIGEN_STRONG_INLINE Packet2f pfrexp<Packet2f>(const Packet2f& a, Packet2f& exponent)
 { return pfrexp_generic(a,exponent); }
 template<> EIGEN_STRONG_INLINE Packet4f pfrexp<Packet4f>(const Packet4f& a, Packet4f& exponent)

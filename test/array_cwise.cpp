@@ -260,6 +260,72 @@ void int_pow_test() {
   unary_pow_test<long long, int>();
 }
 
+namespace Eigen {
+namespace internal {
+template <typename Scalar>
+struct test_signbit_op {
+  Scalar constexpr operator()(const Scalar& a) const { return numext::signbit(a); }
+  template <typename Packet>
+  inline Packet packetOp(const Packet& a) const {
+    return psignbit(a);
+  }
+};
+template <typename Scalar>
+struct functor_traits<test_signbit_op<Scalar>> {
+  enum { Cost = 1, PacketAccess = true }; //todo: define HasSignbit flag
+};
+}  // namespace internal
+}  // namespace Eigen
+
+template<typename Scalar>
+void signbit_test()
+{
+    Scalar true_mask;
+    std::memset(&true_mask, 0xff, sizeof(Scalar));
+    Scalar false_mask;
+    std::memset(&false_mask, 0x00, sizeof(Scalar));
+
+    const size_t size = 100 * internal::packet_traits<Scalar>::size;
+    ArrayX<Scalar> x(size), y(size);
+    x.setRandom();
+    std::vector<Scalar> special_vals = special_values<Scalar>();
+    for (int i = 0; i < special_vals.size(); i++)
+    {
+        x(2 * i + 0) = special_vals[i];
+        x(2 * i + 1) = -special_vals[i];
+    }
+    y = x.unaryExpr(internal::test_signbit_op<Scalar>());
+
+    bool all_pass = true;
+    for (int i = 0; i < size; i++)
+    {
+        // std::signbit returns a boolean, get mask value instead
+        const Scalar ref_val = std::signbit(x(i)) ? true_mask : false_mask;
+        bool not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, y(i)));
+        if (not_same)
+            std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
+        all_pass = all_pass && not_same;
+
+        Scalar numextval = numext::signbit(x(i));
+        not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, numextval));
+        if (not_same)
+            std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
+        all_pass = all_pass && not_same;
+    }
+
+    
+
+
+    VERIFY(all_pass);
+}
+void signbit_tests()
+{
+    signbit_test<float>();
+    signbit_test<double>();
+    signbit_test<Eigen::half>();
+    signbit_test<Eigen::bfloat16>();
+}
+
 template<typename ArrayType> void array(const ArrayType& m)
 {
   typedef typename ArrayType::Scalar Scalar;
@@ -897,6 +963,7 @@ EIGEN_DECLARE_TEST(array_cwise)
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_6( int_pow_test() );
     CALL_SUBTEST_7( mixed_pow_test() );
+    CALL_SUBTEST_8( signbit_test<float>());
   }
 
   VERIFY((internal::is_same< internal::global_math_functions_filtering_base<int>::type, int >::value));

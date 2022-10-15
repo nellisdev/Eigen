@@ -649,6 +649,21 @@ template<> EIGEN_STRONG_INLINE Packet4i pabs(const Packet4i& a)
   #endif
 }
 
+template<> EIGEN_STRONG_INLINE Packet4f psignbit(const Packet4f& a)
+{
+  return _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(a), 31));
+}
+//todo: define 64 bit shift packet ops
+template<> EIGEN_STRONG_INLINE Packet2d psignbit(const Packet2d& a)
+{
+    Packet4f tmp = psignbit<Packet4f>(_mm_castpd_ps(a));
+#ifdef EIGEN_VECTORIZE_AVX
+    return _mm_castps_pd(_mm_permute_ps(tmp, _MM_SHUFFLE(3, 3, 1, 1)));
+#else
+    return _mm_castps_pd(_mm_shuffle_ps(tmp, tmp, _MM_SHUFFLE(3, 3, 1, 1)));
+#endif // EIGEN_VECTORIZE_AVX
+}
+
 #ifdef EIGEN_VECTORIZE_SSE4_1
 template<> EIGEN_STRONG_INLINE Packet4f pround<Packet4f>(const Packet4f& a)
 {

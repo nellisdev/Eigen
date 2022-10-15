@@ -552,6 +552,22 @@ pabs(const unsigned long& a) { return a; }
 template<> EIGEN_DEVICE_FUNC inline unsigned long long
 pabs(const unsigned long long& a) { return a; }
 
+template <typename Packet, bool IsScalar = is_scalar<Packet>::value,
+          bool IsInteger = NumTraits<typename internal::unpacket_traits<Packet>::type>::IsInteger>
+struct psignbit_selector;
+template <typename Packet, bool IsInteger>
+struct psignbit_selector<Packet, true, IsInteger> {
+  EIGEN_DEVICE_FUNC static constexpr Packet run(const Packet& a) { return numext::signbit(a); }
+};
+template <typename Packet>
+struct psignbit_selector<Packet, false, true> {
+  EIGEN_DEVICE_FUNC static inline Packet run(const Packet& a) { return pcmp_lt(a, pzero(a)); }
+};
+/** \internal \returns the sign bit of \a a as a bitmask*/
+template <typename Packet>
+EIGEN_DEVICE_FUNC inline constexpr Packet
+psignbit(const Packet& a) { return psignbit_selector<Packet>::run(a); }
+
 /** \internal \returns the addsub value of \a a,b */
 template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 paddsub(const Packet& a, const Packet& b) {
@@ -563,13 +579,13 @@ template<typename Packet> EIGEN_DEVICE_FUNC inline Packet
 parg(const Packet& a) { using numext::arg; return arg(a); }
 
 
-/** \internal \returns \a a logically shifted by N bits to the right */
+/** \internal \returns \a a arithmetically shifted by N bits to the right */
 template<int N> EIGEN_DEVICE_FUNC inline int
 parithmetic_shift_right(const int& a) { return a >> N; }
 template<int N> EIGEN_DEVICE_FUNC inline long int
 parithmetic_shift_right(const long int& a) { return a >> N; }
 
-/** \internal \returns \a a arithmetically shifted by N bits to the right */
+/** \internal \returns \a a logically shifted by N bits to the right */
 template<int N> EIGEN_DEVICE_FUNC inline int
 plogical_shift_right(const int& a) { return static_cast<int>(static_cast<unsigned int>(a) >> N); }
 template<int N> EIGEN_DEVICE_FUNC inline long int

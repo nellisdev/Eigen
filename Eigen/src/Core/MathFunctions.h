@@ -1531,6 +1531,66 @@ double abs(const std::complex<double>& x) {
 }
 #endif
 
+template <size_t Size>
+struct get_integer_by_size {
+  typedef void type;
+};
+template <>
+struct get_integer_by_size<1> {
+    typedef int8_t type;
+};
+template <>
+struct get_integer_by_size<2> {
+  typedef int16_t type;
+};
+template <>
+struct get_integer_by_size<4> {
+  typedef int32_t type;
+};
+template <>
+struct get_integer_by_size<8> {
+  typedef int64_t type;
+};
+template <size_t Size>
+using get_integer_by_size_t = typename get_integer_by_size<Size>::type;
+
+template <typename Scalar, bool IsInteger = NumTraits<Scalar>::IsInteger, bool IsSigned = NumTraits<Scalar>::IsSigned>
+struct signbit_impl;
+template <typename Scalar>
+struct signbit_impl<Scalar, false, true> {
+  static constexpr size_t Size = sizeof(Scalar);
+  static constexpr size_t Shift = (CHAR_BIT * Size) - NumTraits<Scalar>::IsSigned;
+  using intSize_t = get_integer_by_size_t<Size>;
+
+  static EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Scalar run(const Scalar& x) {
+    intSize_t a = bit_cast<intSize_t, Scalar>(x);
+    a = a >> Shift;
+    Scalar result = bit_cast<Scalar, intSize_t>(a);
+    return result;
+  }
+};
+template <typename Scalar>
+struct signbit_impl<Scalar, true, true> {
+  static constexpr size_t Size = sizeof(Scalar);
+  static constexpr size_t Shift = (CHAR_BIT * Size) - NumTraits<Scalar>::IsSigned;
+
+  static EIGEN_DEVICE_FUNC constexpr Scalar run(const Scalar& x) { 
+      return x >> Shift; 
+  }
+};
+template <typename Scalar>
+struct signbit_impl<Scalar, true, false> {
+
+  static EIGEN_DEVICE_FUNC constexpr Scalar run(const Scalar& x) {
+    EIGEN_UNUSED_VARIABLE(x);
+    return static_cast<Scalar>(0);
+  }
+};
+template <typename Scalar>
+EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr Scalar signbit(const Scalar& x) {
+  return signbit_impl<Scalar>::run(x);
+}
+
 template<typename T>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE
 T exp(const T &x) {
