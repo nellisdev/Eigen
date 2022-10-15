@@ -393,26 +393,36 @@ template<typename Derived> class MatrixBase
       typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
       typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> type;
     };
+
+    template<typename OtherDerived, typename DerivedAux = Derived>
+    struct CrossProductTraits
+    {
+      enum
+      {
+        IsCross2 = DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2
+      };
+      typedef std::conditional_t<
+        IsCross2,
+        typename cross_product_return_type<OtherDerived>::Scalar,
+        typename cross_product_return_type<OtherDerived>::type> ReturnType;
+    };
 #endif // EIGEN_PARSED_BY_DOXYGEN
 
     template<typename OtherDerived, typename DerivedAux = Derived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline std::conditional_t<
-      (DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
-      typename cross_product_return_type<OtherDerived>::Scalar,
-      typename cross_product_return_type<OtherDerived>::type>
+    inline typename CrossProductTraits<OtherDerived, DerivedAux>::ReturnType
 #else
     inline PlainObject
 #endif
     cross(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename DerivedAux = Derived, typename EnableIf = std::enable_if_t<DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2> >
+    template<typename OtherDerived, typename DerivedAux = Derived, typename EnableIf = std::enable_if_t<CrossProductTraits<OtherDerived, DerivedAux>::IsCross2> >
     EIGEN_DEVICE_FUNC
     inline typename cross_product_return_type<OtherDerived>::Scalar
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename DerivedAux = Derived,  typename EnableIf = std::enable_if_t<!(DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2)> >
+    template<typename OtherDerived, typename DerivedAux = Derived,  typename EnableIf = std::enable_if_t<!CrossProductTraits<OtherDerived, DerivedAux>::IsCross2> >
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     inline typename cross_product_return_type<OtherDerived>::type

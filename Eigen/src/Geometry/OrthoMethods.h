@@ -35,10 +35,7 @@ template<typename Derived>
 template<typename OtherDerived, typename DerivedAux>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::conditional_t<
-  (DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2),
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::Scalar,
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
+typename MatrixBase<Derived>::template CrossProductTraits<OtherDerived, DerivedAux>::ReturnType
 #else
 typename MatrixBase<Derived>::PlainObject
 #endif
