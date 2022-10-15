@@ -45,7 +45,7 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 }
 
 template<typename Derived>
-template<typename OtherDerived, typename DerivedAux, typename EnableIf>
+template<typename OtherDerived, typename EnableIf>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
 MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
@@ -66,7 +66,7 @@ MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 
 // Not directly documented due tue issues with ingroup (up to Doxygen version 1.9.5), see doc for vector version
 template<typename Derived>
-template<typename OtherDerived, typename DerivedAux, typename EnableIf>
+template<typename OtherDerived, typename EnableIf>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::Scalar
 MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const

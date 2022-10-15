@@ -417,12 +417,12 @@ template<typename Derived> class MatrixBase
 #endif
     cross(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename DerivedAux = Derived, typename EnableIf = std::enable_if_t<CrossProductTraits<OtherDerived, DerivedAux>::IsCross2> >
+    template<typename OtherDerived,typename EnableIf = std::enable_if_t<CrossProductTraits<OtherDerived>::IsCross2> >
     EIGEN_DEVICE_FUNC
     inline typename cross_product_return_type<OtherDerived>::Scalar
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename DerivedAux = Derived,  typename EnableIf = std::enable_if_t<!CrossProductTraits<OtherDerived, DerivedAux>::IsCross2> >
+    template<typename OtherDerived, typename EnableIf = std::enable_if_t<!CrossProductTraits<OtherDerived>::IsCross2> >
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     inline typename cross_product_return_type<OtherDerived>::type
