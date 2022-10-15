@@ -44,6 +44,7 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
   return cross_impl(other);
 }
 
+// Vector3 version
 template<typename Derived>
 template<typename OtherDerived, typename EnableIf>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
@@ -64,7 +65,7 @@ MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
   );
 }
 
-// Not directly documented due tue issues with ingroup (up to Doxygen version 1.9.5), see doc for vector version
+// Vector2 version
 template<typename Derived>
 template<typename OtherDerived, typename EnableIf>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE

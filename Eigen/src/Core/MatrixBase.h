@@ -424,11 +424,7 @@ template<typename Derived> class MatrixBase
 
     template<typename OtherDerived, typename EnableIf = std::enable_if_t<!CrossProductTraits<OtherDerived>::IsCross2> >
     EIGEN_DEVICE_FUNC
-#ifndef EIGEN_PARSED_BY_DOXYGEN
     inline typename cross_product_return_type<OtherDerived>::type
-#else
-    inline PlainObject
-#endif
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
     template<typename OtherDerived>
