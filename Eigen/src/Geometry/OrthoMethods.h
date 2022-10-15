@@ -32,10 +32,10 @@ namespace Eigen {
   * \sa MatrixBase::cross3()
   */
 template<typename Derived>
-template<typename OtherDerived, typename DerivedAux>
+template<typename OtherDerived>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template CrossProductTraits<OtherDerived, DerivedAux>::ReturnType
+typename MatrixBase<Derived>::template CrossProductTraits<OtherDerived>::ReturnType
 #else
 typename MatrixBase<Derived>::PlainObject
 #endif

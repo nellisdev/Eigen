@@ -408,10 +408,10 @@ template<typename Derived> class MatrixBase
     };
 #endif // EIGEN_PARSED_BY_DOXYGEN
 
-    template<typename OtherDerived, typename DerivedAux = Derived>
+    template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline typename CrossProductTraits<OtherDerived, DerivedAux>::ReturnType
+    inline typename CrossProductTraits<OtherDerived, Derived>::ReturnType
 #else
     inline PlainObject
 #endif
