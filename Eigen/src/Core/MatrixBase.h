@@ -413,20 +413,6 @@ template<typename Derived> class MatrixBase
 
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    inline std::enable_if_t<
-      cross_product_return_type<OtherDerived>::IsScalar,
-      typename cross_product_return_type<OtherDerived>::type>
-    cross_impl(const MatrixBase<OtherDerived>& other) const;
-
-    template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
-    inline std::enable_if_t<
-      !cross_product_return_type<OtherDerived>::IsScalar,
-      typename cross_product_return_type<OtherDerived>::type>
-    cross_impl(const MatrixBase<OtherDerived>& other) const;
-
-    template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
     inline PlainObject cross3(const MatrixBase<OtherDerived>& other) const;
 
     EIGEN_DEVICE_FUNC

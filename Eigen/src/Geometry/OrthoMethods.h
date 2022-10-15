@@ -15,6 +15,43 @@
 
 namespace Eigen { 
 
+// Vector3 version
+template<typename Derived, typename OtherDerived>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+std::enable_if_t<
+  !MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
+  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
+cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
+
+  // Note that there is no need for an expression here since the compiler
+  // optimize such a small temporary very well (even within a complex expression)
+  typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+  typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+  return typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type(
+    numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
+    numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
+    numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
+  );
+}
+
+// Vector2 version
+template<typename Derived, typename OtherDerived>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+std::enable_if_t<
+  MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
+  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
+cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
+  typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+  typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+  return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
+}
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \returns the cross product of \c *this and \a other, either a scalar or a vector, depending on the input sizes.
@@ -41,46 +78,7 @@ typename MatrixBase<Derived>::PlainObject
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
-  return cross_impl(other);
-}
-
-// Vector3 version
-template<typename Derived>
-template<typename OtherDerived>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  !MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
-MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
-
-  // Note that there is no need for an expression here since the compiler
-  // optimize such a small temporary very well (even within a complex expression)
-  typename internal::nested_eval<Derived,2>::type lhs(derived());
-  typename internal::nested_eval<OtherDerived,2>::type rhs(other.derived());
-  return typename cross_product_return_type<OtherDerived>::type(
-    numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
-    numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
-    numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
-  );
-}
-
-// Vector2 version
-template<typename Derived>
-template<typename OtherDerived>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::IsScalar,
-  typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type>
-MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
-  typename internal::nested_eval<Derived,2>::type lhs(derived());
-  typename internal::nested_eval<OtherDerived,2>::type rhs(other.derived());
-  return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
+  return cross_impl(*this, other);
 }
 
 namespace internal {
