@@ -35,7 +35,7 @@ template<typename Derived>
 template<typename OtherDerived>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template CrossProductTraits<OtherDerived>::ReturnType
+typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
 #else
 typename MatrixBase<Derived>::PlainObject
 #endif
@@ -48,7 +48,7 @@ MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 template<typename Derived>
 template<typename OtherDerived, typename EnableIf>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::VectorType
 MatrixBase<Derived>::cross_impl(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)

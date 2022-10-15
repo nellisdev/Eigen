@@ -389,42 +389,36 @@ template<typename Derived> class MatrixBase
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     /// \internal helper struct to form the return type of the cross product
-    template<typename OtherDerived> struct cross_product_return_type {
-      typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
-      typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> type;
-    };
-
+    /// The second template parameter is for SFINAE resolution
     template<typename OtherDerived, typename DerivedAux = Derived>
-    struct CrossProductTraits
-    {
+    struct cross_product_return_type {
+      typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
+      typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> VectorType;
       enum
       {
-        IsCross2 = DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2
+        IsScalar = DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2
       };
-      typedef std::conditional_t<
-        IsCross2,
-        typename cross_product_return_type<OtherDerived>::Scalar,
-        typename cross_product_return_type<OtherDerived>::type> ReturnType;
+      typedef std::conditional_t<IsScalar, Scalar, VectorType> type;
     };
 #endif // EIGEN_PARSED_BY_DOXYGEN
 
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline typename CrossProductTraits<OtherDerived, Derived>::ReturnType
+    inline typename cross_product_return_type<OtherDerived, Derived>::type
 #else
     inline PlainObject
 #endif
     cross(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived,typename EnableIf = std::enable_if_t<CrossProductTraits<OtherDerived>::IsCross2> >
+    template<typename OtherDerived,typename EnableIf = std::enable_if_t<cross_product_return_type<OtherDerived>::IsScalar> >
     EIGEN_DEVICE_FUNC
     inline typename cross_product_return_type<OtherDerived>::Scalar
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
-    template<typename OtherDerived, typename EnableIf = std::enable_if_t<!CrossProductTraits<OtherDerived>::IsCross2> >
+    template<typename OtherDerived, typename EnableIf = std::enable_if_t<!cross_product_return_type<OtherDerived>::IsScalar> >
     EIGEN_DEVICE_FUNC
-    inline typename cross_product_return_type<OtherDerived>::type
+    inline typename cross_product_return_type<OtherDerived>::VectorType
     cross_impl(const MatrixBase<OtherDerived>& other) const;
 
     template<typename OtherDerived>
