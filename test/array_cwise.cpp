@@ -299,12 +299,12 @@ void signbit_test() {
     const Scalar ref_val = std::signbit(x(i)) ? true_mask : false_mask;
     bool not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, y(i)));
     if (not_same) std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
-    all_pass = all_pass && not_same;
-
+    all_pass = all_pass && !not_same;
+    // explicitly test scalar path for all values
     Scalar numextval = numext::signbit(x(i));
     not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, numextval));
     if (not_same) std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
-    all_pass = all_pass && not_same;
+    all_pass = all_pass && !not_same;
   }
 
   VERIFY(all_pass);
