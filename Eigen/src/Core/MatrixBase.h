@@ -405,7 +405,7 @@ template<typename Derived> class MatrixBase
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    inline typename cross_product_return_type<OtherDerived, Derived>::type
+    inline typename cross_product_return_type<OtherDerived>::type
 #else
     inline PlainObject
 #endif
