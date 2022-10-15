@@ -389,14 +389,12 @@ template<typename Derived> class MatrixBase
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     /// \internal helper struct to form the return type of the cross product
-    /// The second template parameter is for SFINAE resolution
-    template<typename OtherDerived, typename DerivedAux = Derived>
-    struct cross_product_return_type {
+    template<typename OtherDerived> struct cross_product_return_type {
       typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
       typedef Matrix<Scalar,MatrixBase::RowsAtCompileTime,MatrixBase::ColsAtCompileTime> VectorType;
       enum
       {
-        IsScalar = DerivedAux::IsVectorAtCompileTime && DerivedAux::SizeAtCompileTime==2
+        IsScalar = Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2
       };
       typedef std::conditional_t<IsScalar, Scalar, VectorType> type;
     };
