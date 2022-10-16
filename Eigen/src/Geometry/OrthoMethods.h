@@ -74,10 +74,10 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
   *
   * \returns the cross product of \c *this and \a other, either a scalar or a vector, depending on the input sizes.
   *
-  * This method implemented both for vectors of fixed size 2 and those of fixed size 3. No size mixing is allowed.
-  * For size-3 vectors, the output is simply the traditional cross product.
-  * 
-  * For size-2 vectors, the output is a scalar. The result is equal to the signed area of a parallelepiped spanned by the input vectors.
+  * This method is implemented for vectors of fixed size either 2 or 3. No size mixing is allowed.
+  * For vectors of size 3, the output is simply the traditional cross product.
+  *
+  * For vectors of size 2, the output is a scalar. The result is equal to the signed area of a parallelepiped spanned by the input vectors.
   * Or, to put it differently, the cross product of \f$ \begin{bmatrix} v1 & v2 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w1 & w2 \end{bmatrix} \f$
   * is the third coordinate of the cross product of \f$ \begin{bmatrix} v1 & v2 & v3 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w1 & w2 & w3 \end{bmatrix} \f$.
   *
