@@ -381,6 +381,10 @@ EIGEN_STRONG_INLINE std::enable_if_t< (N == 63), Packet4l> parithmetic_shift_rig
   __m256i hi_word = _mm256_srai_epi32(a, 31);
   return _mm256_shuffle_epi32(hi_word, _MM_SHUFFLE(3, 3, 1, 1));
 }
+template <int N>
+EIGEN_STRONG_INLINE std::enable_if_t< (N < 0) || (N > 63), Packet4l> parithmetic_shift_right(Packet4l a) {
+    return parithmetic_shift_right<uint8_t(N)%64>(a);
+}
 #endif
 template <>
 EIGEN_STRONG_INLINE Packet4l pload<Packet4l>(const int64_t* from) {
