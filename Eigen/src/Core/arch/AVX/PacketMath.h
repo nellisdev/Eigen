@@ -229,10 +229,7 @@ template<> struct packet_traits<int64_t> : default_packet_traits
     Vectorizable = 1,
     AlignedOnScalar = 1,
     HasCmp = 1,
-    size=4,
-
-    // requires AVX512
-    //HasShift     = 0,
+    size=4
   };
 };
 #endif
@@ -362,8 +359,7 @@ EIGEN_STRONG_INLINE Packet4l plogical_shift_left(Packet4l a) {
 }
 #ifdef EIGEN_VECTORIZE_AVX512FP16
 template <int N>
-EIGEN_STRONG_INLINE Packet4l parithmetic_shift_right(Packet4l a) {
-  return _mm256_srai_epi64(a, 63);
+EIGEN_STRONG_INLINE Packet4l parithmetic_shift_right(Packet4l a) { return _mm256_srai_epi64(a, N); }
 #else
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t< N < 32, Packet4l> parithmetic_shift_right(Packet4l a) {
