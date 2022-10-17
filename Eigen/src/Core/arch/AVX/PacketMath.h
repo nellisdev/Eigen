@@ -1110,7 +1110,6 @@ template<> EIGEN_STRONG_INLINE Packet4d  psignbit(const Packet4d&  a) {
 #ifdef EIGEN_VECTORIZE_AVX512FP16
   return _mm256_castsi256_pd(_mm256_srai_epi64(_mm256_castpd_si256(a), 63));
 #else
-  // todo: define 64 bit shift packet ops
   __m256 tmp = psignbit<Packet8f>(_mm256_castpd_ps(a));
   return _mm256_castps_pd(_mm256_permute_ps(tmp, _MM_SHUFFLE(3, 3, 1, 1)));
 #endif
