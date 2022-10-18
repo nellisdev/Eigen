@@ -654,9 +654,9 @@ template<> EIGEN_STRONG_INLINE Packet2d psignbit(const Packet2d& a)
 {
     Packet4f tmp = psignbit<Packet4f>(_mm_castpd_ps(a));
 #ifdef EIGEN_VECTORIZE_AVX
-    return _mm_castps_pd(_mm_permute_ps(tmp, shuffle_mask<1, 1, 3, 3>::mask));
+    return _mm_castps_pd(_mm_permute_ps(tmp, (shuffle_mask<1, 1, 3, 3>::mask)));
 #else
-    return _mm_castps_pd(_mm_shuffle_ps(tmp, tmp, shuffle_mask<1, 1, 3, 3>::mask));
+    return _mm_castps_pd(_mm_shuffle_ps(tmp, tmp, (shuffle_mask<1, 1, 3, 3>::mask)));
 #endif // EIGEN_VECTORIZE_AVX
 }
 

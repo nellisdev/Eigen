@@ -374,12 +374,12 @@ EIGEN_STRONG_INLINE std::enable_if_t< (N > 0) && (N < 32), Packet4l> parithmetic
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t< (N >= 32) && (N < 63), Packet4l> parithmetic_shift_right(Packet4l a) {
   __m256i hi_word = _mm256_srai_epi32(a, 31);
-  __m256i lo_word = _mm256_shuffle_epi32(_mm256_srai_epi32(a, N - 32), shuffle_mask<1, 1, 3, 3>::mask);
+  __m256i lo_word = _mm256_shuffle_epi32(_mm256_srai_epi32(a, N - 32), (shuffle_mask<1, 1, 3, 3>::mask));
   return _mm256_blend_epi32(hi_word, lo_word, 0b01010101);
 }
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t< (N == 63), Packet4l> parithmetic_shift_right(Packet4l a) {
-  return _mm256_shuffle_epi32(_mm256_srai_epi32(a, 31), shuffle_mask<1, 1, 3, 3>::mask);
+  return _mm256_shuffle_epi32(_mm256_srai_epi32(a, 31), (shuffle_mask<1, 1, 3, 3>::mask));
 }
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t< (N < 0) || (N > 63), Packet4l> parithmetic_shift_right(Packet4l a) {
