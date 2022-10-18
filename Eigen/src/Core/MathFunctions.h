@@ -1561,7 +1561,7 @@ struct signbit_impl<Scalar, false, true> {
   static constexpr size_t Size = sizeof(Scalar);
   static constexpr size_t Shift = (CHAR_BIT * Size) - NumTraits<Scalar>::IsSigned;
   using intSize_t = get_integer_by_size_t<Size>;
-  static EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Scalar run(const Scalar& x) {
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static Scalar run(const Scalar& x) {
     intSize_t a = bit_cast<intSize_t, Scalar>(x);
     a = a >> Shift;
     Scalar result = bit_cast<Scalar, intSize_t>(a);
@@ -1572,17 +1572,17 @@ template <typename Scalar>
 struct signbit_impl<Scalar, true, true> {
   static constexpr size_t Size = sizeof(Scalar);
   static constexpr size_t Shift = (CHAR_BIT * Size) - NumTraits<Scalar>::IsSigned;
-  static EIGEN_DEVICE_FUNC constexpr Scalar run(const Scalar& x) { return x >> Shift; }
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Scalar run(const Scalar& x) { return x >> Shift; }
 };
 template <typename Scalar>
 struct signbit_impl<Scalar, true, false> {
-  static EIGEN_DEVICE_FUNC constexpr Scalar run(const Scalar& x) {
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Scalar run(const Scalar& x) {
     EIGEN_UNUSED_VARIABLE(x);
     return Scalar(0);
   }
 };
 template <typename Scalar>
-EIGEN_DEVICE_FUNC static EIGEN_ALWAYS_INLINE constexpr Scalar signbit(const Scalar& x) {
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Scalar signbit(const Scalar& x) {
   return signbit_impl<Scalar>::run(x);
 }
 
