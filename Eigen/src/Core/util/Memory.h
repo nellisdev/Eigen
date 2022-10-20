@@ -125,7 +125,7 @@ EIGEN_DEVICE_FUNC inline void handmade_aligned_free(void *ptr)
   * Since we know that our handmade version is based on std::malloc
   * we can use std::realloc to implement efficient reallocation.
   */
-inline void* handmade_aligned_realloc(void* ptr, std::size_t size, std::size_t alignment = EIGEN_DEFAULT_ALIGN_BYTES)
+EIGEN_DEVICE_FUNC inline void* handmade_aligned_realloc(void* ptr, std::size_t size, std::size_t alignment = EIGEN_DEFAULT_ALIGN_BYTES)
 {
   if (ptr == 0) return handmade_aligned_malloc(size, alignment);
   uint8_t previous_offset = *(static_cast<char*>(ptr) - 1);
@@ -214,7 +214,7 @@ EIGEN_DEVICE_FUNC inline void aligned_free(void *ptr)
   * \brief Reallocates an aligned block of memory.
   * \throws std::bad_alloc on allocation failure
   */
-inline void* aligned_realloc(void *ptr, std::size_t new_size, std::size_t old_size)
+EIGEN_DEVICE_FUNC inline void* aligned_realloc(void *ptr, std::size_t new_size, std::size_t old_size)
 {
   if (ptr == 0) return aligned_malloc(new_size);
   EIGEN_UNUSED_VARIABLE(old_size)
@@ -273,12 +273,12 @@ template<> EIGEN_DEVICE_FUNC inline void conditional_aligned_free<false>(void *p
   free(ptr);
 }
 
-template<bool Align> inline void* conditional_aligned_realloc(void* ptr, std::size_t new_size, std::size_t old_size)
+template<bool Align> EIGEN_DEVICE_FUNC inline void* conditional_aligned_realloc(void* ptr, std::size_t new_size, std::size_t old_size)
 {
   return aligned_realloc(ptr, new_size, old_size);
 }
 
-template<> inline void* conditional_aligned_realloc<false>(void* ptr, std::size_t new_size, std::size_t)
+template<> EIGEN_DEVICE_FUNC inline void* conditional_aligned_realloc<false>(void* ptr, std::size_t new_size, std::size_t)
 {
   return std::realloc(ptr, new_size);
 }
@@ -471,7 +471,7 @@ template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned
   return result;
 }
 
-template<typename T, bool Align> inline T* conditional_aligned_realloc_new_auto(T* pts, std::size_t new_size, std::size_t old_size)
+template<typename T, bool Align> EIGEN_DEVICE_FUNC inline T* conditional_aligned_realloc_new_auto(T* pts, std::size_t new_size, std::size_t old_size)
 {
   if (NumTraits<T>::RequireInitialization) {
     return conditional_aligned_realloc_new<T, Align>(pts, new_size, old_size);
