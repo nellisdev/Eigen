@@ -118,7 +118,6 @@ EIGEN_DEVICE_FUNC inline void handmade_aligned_free(void *ptr)
     void* original = static_cast<char*>(ptr) - offset;
     std::free(original);
   }
-  }
 }
 
 /** \internal
