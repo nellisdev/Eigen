@@ -1575,7 +1575,7 @@ template<> EIGEN_STRONG_INLINE Packet8bf  pabs(const Packet8bf& a) {
   return pand<Packet8us>(p8us_abs_mask, a);
 }
 
-template<> EIGEN_STRONG_INLINE Packet8bf psignbit(const Packet8bf& a) { return (Packet8bf)vec_sra((Packet8s)a, vec_splats(uint16_t(15))); }
+template<> EIGEN_STRONG_INLINE Packet8bf psignbit(const Packet8bf& a) { return vec_sra(a.m_val, vec_splat_u16(15)); }
 template<> EIGEN_STRONG_INLINE Packet4f  psignbit(const Packet4f&  a) { return  (Packet4f)vec_sra((Packet4i)a, vec_splats(uint32_t(31))); }
 #ifdef __POWER8_VECTOR__
 template<> EIGEN_STRONG_INLINE Packet2d  psignbit(const Packet2d&  a) { return  (Packet2d)vec_sra((Packet2l)a, vec_splats(uint64_t(63));  }
