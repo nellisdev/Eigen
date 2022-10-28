@@ -320,7 +320,7 @@ struct functor_traits<scalar_expm1_op<Scalar> > {
   * \sa class CwiseUnaryOp, ArrayBase::log()
   */
 template<typename Scalar> struct scalar_log_op {
-  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const { return numext::log(a); }
+  EIGEN_DEVICE_FUNC inline const Scalar operator() (const Scalar& a) const { return internal::plog(a); }
   template <typename Packet>
   EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::plog(a); }
 };
