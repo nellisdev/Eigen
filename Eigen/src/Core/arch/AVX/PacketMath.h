@@ -383,7 +383,7 @@ EIGEN_STRONG_INLINE std::enable_if_t< (N == 63), Packet4l> parithmetic_shift_rig
 }
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t< (N < 0) || (N > 63), Packet4l> parithmetic_shift_right(Packet4l a) {
-  return parithmetic_shift_right<uint8_t(N)%64>(a);
+  return parithmetic_shift_right<int(N&63)>(a);
 }
 #endif
 template <>

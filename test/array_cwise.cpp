@@ -280,22 +280,22 @@ struct functor_traits<test_signbit_op<Scalar>> {
 template <typename Scalar>
 void signbit_test() {
   Scalar true_mask;
-  std::memset(&true_mask, 0xff, sizeof(Scalar));
+  std::memset((void*)&true_mask, 0xff, sizeof(Scalar));
   Scalar false_mask;
-  std::memset(&false_mask, 0x00, sizeof(Scalar));
+  std::memset((void*)&false_mask, 0x00, sizeof(Scalar));
 
   const size_t size = 100 * internal::packet_traits<Scalar>::size;
   ArrayX<Scalar> x(size), y(size);
   x.setRandom();
   std::vector<Scalar> special_vals = special_values<Scalar>();
-  for (int i = 0; i < special_vals.size(); i++) {
+  for (size_t i = 0; i < special_vals.size(); i++) {
     x(2 * i + 0) = special_vals[i];
     x(2 * i + 1) = -special_vals[i];
   }
   y = x.unaryExpr(internal::test_signbit_op<Scalar>());
 
   bool all_pass = true;
-  for (int i = 0; i < size; i++) {
+  for (size_t i = 0; i < size; i++) {
     const Scalar ref_val = std::signbit(x(i)) ? true_mask : false_mask;
     bool not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, y(i)));
     if (not_same) std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";

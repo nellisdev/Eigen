@@ -1193,13 +1193,13 @@ Packet prsqrt(const Packet& a) {
 
 template <typename Packet, bool IsScalar = is_scalar<Packet>::value,
     bool IsInteger = NumTraits<typename unpacket_traits<Packet>::type>::IsInteger>
-    struct psignbit_selector;
+    struct psignbit_impl;
 template <typename Packet, bool IsInteger>
-struct psignbit_selector<Packet, true, IsInteger> {
+struct psignbit_impl<Packet, true, IsInteger> {
      EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Packet run(const Packet& a) { return numext::signbit(a); }
 };
 template <typename Packet>
-struct psignbit_selector<Packet, false, false> {
+struct psignbit_impl<Packet, false, false> {
     // generic implementation if not specialized in PacketMath.h
     // slower than arithmetic shift
     typedef typename unpacket_traits<Packet>::type Scalar;
@@ -1210,14 +1210,14 @@ struct psignbit_selector<Packet, false, false> {
     }
 };
 template <typename Packet>
-struct psignbit_selector<Packet, false, true> {
+struct psignbit_impl<Packet, false, true> {
     // generic implementation for integer packets
     EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Packet run(const Packet& a) { return pcmp_lt(a, pzero(a)); }
 };
 /** \internal \returns the sign bit of \a a as a bitmask*/
 template <typename Packet>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE constexpr Packet
-psignbit(const Packet& a) { return psignbit_selector<Packet>::run(a); }
+psignbit(const Packet& a) { return psignbit_impl<Packet>::run(a); }
 
 } // end namespace internal
 
