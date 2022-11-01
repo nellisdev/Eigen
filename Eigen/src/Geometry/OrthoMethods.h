@@ -15,7 +15,9 @@
 
 namespace Eigen { 
 
-/** \geometry_module \ingroup Geometry_Module
+namespace internal {
+
+/** \internal \ingroup Geometry_Module
   * Helper struct to form the return type of the cross product.
   * This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
   */
@@ -24,8 +26,6 @@ template<typename Derived, typename OtherDerived> struct cross_product_return_ty
   typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> VectorType;
   typedef std::conditional_t<Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2, Scalar, VectorType> type;
 };
-
-namespace internal {
 
 // Vector3 version
 template<typename Derived, typename OtherDerived>
@@ -87,7 +87,7 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
 template<typename Derived>
 template<typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-typename cross_product_return_type<Derived, OtherDerived>::type
+typename internal::cross_product_return_type<Derived, OtherDerived>::type
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
   return internal::cross_impl(*this, other);
