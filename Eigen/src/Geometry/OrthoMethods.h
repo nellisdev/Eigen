@@ -64,7 +64,7 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
   return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
 }
 
-}
+} // end namespace internal
 
 /** \geometry_module \ingroup Geometry_Module
   *
