@@ -367,8 +367,11 @@ vec2 = vec1.normalized();     vec1.normalize(); // inplace \endcode
 <tr class="alt"><td>
 \link MatrixBase::cross() cross product \endlink \matrixworld</td><td>\code
 #include <Eigen/Geometry>
-vec3 = vec1.cross(vec2);   // size-3 vectors
-scalar = vec1.cross(vec2); // size-2 vectors \endcode</td></tr>
+Vector3d v31, v32;
+Vector3d v33 = v31.cross(v32);  // size-3 vectors
+
+Vector2d v21, v22;
+double scalar = v21.cross(v22); // size-2 vectors \endcode</td></tr>
 </table>
 
 <a href="#" class="top">top</a>
