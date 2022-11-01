@@ -68,7 +68,7 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
 
 /** \geometry_module \ingroup Geometry_Module
   *
-  * \returns the cross product of \c *this and \a other, either a scalar or a vector, depending on the input sizes.
+  * \returns the cross product of \c *this and \a other. This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
   *
   * This method is implemented for vectors of fixed size either 2 or 3. No size mixing is allowed.
   * For vectors of size 3, the output is simply the traditional cross product.
