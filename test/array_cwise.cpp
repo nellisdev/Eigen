@@ -280,9 +280,9 @@ struct functor_traits<test_signbit_op<Scalar>> {
 template <typename Scalar>
 void signbit_test() {
   Scalar true_mask;
-  std::memset((void*)&true_mask, 0xff, sizeof(Scalar));
+  std::memset(static_cast<void*>(&true_mask), 0xff, sizeof(Scalar));
   Scalar false_mask;
-  std::memset((void*)&false_mask, 0x00, sizeof(Scalar));
+  std::memset(static_cast<void*>(&false_mask), 0x00, sizeof(Scalar));
 
   const size_t size = 100 * internal::packet_traits<Scalar>::size;
   ArrayX<Scalar> x(size), y(size);
