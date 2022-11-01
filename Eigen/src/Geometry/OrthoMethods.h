@@ -22,11 +22,7 @@ namespace Eigen {
 template<typename Derived, typename OtherDerived> struct cross_product_return_type {
   typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
   typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> VectorType;
-  enum
-  {
-    IsScalar = Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2
-  };
-  typedef std::conditional_t<IsScalar, Scalar, VectorType> type;
+  typedef std::conditional_t<Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2, Scalar, VectorType> type;
 };
 
 namespace internal {
@@ -35,7 +31,7 @@ namespace internal {
 template<typename Derived, typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 std::enable_if_t<
-  !cross_product_return_type<Derived, OtherDerived>::IsScalar,
+  !(Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2),
   typename cross_product_return_type<Derived, OtherDerived>::type>
 cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
 {
@@ -57,7 +53,7 @@ cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& sec
 template<typename Derived, typename OtherDerived>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 std::enable_if_t<
-  cross_product_return_type<Derived, OtherDerived>::IsScalar,
+  Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2,
   typename cross_product_return_type<Derived, OtherDerived>::type>
 cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
 {
