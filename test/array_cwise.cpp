@@ -277,6 +277,20 @@ struct functor_traits<test_signbit_op<Scalar>> {
 }  // namespace internal
 }  // namespace Eigen
 
+template <typename T, bool IsInteger = NumTraits<T>::IsInteger>
+struct ref_signbit_func_impl {
+    static bool run(const T& x) { return std::signbit(x); }
+};
+template <typename T>
+struct ref_signbit_func_impl<T, true> {
+    // MSVC (perhaps others) does not have a std::signbit overload for integers
+    static bool run(const T& x) { return x < T(0); }
+};
+template <typename T>
+bool ref_signbit_func(const T& x) {
+    return ref_signbit_func_impl<T>::run(x);
+}
+
 template <typename Scalar>
 void signbit_test() {
   Scalar true_mask;
@@ -296,15 +310,11 @@ void signbit_test() {
 
   bool all_pass = true;
   for (size_t i = 0; i < size; i++) {
-    const Scalar ref_val = std::signbit(x(i)) ? true_mask : false_mask;
+    const Scalar ref_val = ref_signbit_func(x(i)) ? true_mask : false_mask;
     bool not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, y(i)));
     if (not_same) std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
     all_pass = all_pass && !not_same;
-    // explicitly test scalar path for all values
-    Scalar numextval = numext::signbit(x(i));
-    not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, numextval));
-    if (not_same) std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
-    all_pass = all_pass && !not_same;
+
   }
 
   VERIFY(all_pass);
@@ -315,6 +325,16 @@ void signbit_tests()
     signbit_test<double>();
     signbit_test<Eigen::half>();
     signbit_test<Eigen::bfloat16>();
+
+    signbit_test<uint8_t>();
+    signbit_test<uint16_t>();
+    signbit_test<uint32_t>();
+    signbit_test<uint64_t>();
+
+    signbit_test<int8_t>();
+    signbit_test<int16_t>();
+    signbit_test<int32_t>();
+    signbit_test<int64_t>();
 }
 
 template<typename ArrayType> void array(const ArrayType& m)
@@ -912,6 +932,33 @@ template<typename ArrayType> void array_integer(const ArrayType& m)
   VERIFY( (m2 == m1.unaryExpr(arithmetic_shift_right<9>())).all() );
 }
 
+template<typename ArrayType>
+struct right_arithmetic_shift_test_impl {
+    typedef typename ArrayType::Scalar Scalar;
+    static constexpr size_t Size = sizeof(Scalar);
+    static constexpr size_t MaxShift = (CHAR_BIT * Size) - 1;
+
+    template <size_t N = 0>
+    static inline std::enable_if_t<(N >  MaxShift), void> run(const ArrayType&  ) {}
+    template <size_t N = 0>
+    static inline std::enable_if_t<(N <= MaxShift), void> run(const ArrayType& m) {
+      const Index rows = m.rows();
+      const Index cols = m.cols();
+
+      ArrayType m1 = ArrayType::Random(rows, cols), m2(rows, cols);
+      m2 = m1.unaryExpr([](const Scalar& x) { return x >> N; });
+      VERIFY((m2 == m1.unaryExpr(internal::scalar_shift_right_op<Scalar, N>())).all());
+
+      run<N + 1>(m);
+    }
+};
+
+template<typename ArrayType>
+void right_arithmetic_shift_test(const ArrayType& m)
+{
+    right_arithmetic_shift_test_impl<ArrayType>::run(m);
+}
+
 EIGEN_DECLARE_TEST(array_cwise)
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -924,6 +971,9 @@ EIGEN_DECLARE_TEST(array_cwise)
     CALL_SUBTEST_6( array(Array<Index,Dynamic,Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( array_integer(ArrayXXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( array_integer(Array<Index,Dynamic,Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( right_arithmetic_shift_test(ArrayXXi(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_6( right_arithmetic_shift_test(Array<Index, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
+
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( comparisons(Array<float, 1, 1>()) );
