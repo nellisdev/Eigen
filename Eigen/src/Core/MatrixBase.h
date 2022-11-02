@@ -389,7 +389,7 @@ template<typename Derived> class MatrixBase
 
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
-    inline typename internal::cross_product_return_type<Derived, OtherDerived>::type
+    inline typename internal::cross_impl<Derived, OtherDerived>::return_type
     cross(const MatrixBase<OtherDerived>& other) const;
 
     template<typename OtherDerived>
