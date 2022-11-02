@@ -24,7 +24,8 @@ struct cross_impl
   typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
   typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> return_type;
 
-  static inline return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
   {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
@@ -48,7 +49,8 @@ struct cross_impl<Derived, OtherDerived, 2>
   typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
   typedef Scalar return_type;
 
-  static inline return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  return_type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
   {
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
     EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
