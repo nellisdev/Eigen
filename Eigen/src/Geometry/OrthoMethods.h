@@ -27,42 +27,38 @@ template<typename Derived, typename OtherDerived> struct cross_product_return_ty
   typedef std::conditional_t<Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2, Scalar, VectorType> type;
 };
 
-// Vector3 version
-template<typename Derived, typename OtherDerived>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  !(Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2),
-  typename cross_product_return_type<Derived, OtherDerived>::type>
-cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+template<typename Derived, typename OtherDerived, bool IsVector2 = Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2>
+struct cross_impl
 {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
+  static inline typename cross_product_return_type<Derived, OtherDerived>::type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+  {
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,3)
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,3)
 
-  // Note that there is no need for an expression here since the compiler
-  // optimize such a small temporary very well (even within a complex expression)
-  typename internal::nested_eval<Derived,2>::type lhs(first.derived());
-  typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
-  return typename cross_product_return_type<Derived, OtherDerived>::type(
-    numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
-    numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
-    numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
-  );
-}
+    // Note that there is no need for an expression here since the compiler
+    // optimize such a small temporary very well (even within a complex expression)
+    typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+    typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+    return typename cross_product_return_type<Derived, OtherDerived>::type(
+      numext::conj(lhs.coeff(1) * rhs.coeff(2) - lhs.coeff(2) * rhs.coeff(1)),
+      numext::conj(lhs.coeff(2) * rhs.coeff(0) - lhs.coeff(0) * rhs.coeff(2)),
+      numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0))
+    );
+  }
+};
 
-// Vector2 version
 template<typename Derived, typename OtherDerived>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-std::enable_if_t<
-  Derived::IsVectorAtCompileTime && Derived::SizeAtCompileTime==2,
-  typename cross_product_return_type<Derived, OtherDerived>::type>
-cross_impl(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+struct cross_impl<Derived, OtherDerived, true>
 {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
-  typename internal::nested_eval<Derived,2>::type lhs(first.derived());
-  typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
-  return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
-}
+  static inline typename cross_product_return_type<Derived, OtherDerived>::type run(const MatrixBase<Derived>& first, const MatrixBase<OtherDerived>& second)
+  {
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,2);
+    EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(OtherDerived,2);
+    typename internal::nested_eval<Derived,2>::type lhs(first.derived());
+    typename internal::nested_eval<OtherDerived,2>::type rhs(second.derived());
+    return numext::conj(lhs.coeff(0) * rhs.coeff(1) - lhs.coeff(1) * rhs.coeff(0));
+  }
+};
 
 } // end namespace internal
 
@@ -90,7 +86,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 typename internal::cross_product_return_type<Derived, OtherDerived>::type
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
-  return internal::cross_impl(*this, other);
+  return internal::cross_impl<Derived, OtherDerived>::run(*this, other);
 }
 
 namespace internal {
