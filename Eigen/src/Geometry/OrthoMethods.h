@@ -17,10 +17,7 @@ namespace Eigen {
 
 namespace internal {
 
-/** \internal \ingroup Geometry_Module
-  * Helper struct to form the return type of the cross product.
-  * This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
-  */
+// Vector3 version (default)
 template<typename Derived, typename OtherDerived, int Size>
 struct cross_impl
 {
@@ -44,6 +41,7 @@ struct cross_impl
   }
 };
 
+// Vector2 version
 template<typename Derived, typename OtherDerived>
 struct cross_impl<Derived, OtherDerived, 2>
 {
