@@ -1553,8 +1553,7 @@ struct signbit_impl<Scalar, true, true> {
 };
 template <typename Scalar>
 struct signbit_impl<Scalar, true, false> {
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Scalar run(const Scalar& x) {
-    EIGEN_UNUSED_VARIABLE(x);
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Scalar run(const Scalar&  ) {
     return Scalar(0);
   }
 };

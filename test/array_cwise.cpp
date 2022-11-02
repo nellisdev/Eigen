@@ -219,7 +219,7 @@ void unary_pow_test() {
   for (Exponent exponent = min_exponent; exponent < max_exponent; ++exponent) {
     test_exponent<Base, Exponent>(exponent);
   }
-};
+}
 
 void mixed_pow_test() {
   // The following cases will test promoting a smaller exponent type
@@ -314,27 +314,25 @@ void signbit_test() {
     bool not_same = internal::predux_any(internal::bitwise_helper<Scalar>::bitwise_xor(ref_val, y(i)));
     if (not_same) std::cout << "signbit(" << x(i) << ") != " << y(i) << "\n";
     all_pass = all_pass && !not_same;
-
   }
 
   VERIFY(all_pass);
 }
-void signbit_tests()
-{
-    signbit_test<float>();
-    signbit_test<double>();
-    signbit_test<Eigen::half>();
-    signbit_test<Eigen::bfloat16>();
+void signbit_tests() {
+  signbit_test<float>();
+  signbit_test<double>();
+  signbit_test<Eigen::half>();
+  signbit_test<Eigen::bfloat16>();
 
-    signbit_test<uint8_t>();
-    signbit_test<uint16_t>();
-    signbit_test<uint32_t>();
-    signbit_test<uint64_t>();
+  signbit_test<uint8_t>();
+  signbit_test<uint16_t>();
+  signbit_test<uint32_t>();
+  signbit_test<uint64_t>();
 
-    signbit_test<int8_t>();
-    signbit_test<int16_t>();
-    signbit_test<int32_t>();
-    signbit_test<int64_t>();
+  signbit_test<int8_t>();
+  signbit_test<int16_t>();
+  signbit_test<int32_t>();
+  signbit_test<int64_t>();
 }
 
 template<typename ArrayType> void array(const ArrayType& m)
@@ -932,31 +930,33 @@ template<typename ArrayType> void array_integer(const ArrayType& m)
   VERIFY( (m2 == m1.unaryExpr(arithmetic_shift_right<9>())).all() );
 }
 
-template<typename ArrayType>
-struct right_arithmetic_shift_test_impl {
-    typedef typename ArrayType::Scalar Scalar;
-    static constexpr size_t Size = sizeof(Scalar);
-    static constexpr size_t MaxShift = (CHAR_BIT * Size) - 1;
+template <typename ArrayType>
+struct signed_shift_test_impl {
+  typedef typename ArrayType::Scalar Scalar;
+  static constexpr size_t Size = sizeof(Scalar);
+  static constexpr size_t MaxShift = (CHAR_BIT * Size) - 1;
 
-    template <size_t N = 0>
-    static inline std::enable_if_t<(N >  MaxShift), void> run(const ArrayType&  ) {}
-    template <size_t N = 0>
-    static inline std::enable_if_t<(N <= MaxShift), void> run(const ArrayType& m) {
-      const Index rows = m.rows();
-      const Index cols = m.cols();
+  template <size_t N = 0>
+  static inline std::enable_if_t<(N >  MaxShift), void> run(const ArrayType&  ) {}
+  template <size_t N = 0>
+  static inline std::enable_if_t<(N <= MaxShift), void> run(const ArrayType& m) {
+    const Index rows = m.rows();
+    const Index cols = m.cols();
 
-      ArrayType m1 = ArrayType::Random(rows, cols), m2(rows, cols);
-      m2 = m1.unaryExpr([](const Scalar& x) { return x >> N; });
-      VERIFY((m2 == m1.unaryExpr(internal::scalar_shift_right_op<Scalar, N>())).all());
+    ArrayType m1 = ArrayType::Random(rows, cols), m2(rows, cols);
 
-      run<N + 1>(m);
-    }
+    m2 = m1.unaryExpr([](const Scalar& x) { return x >> N; });
+    VERIFY((m2 == m1.unaryExpr(internal::scalar_shift_right_op<Scalar, N>())).all());
+
+    m2 = m1.unaryExpr([](const Scalar& x) { return x << N; });
+    VERIFY((m2 == m1.unaryExpr( internal::scalar_shift_left_op<Scalar, N>())).all());
+
+    run<N + 1>(m);
+  }
 };
-
-template<typename ArrayType>
-void right_arithmetic_shift_test(const ArrayType& m)
-{
-    right_arithmetic_shift_test_impl<ArrayType>::run(m);
+template <typename ArrayType>
+void signed_shift_test(const ArrayType& m) {
+    signed_shift_test_impl<ArrayType>::run(m);
 }
 
 EIGEN_DECLARE_TEST(array_cwise)
@@ -971,8 +971,8 @@ EIGEN_DECLARE_TEST(array_cwise)
     CALL_SUBTEST_6( array(Array<Index,Dynamic,Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( array_integer(ArrayXXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( array_integer(Array<Index,Dynamic,Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_6( right_arithmetic_shift_test(ArrayXXi(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
-    CALL_SUBTEST_6( right_arithmetic_shift_test(Array<Index, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_7( signed_shift_test(ArrayXXi(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_7( signed_shift_test(Array<Index, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
 
   }
   for(int i = 0; i < g_repeat; i++) {
