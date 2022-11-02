@@ -21,8 +21,8 @@ namespace internal {
   * Helper struct to form the return type of the cross product.
   * This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
   */
-template<typename Derived, typename OtherDerived>
-struct cross_impl<Derived, OtherDerived, false>
+template<typename Derived, typename OtherDerived, int Size>
+struct cross_impl
 {
   typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
   typedef Matrix<Scalar,MatrixBase<Derived>::RowsAtCompileTime,MatrixBase<Derived>::ColsAtCompileTime> return_type;
@@ -45,7 +45,7 @@ struct cross_impl<Derived, OtherDerived, false>
 };
 
 template<typename Derived, typename OtherDerived>
-struct cross_impl<Derived, OtherDerived, true>
+struct cross_impl<Derived, OtherDerived, 2>
 {
   typedef typename ScalarBinaryOpTraits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType Scalar;
   typedef Scalar return_type;
