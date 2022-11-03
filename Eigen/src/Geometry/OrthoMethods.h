@@ -72,8 +72,6 @@ struct cross_impl<Derived, OtherDerived, 2>
   * For vectors of size 2, the output is a scalar. The result is equal to the signed area of a parallelepiped spanned by the input vectors.
   * Or, to put it differently, the cross product of \f$ \begin{bmatrix} v1 & v2 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w1 & w2 \end{bmatrix} \f$
   * is the third coordinate of the cross product of \f$ \begin{bmatrix} v1 & v2 & v3 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w1 & w2 & w3 \end{bmatrix} \f$.
-  *
-  * Here is a very good explanation of cross-product: http://xkcd.com/199/.
   * 
   * With complex numbers, the cross product is implemented as
   * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} - \mathbf{b} \times \mathbf{c})\f$
