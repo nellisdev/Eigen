@@ -77,7 +77,7 @@ struct cross_impl<Derived, OtherDerived, 2>
   * For real-valued inputs, the result can be interpreted as the signed area of a parallelepiped spanned by the two vectors.
   * 
   * \note With complex numbers, the cross product is implemented as
-  * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} - \mathbf{b} \times \mathbf{c})\f$
+  * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} + \mathbf{b} \times \mathbf{c})\f$
   * 
   * \sa MatrixBase::cross3()
   */
