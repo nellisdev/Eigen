@@ -66,14 +66,17 @@ struct cross_impl<Derived, OtherDerived, 2>
   *
   * \returns the cross product of \c *this and \a other. This is either a scalar for size-2 vectors or a size-3 vector for size-3 vectors.
   *
-  * This method is implemented for vectors of fixed size either 2 or 3. No size mixing is allowed.
+  * This method is implemented for two different cases: between vectors of fixed size 2 and between vectors of fixed size 3.
+  * 
   * For vectors of size 3, the output is simply the traditional cross product.
   *
-  * For vectors of size 2, the output is a scalar. The result is equal to the signed area of a parallelepiped spanned by the input vectors.
-  * Or, to put it differently, the cross product of \f$ \begin{bmatrix} v1 & v2 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w1 & w2 \end{bmatrix} \f$
-  * is the third coordinate of the cross product of \f$ \begin{bmatrix} v1 & v2 & v3 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w1 & w2 & w3 \end{bmatrix} \f$.
+  * For vectors of size 2, the output is a scalar.
+  * Given vectors \f$ v = \begin{bmatrix} v_1 & v_2 \end{bmatrix} \f$ and \f$ w = \begin{bmatrix} w_1 & w_2 \end{bmatrix} \f$,
+  * the result is simply \f$ v\times w = \overline{v_1 w_2 - v_2 w_1} = \text{conj}\left|\begin{smallmatrix} v_1 & w_1 \\ v_2 & w_2 \end{smallmatrix}\right| \f$;
+  * or, to put it differently, it is the third coordinate of the cross product of \f$ \begin{bmatrix} v_1 & v_2 & v_3 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w_1 & w_2 & w_3 \end{bmatrix} \f$.
+  * For real-valued inputs, the result can be interpreted as the signed area of a parallelepiped spanned by the two vectors.
   * 
-  * With complex numbers, the cross product is implemented as
+  * \note With complex numbers, the cross product is implemented as
   * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} - \mathbf{b} \times \mathbf{c})\f$
   * 
   * \sa MatrixBase::cross3()
