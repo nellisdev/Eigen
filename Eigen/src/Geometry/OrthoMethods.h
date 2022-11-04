@@ -74,7 +74,7 @@ struct cross_impl<Derived, OtherDerived, 2>
   * Given vectors \f$ v = \begin{bmatrix} v_1 & v_2 \end{bmatrix} \f$ and \f$ w = \begin{bmatrix} w_1 & w_2 \end{bmatrix} \f$,
   * the result is simply \f$ v\times w = \overline{v_1 w_2 - v_2 w_1} = \text{conj}\left|\begin{smallmatrix} v_1 & w_1 \\ v_2 & w_2 \end{smallmatrix}\right| \f$;
   * or, to put it differently, it is the third coordinate of the cross product of \f$ \begin{bmatrix} v_1 & v_2 & v_3 \end{bmatrix} \f$ and \f$ \begin{bmatrix} w_1 & w_2 & w_3 \end{bmatrix} \f$.
-  * For real-valued inputs, the result can be interpreted as the signed area of a parallelepiped spanned by the two vectors.
+  * For real-valued inputs, the result can be interpreted as the signed area of a parallelogram spanned by the two vectors.
   * 
   * \note With complex numbers, the cross product is implemented as
   * \f$ (\mathbf{a}+i\mathbf{b}) \times (\mathbf{c}+i\mathbf{d}) = (\mathbf{a} \times \mathbf{c} - \mathbf{b} \times \mathbf{d}) - i(\mathbf{a} \times \mathbf{d} + \mathbf{b} \times \mathbf{c})\f$
