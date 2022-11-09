@@ -1462,7 +1462,7 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreu_partial_common(__UNPA
   }
 
   LOAD_STORE_UNROLL_16
-  for (Index i = 0; i < n; i++) {
+  for (i = 0; i < n; i++) {
     to[i] = from[i];
   }
 #endif
