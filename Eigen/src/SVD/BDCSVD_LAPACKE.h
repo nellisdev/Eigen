@@ -80,12 +80,21 @@ BDCSVD<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW, Dynamic, Dynamic>, OPTIONS>:
   } else { ldvt=1; vt=&dummy; }\
   MatrixType m_temp; m_temp = matrix; \
   lda = internal::convert_index<lapack_int>(m_temp.outerStride()); \
-  LAPACKE_##LAPACKE_PREFIX##gesdd( matrix_order, jobz, internal::convert_index<lapack_int>(m_rows), internal::convert_index<lapack_int>(m_cols), (LAPACKE_TYPE*)m_temp.data(), lda, (LAPACKE_RTYPE*)m_singularValues.data(), u, ldu, vt, ldvt); \
-  if (m_computeThinU && m_computeFullV) { \
-    m_matrixU = localU.leftCols(m_matrixU.cols());\
-  } \
-  if (computeV()) { \
-    m_matrixV = localV.adjoint().leftCols(m_matrixV.cols()); \
+  lapack_int info = LAPACKE_##LAPACKE_PREFIX##gesdd( matrix_order, jobz, internal::convert_index<lapack_int>(m_rows), internal::convert_index<lapack_int>(m_cols), (LAPACKE_TYPE*)m_temp.data(), lda, (LAPACKE_RTYPE*)m_singularValues.data(), u, ldu, vt, ldvt); \
+  /* Check the result of the LAPACK call */ \
+  if (info < 0 || !m_singularValues.allFinite()) { \
+    /* this includes info == -4 => NaN entry in A */ \
+    m_info = InvalidInput; \
+  } else if (info > 0 ) { \
+    m_info = NoConvergence; \
+  } else { \
+    m_info = Success; \
+    if (m_computeThinU && m_computeFullV) { \
+      m_matrixU = localU.leftCols(m_matrixU.cols());\
+    } \
+    if (computeV()) { \
+      m_matrixV = localV.adjoint().leftCols(m_matrixV.cols()); \
+    } \
   } \
   m_isInitialized = true; \
   return *this; \
