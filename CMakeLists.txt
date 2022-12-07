@@ -134,6 +134,7 @@ else()
 endif()
 
 option(EIGEN_BUILD_BTL "Build benchmark suite" OFF)
+option(EIGEN_BUILD_SPBENCH "Build sparse benchmark suite" OFF)
 
 # Disable pkgconfig only for native Windows builds
 if(NOT WIN32 OR NOT CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
@@ -258,6 +259,12 @@ if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512dq -mfma")
     message(STATUS "Enabling AVX512DQ in tests/examples")
   endif()
+  
+  option(EIGEN_TEST_AVX512FP16 "Enable/Disable AVX512-FP16 in tests/examples" OFF)
+  if(EIGEN_TEST_AVX512FP16)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mfma -mavx512vl -mavx512fp16")
+	message(STATUS "Enabling AVX512-FP16 in tests/examples")
+  endif()
 
   option(EIGEN_TEST_F16C "Enable/Disable F16C in tests/examples" OFF)
   if(EIGEN_TEST_F16C)
@@ -360,9 +367,17 @@ else()
   endif()
 
   option(EIGEN_TEST_FMA "Enable/Disable FMA/AVX2 in tests/examples" OFF)
-  if(EIGEN_TEST_FMA AND NOT EIGEN_TEST_NEON)
+  option(EIGEN_TEST_AVX2 "Enable/Disable FMA/AVX2 in tests/examples" OFF)
+  if((EIGEN_TEST_FMA AND NOT EIGEN_TEST_NEON) OR EIGEN_TEST_AVX2)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2")
     message(STATUS "Enabling FMA/AVX2 in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_AVX512 "Enable/Disable AVX512 in tests/examples" OFF)
+  option(EIGEN_TEST_AVX512DQ "Enable/Disable AVX512DQ in tests/examples" OFF)
+  if(EIGEN_TEST_AVX512 OR EIGEN_TEST_AVX512DQ)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX512")
+    message(STATUS "Enabling AVX512 in tests/examples")
   endif()
 
 endif()
@@ -477,6 +492,9 @@ if(EIGEN_BUILD_TESTING)
   add_subdirectory(failtest)
 endif()
 
+include(CMakeDetermineFortranCompiler)
+option(EIGEN_BUILD_BLAS "Toggles the building of the Eigen Blas library" ${CMAKE_Fortran_COMPILER})
+option(EIGEN_BUILD_LAPACK "Toggles the building of the included Eigen LAPACK library" ${CMAKE_Fortran_COMPILER})
 if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
   add_subdirectory(blas)
   add_subdirectory(lapack)
@@ -544,7 +562,7 @@ foreach(DIR ${FORMAT_SUBDIRS})
     DEPENDS ${FORMAT_SOURCES})
 endif()
 
-if(NOT WIN32)
+if(NOT WIN32 AND EIGEN_BUILD_SPBENCH)
   add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
 endif()
 
@@ -611,6 +629,8 @@ set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)
 
 install (TARGETS eigen EXPORT Eigen3Targets)
 
+option(EIGEN_BUILD_CMAKE_PACKAGE "Enables the creation of EigenConfig.cmake and related files" ON)
+if(EIGEN_BUILD_CMAKE_PACKAGE)
 configure_package_config_file (
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Eigen3Config.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
@@ -653,8 +673,11 @@ install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
          DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
 
 # Add uninstall target
-add_custom_target ( uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)
+if(NOT TARGET uninstall)
+  add_custom_target ( uninstall
+      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)
+endif()
+endif()
 
 if (EIGEN_SPLIT_TESTSUITE)
   ei_split_testsuite("${EIGEN_SPLIT_TESTSUITE}")

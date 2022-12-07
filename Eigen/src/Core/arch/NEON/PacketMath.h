@@ -198,6 +198,9 @@ struct packet_traits<float> : default_packet_traits
 
     HasSin  = EIGEN_FAST_MATH,
     HasCos  = EIGEN_FAST_MATH,
+    HasACos  = 1,
+    HasASin  = 1,
+    HasATan  = 1,
     HasLog  = 1,
     HasExp  = 1,
     HasSqrt = 1,
@@ -2369,6 +2372,15 @@ template<> EIGEN_STRONG_INLINE Packet2l pabs(const Packet2l& a) {
 }
 template<> EIGEN_STRONG_INLINE Packet2ul pabs(const Packet2ul& a) { return a; }
 
+template <>
+EIGEN_STRONG_INLINE Packet2f psignbit(const Packet2f& a) {
+  return vreinterpret_f32_s32(vshr_n_s32(vreinterpret_s32_f32(a), 31));
+}
+template <>
+EIGEN_STRONG_INLINE Packet4f psignbit(const Packet4f& a) {
+  return vreinterpretq_f32_s32(vshrq_n_s32(vreinterpretq_s32_f32(a), 31));
+}
+
 template<> EIGEN_STRONG_INLINE Packet2f pfrexp<Packet2f>(const Packet2f& a, Packet2f& exponent)
 { return pfrexp_generic(a,exponent); }
 template<> EIGEN_STRONG_INLINE Packet4f pfrexp<Packet4f>(const Packet4f& a, Packet4f& exponent)
@@ -3340,23 +3352,13 @@ template<> EIGEN_STRONG_INLINE Packet4ui psqrt(const Packet4ui& a) {
 }
 
 template<> EIGEN_STRONG_INLINE Packet4f prsqrt(const Packet4f& a) {
-  // Compute approximate reciprocal sqrt.
-  Packet4f x = vrsqrteq_f32(a);
   // Do Newton iterations for 1/sqrt(x).
-  x = vmulq_f32(vrsqrtsq_f32(vmulq_f32(a, x), x), x);
-  x = vmulq_f32(vrsqrtsq_f32(vmulq_f32(a, x), x), x);
-  const Packet4f infinity = pset1<Packet4f>(NumTraits<float>::infinity());
-  return pselect(pcmp_eq(a, pzero(a)), infinity, x);
+  return generic_rsqrt_newton_step<Packet4f, /*Steps=*/2>::run(a, vrsqrteq_f32(a));
 }
 
 template<> EIGEN_STRONG_INLINE Packet2f prsqrt(const Packet2f& a) {
   // Compute approximate reciprocal sqrt.
-  Packet2f x = vrsqrte_f32(a);
-  // Do Newton iterations for 1/sqrt(x).
-  x = vmul_f32(vrsqrts_f32(vmul_f32(a, x), x), x);
-  x = vmul_f32(vrsqrts_f32(vmul_f32(a, x), x), x);
-  const Packet2f infinity = pset1<Packet2f>(NumTraits<float>::infinity());
-  return pselect(pcmp_eq(a, pzero(a)), infinity, x);
+  return generic_rsqrt_newton_step<Packet2f, /*Steps=*/2>::run(a, vrsqrte_f32(a));
 }
 
 // Unfortunately vsqrt_f32 is only available for A64.
@@ -3365,14 +3367,10 @@ template<> EIGEN_STRONG_INLINE Packet4f psqrt(const Packet4f& _x){return vsqrtq_
 template<> EIGEN_STRONG_INLINE Packet2f psqrt(const Packet2f& _x){return vsqrt_f32(_x); }
 #else
 template<> EIGEN_STRONG_INLINE Packet4f psqrt(const Packet4f& a) {
-  const Packet4f infinity = pset1<Packet4f>(NumTraits<float>::infinity());
-  const Packet4f is_zero_or_inf = por(pcmp_eq(a, pzero(a)), pcmp_eq(a, infinity));
-  return pselect(is_zero_or_inf, a, pmul(a, prsqrt(a)));
+  return generic_sqrt_newton_step<Packet4f>::run(a, prsqrt(a));
 }
 template<> EIGEN_STRONG_INLINE Packet2f psqrt(const Packet2f& a) {
-  const Packet2f infinity = pset1<Packet2f>(NumTraits<float>::infinity());
-  const Packet2f is_zero_or_inf = por(pcmp_eq(a, pzero(a)), pcmp_eq(a, infinity));
-  return pselect(is_zero_or_inf, a, pmul(a, prsqrt(a)));
+  return generic_sqrt_newton_step<Packet2f>::run(a, prsqrt(a));
 }
 #endif
 
@@ -3773,10 +3771,13 @@ template<> struct packet_traits<double>  : default_packet_traits
     HasCeil = 1,
     HasRint = 1,
 
+#if EIGEN_ARCH_ARM64 && !EIGEN_APPLE_DOUBLE_NEON_BUG
+    HasExp  = 1,
+    HasLog  = 1,
+    HasATan = 1,
+#endif
     HasSin  = 0,
     HasCos  = 0,
-    HasLog  = 1,
-    HasExp  = 1,
     HasSqrt = 1,
     HasRsqrt = 1,
     HasTanh = 0,
@@ -3912,6 +3913,11 @@ template<> EIGEN_STRONG_INLINE Packet2d preverse(const Packet2d& a)
 
 template<> EIGEN_STRONG_INLINE Packet2d pabs(const Packet2d& a) { return vabsq_f64(a); }
 
+template <>
+EIGEN_STRONG_INLINE Packet2d psignbit(const Packet2d& a) {
+  return vreinterpretq_f64_s64(vshrq_n_s64(vreinterpretq_s64_f64(a), 63));
+}
+
 template<> EIGEN_STRONG_INLINE double predux<Packet2d>(const Packet2d& a)
 { return vaddvq_f64(a); }
 
@@ -3966,14 +3972,8 @@ template<> EIGEN_STRONG_INLINE Packet2d pset1frombits<Packet2d>(uint64_t from)
 { return vreinterpretq_f64_u64(vdupq_n_u64(from)); }
 
 template<> EIGEN_STRONG_INLINE Packet2d prsqrt(const Packet2d& a) {
-  // Compute approximate reciprocal sqrt.
-  Packet2d x = vrsqrteq_f64(a);
   // Do Newton iterations for 1/sqrt(x).
-  x = vmulq_f64(vrsqrtsq_f64(vmulq_f64(a, x), x), x);
-  x = vmulq_f64(vrsqrtsq_f64(vmulq_f64(a, x), x), x);
-  x = vmulq_f64(vrsqrtsq_f64(vmulq_f64(a, x), x), x);
-  const Packet2d infinity = pset1<Packet2d>(NumTraits<double>::infinity());
-  return pselect(pcmp_eq(a, pzero(a)), infinity, x);
+  return generic_rsqrt_newton_step<Packet2d, /*Steps=*/3>::run(a, vrsqrteq_f64(a));
 }
 
 template<> EIGEN_STRONG_INLINE Packet2d psqrt(const Packet2d& _x){ return vsqrtq_f64(_x); }
@@ -4479,9 +4479,19 @@ EIGEN_STRONG_INLINE Packet8hf pabs<Packet8hf>(const Packet8hf& a) {
   return vabsq_f16(a);
 }
 
+template<>
+EIGEN_STRONG_INLINE Packet8hf psignbit(const Packet8hf& a) {
+  return vreinterpretq_f16_s16(vshrq_n_s16(vreinterpretq_s16_f16(a), 15));
+}
+
 template <>
 EIGEN_STRONG_INLINE Packet4hf pabs<Packet4hf>(const Packet4hf& a) {
   return vabs_f16(a);
+}
+
+template <>
+EIGEN_STRONG_INLINE Packet4hf psignbit(const Packet4hf& a) {
+  return vreinterpret_f16_s16( vshr_n_s16( vreinterpret_s16_f16(a), 15)); 
 }
 
 template <>

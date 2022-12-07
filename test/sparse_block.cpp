@@ -11,14 +11,14 @@
 #include "AnnoyingScalar.h"
 
 template<typename T>
-typename Eigen::internal::enable_if<(T::Flags&RowMajorBit)==RowMajorBit, typename T::RowXpr>::type
+std::enable_if_t<(T::Flags&RowMajorBit)==RowMajorBit, typename T::RowXpr>
 innervec(T& A, Index i)
 {
   return A.row(i);
 }
 
 template<typename T>
-typename Eigen::internal::enable_if<(T::Flags&RowMajorBit)==0, typename T::ColXpr>::type
+std::enable_if_t<(T::Flags&RowMajorBit)==0, typename T::ColXpr>
 innervec(T& A, Index i)
 {
   return A.col(i);
@@ -287,6 +287,25 @@ template<typename SparseMatrixType> void sparse_block(const SparseMatrixType& re
       if(m3.nonZeros()>0)
       VERIFY_IS_APPROX(m3, refMat3);
     }
+  }
+  
+  // Explicit inner iterator.
+  {
+    DenseMatrix refMat2 = DenseMatrix::Zero(rows, cols);
+    SparseMatrixType m2(rows, cols);
+    initSparse<Scalar>(density, refMat2, m2);
+    
+    Index j0 =internal::random<Index>(0, outer - 1);
+    auto v = innervec(m2, j0);
+    
+    typename decltype(v)::InnerIterator block_iterator(v);
+    typename SparseMatrixType::InnerIterator matrix_iterator(m2, j0);
+    while (block_iterator) {
+      VERIFY_IS_EQUAL(block_iterator.index(), matrix_iterator.index());
+      ++block_iterator;
+      ++matrix_iterator;
+    }
+
   }
 }
 
