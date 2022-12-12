@@ -81,10 +81,6 @@ void testVectorType(const VectorType& base)
   VectorType m(base), o(base);
   m.setLinSpaced(size,low,high);
   o.setEqualSpaced(size, low, step);
-  bool testEqualSpace = Scalar(size - 1) * step == (high - low);
-  if (testEqualSpace) {
-    VERIFY_IS_APPROX(m, o);
-  }
 
   if(!NumTraits<Scalar>::IsInteger)
   {
@@ -262,13 +258,12 @@ void nullary_overflow()
 {
   // Check possible overflow issue
   int n = 60000;
-  ArrayXi a1(n), a2(n), a3(n);
-  a1.setLinSpaced(n, 0, n-1);
-  for(int i=0; i<n; ++i)
-    a2(i) = i;
-  VERIFY_IS_APPROX(a1,a2);
-  a3.setEqualSpaced(n, 0, 1);
-  VERIFY_IS_APPROX(a1,a3);
+  ArrayXi a1(n), a2(n), a_ref(n);
+  a1.setLinSpaced(n, 0, n - 1);
+  a2.setEqualSpaced(n, 0, 1);
+  for (int i = 0; i < n; ++i) a_ref(i) = i;
+  VERIFY_IS_APPROX(a1, a_ref);
+  VERIFY_IS_APPROX(a2, a_ref);
 }
 
 template<int>
