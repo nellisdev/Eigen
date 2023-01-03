@@ -379,11 +379,12 @@ public:
     storePacketBlock_helper<SubPacket, Scalar_, n, idx-1> spbh;
     EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>* sup, Index i, Index j, const PacketBlock<SubPacket, n>& block) const {
       spbh.store(sup, i,j,block);
-      for(int l = 0; l < unpacket_traits<SubPacket>::size; l++)
-      {
-        Scalar_ *v = &sup->operator()(i+l, j+idx);
-        *v = block.packet[idx][l];
-      }
+      sup->template storePacket<SubPacket>(i, j+idx, block.packet[idx]);
+      //for(int l = 0; l < unpacket_traits<SubPacket>::size; l++)
+      //{
+      //  Scalar_ *v = &sup->operator()(i+l, j+idx);
+      //  *v = *reinterpret_cast<Scalar_ *>(&block.packet[idx][l]);
+      //}
     }
   };
 
@@ -393,12 +394,7 @@ public:
     storePacketBlock_helper<SubPacket, std::complex<float>, n, idx-1> spbh;
     EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void store(const blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType, Incr>* sup, Index i, Index j, const PacketBlock<SubPacket, n>& block) const {
       spbh.store(sup,i,j,block);
-      for(int l = 0; l < unpacket_traits<SubPacket>::size; l++)
-      {
-        std::complex<float> *v = &sup->operator()(i+l, j+idx);
-        v->real(block.packet[idx].v[2*l+0]);
-        v->imag(block.packet[idx].v[2*l+1]);
-      }
+      sup->template storePacket<SubPacket>(i, j+idx, block.packet[idx]);
     }
   };
 
@@ -487,8 +483,8 @@ template<typename XprType> struct blas_traits
     ExtractType,
     typename ExtractType_::PlainObject
     > DirectLinearAccessType;
-  static inline EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR ExtractType extract(const XprType& x) { return x; }
-  static inline EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR const Scalar extractScalarFactor(const XprType&) { return Scalar(1); }
+  static inline EIGEN_DEVICE_FUNC ExtractType extract(const XprType& x) { return x; }
+  static inline EIGEN_DEVICE_FUNC const Scalar extractScalarFactor(const XprType&) { return Scalar(1); }
 };
 
 // pop conjugate
@@ -576,7 +572,7 @@ struct blas_traits<Transpose<NestedXpr> >
   enum {
     IsTransposed = Base::IsTransposed ? 0 : 1
   };
-  static inline EIGEN_CONSTEXPR ExtractType extract(const XprType& x) { return ExtractType(Base::extract(x.nestedExpression())); }
+  static inline ExtractType extract(const XprType& x) { return ExtractType(Base::extract(x.nestedExpression())); }
   static inline Scalar extractScalarFactor(const XprType& x) { return Base::extractScalarFactor(x.nestedExpression()); }
 };
 
@@ -587,7 +583,7 @@ struct blas_traits<const T>
 
 template<typename T, bool HasUsableDirectAccess=blas_traits<T>::HasUsableDirectAccess>
 struct extract_data_selector {
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE EIGEN_CONSTEXPR static const typename T::Scalar* run(const T& m)
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static const typename T::Scalar* run(const T& m)
   {
     return blas_traits<T>::extract(m).data();
   }
@@ -599,7 +595,7 @@ struct extract_data_selector<T,false> {
 };
 
 template<typename T>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE EIGEN_CONSTEXPR const typename T::Scalar* extract_data(const T& m)
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE const typename T::Scalar* extract_data(const T& m)
 {
   return extract_data_selector<T>::run(m);
 }
