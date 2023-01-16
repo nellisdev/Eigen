@@ -391,7 +391,7 @@ MatrixBase<Derived>::asDiagonal() const
   * \only_for_vectors
   *
   * \tparam MatrixType the type of the object in which we are taking a sub/main/super
-  * \tparam Index of the sub/super diagonal. The default is 0 and it means the main diagonal.
+  * \tparam Index of sub/super diagonal. The default is 0 and it means the main diagonal.
   *              A positive value means a superdiagonal, a negative value means a subdiagonal.            
   *
   * \sa class DiagonalWrapper, class DiagonalMatrix, diagonal(), asDiagonal()
