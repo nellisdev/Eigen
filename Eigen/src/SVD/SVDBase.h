@@ -32,23 +32,24 @@ constexpr int get_qr_preconditioner(int options) { return options & QRPreconditi
 
 constexpr int get_computation_options(int options) { return options & ComputationOptionsBits; }
 
-constexpr int should_svd_compute_thin_u(int options) { return options & ComputeThinU; }
-constexpr int should_svd_compute_full_u(int options) { return options & ComputeFullU; }
-constexpr int should_svd_compute_thin_v(int options) { return options & ComputeThinV; }
-constexpr int should_svd_compute_full_v(int options) { return options & ComputeFullV; }
+constexpr bool should_svd_compute_thin_u(int options) { return (options & ComputeThinU) != 0; }
+constexpr bool should_svd_compute_full_u(int options) { return (options & ComputeFullU) != 0; }
+constexpr bool should_svd_compute_thin_v(int options) { return (options & ComputeThinV) != 0; }
+constexpr bool should_svd_compute_full_v(int options) { return (options & ComputeFullV) != 0; }
 
-template <typename MatrixType, int Options>
-void check_svd_constructor_assertions(unsigned int computationOptions) {
+template<typename MatrixType, int Options>
+void check_svd_options_assertions(unsigned int computationOptions, Index rows, Index cols) {
   EIGEN_STATIC_ASSERT((Options & ComputationOptionsBits) == 0,
                       "SVDBase: Cannot request U or V using both static and runtime options, even if they match. "
-                      "Requesting unitaries at runtime through the constructor is DEPRECATED: "
-                      "If possible, prefer requesting unitaries statically, using the Options template parameter.");
-  eigen_assert(
-      !(should_svd_compute_thin_u(computationOptions) && MatrixType::ColsAtCompileTime != Dynamic) &&
-      !(should_svd_compute_thin_v(computationOptions) && MatrixType::ColsAtCompileTime != Dynamic) &&
-      "SVDBase: If U or V are requested at runtime through the constructor, then thin U and V are only available when "
-      "your matrix has a dynamic number of columns.");
+                      "Requesting unitaries at runtime is DEPRECATED: "
+                      "Prefer requesting unitaries statically, using the Options template parameter.");
+  eigen_assert(!(should_svd_compute_thin_u(computationOptions) && cols < rows && MatrixType::RowsAtCompileTime != Dynamic) &&
+               !(should_svd_compute_thin_v(computationOptions) && rows < cols && MatrixType::ColsAtCompileTime != Dynamic) &&
+               "SVDBase: If thin U is requested at runtime, your matrix must have more rows than columns or a dynamic number of rows."
+               "Similarly, if thin V is requested at runtime, you matrix must have more columns than rows or a dynamic number of columns.");
   (void)computationOptions;
+  (void)rows;
+  (void)cols;
 }
 
 template<typename Derived> struct traits<SVDBase<Derived> >
@@ -60,8 +61,9 @@ template<typename Derived> struct traits<SVDBase<Derived> >
   enum { Flags = 0 };
 };
 
-template <typename MatrixType, int Options>
+template <typename MatrixType, int Options_>
 struct svd_traits : traits<MatrixType> {
+  static constexpr int Options = Options_;
   static constexpr bool ShouldComputeFullU = internal::should_svd_compute_full_u(Options);
   static constexpr bool ShouldComputeThinU = internal::should_svd_compute_thin_u(Options);
   static constexpr bool ShouldComputeFullV = internal::should_svd_compute_full_v(Options);
@@ -71,18 +73,14 @@ struct svd_traits : traits<MatrixType> {
         internal::min_size_prefer_dynamic(MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime),
     MaxDiagSizeAtCompileTime =
         internal::min_size_prefer_dynamic(MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime),
-    MatrixUColsAtCompileTime = ShouldComputeFullU   ? MatrixType::RowsAtCompileTime
-                               : ShouldComputeThinU ? DiagSizeAtCompileTime
-                                                    : Dynamic,
-    MatrixVColsAtCompileTime = ShouldComputeFullV   ? MatrixType::ColsAtCompileTime
-                               : ShouldComputeThinV ? DiagSizeAtCompileTime
-                                                    : Dynamic,
-    MatrixUMaxColsAtCompileTime = ShouldComputeFullU   ? MatrixType::MaxRowsAtCompileTime
-                                  : ShouldComputeThinU ? MaxDiagSizeAtCompileTime
-                                                       : Dynamic,
-    MatrixVMaxColsAtCompileTime = ShouldComputeFullV   ? MatrixType::MaxColsAtCompileTime
-                                  : ShouldComputeThinV ? MaxDiagSizeAtCompileTime
-                                                       : Dynamic
+    MatrixUColsAtCompileTime = ShouldComputeThinU ? DiagSizeAtCompileTime
+                                                  : MatrixType::RowsAtCompileTime,
+    MatrixVColsAtCompileTime = ShouldComputeThinV ? DiagSizeAtCompileTime
+                                                  : MatrixType::ColsAtCompileTime,
+    MatrixUMaxColsAtCompileTime = ShouldComputeThinU ? MaxDiagSizeAtCompileTime
+                                                     : MatrixType::MaxRowsAtCompileTime,
+    MatrixVMaxColsAtCompileTime = ShouldComputeThinV ? MaxDiagSizeAtCompileTime
+                                                     : MatrixType::MaxColsAtCompileTime
   };
 };
 }

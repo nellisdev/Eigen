@@ -120,9 +120,7 @@ specified position.  The value returned is of the datatype of the tensor.
 ## TensorLayout
 
 The tensor library supports 2 layouts: `ColMajor` (the default) and
-`RowMajor`.  Only the default column major layout is currently fully
-supported, and it is therefore not recommended to attempt to use the row major
-layout at the moment.
+`RowMajor`. 
 
 The layout of a tensor is optionally specified as part of its type. If not
 specified explicitly column major is assumed.
@@ -887,6 +885,23 @@ containing the natural logarithms of the original tensor.
 
 Returns a tensor of the same type and dimensions as the original tensor
 containing the absolute values of the original tensor.
+
+### <Operation> arg()
+
+Returns a tensor with the same dimensions as the original tensor
+containing the complex argument (phase angle) of the values of the
+original tensor.
+
+### <Operation> real()
+
+Returns a tensor with the same dimensions as the original tensor
+containing the real part of the complex values of the original tensor.
+
+### <Operation> imag()
+
+Returns a tensor with the same dimensions as the orginal tensor
+containing the imaginary part of the complex values of the original
+tensor.
 
 ### <Operation> pow(Scalar exponent)
 
@@ -1847,8 +1862,3 @@ product of 2 1d tensors (through contractions) returns a 0d tensor.
 *   The IndexList class requires a cxx11 compliant compiler. You can use an
     array of indices instead if you don't have access to a modern compiler.
 *   On GPUs only floating point values are properly tested and optimized for.
-*   Complex and integer values are known to be broken on GPUs. If you try to use
-    them you'll most likely end up triggering a static assertion failure such as
-    EIGEN_STATIC_ASSERT(packetSize > 1, YOU_MADE_A_PROGRAMMING_MISTAKE)
-
-

@@ -3,10 +3,8 @@
 
 #include <Eigen/Core>
 
-#ifdef EIGEN_GPUCC
-#define EIGEN_USE_GPU
-#include "../unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h"
-#endif // EIGEN_GPUCC
+// Allow gpu** macros for generic tests.
+#include <unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h>
 
 // std::tuple cannot be used on device, and there is a bug in cuda < 9.2 that
 // doesn't allow std::tuple to compile for host code either. In these cases,
@@ -66,7 +64,7 @@ struct extract_output_indices_helper<N, Idx, std::index_sequence<OutputIndices..
       typename std::conditional<
         // If is a non-const l-value reference, append index.
         std::is_lvalue_reference<T1>::value 
-          && !std::is_const<typename std::remove_reference<T1>::type>::value,
+          && !std::is_const<std::remove_reference_t<T1>>::value,
         std::index_sequence<OutputIndices..., Idx>,
         std::index_sequence<OutputIndices...> >::type,
       Ts...>::type;
@@ -95,8 +93,8 @@ struct void_helper {
   template<typename Func, typename... Args>
   static EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC
   auto call(Func&& func, Args&&... args) -> 
-      typename std::enable_if<!std::is_same<decltype(func(args...)), void>::value, 
-                              decltype(func(args...))>::type {
+      std::enable_if_t<!std::is_same<decltype(func(args...)), void>::value,
+                       decltype(func(args...))> {
     return func(std::forward<Args>(args)...);
   }
   
@@ -104,8 +102,8 @@ struct void_helper {
   template<typename Func, typename... Args>
   static EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC
   auto call(Func&& func, Args&&... args) -> 
-      typename std::enable_if<std::is_same<decltype(func(args...)), void>::value,
-                              Void>::type {
+    std::enable_if_t<std::is_same<decltype(func(args...)), void>::value,
+                     Void> {
     func(std::forward<Args>(args)...);
     return Void{};
   }
@@ -113,7 +111,7 @@ struct void_helper {
   // Restores the original return type, Void -> void, T otherwise.
   template<typename T>
   static EIGEN_ALWAYS_INLINE EIGEN_DEVICE_FUNC
-  typename std::enable_if<!std::is_same<typename std::decay<T>::type, Void>::value, T>::type
+  std::enable_if_t<!std::is_same<typename std::decay<T>::type, Void>::value, T>
   restore(T&& val) {
     return val;
   }

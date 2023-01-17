@@ -12,9 +12,8 @@
 #include <Eigen/QR>
 #include "solverbase.h"
 
-template<typename MatrixType> void qr()
+template<typename MatrixType, typename PermutationIndex> void qr()
 {
-  STATIC_CHECK(( internal::is_same<typename FullPivHouseholderQR<MatrixType>::StorageIndex,int>::value ));
 
   static const int Rows = MatrixType::RowsAtCompileTime, Cols = MatrixType::ColsAtCompileTime;
   Index max_size = EIGEN_TEST_MAX_SIZE;
@@ -28,7 +27,7 @@ template<typename MatrixType> void qr()
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> MatrixQType;
   MatrixType m1;
   createRandomPIMatrixOfRank(rank,rows,cols,m1);
-  FullPivHouseholderQR<MatrixType> qr(m1);
+  FullPivHouseholderQR<MatrixType, PermutationIndex> qr(m1);
   VERIFY_IS_EQUAL(rank, qr.rank());
   VERIFY_IS_EQUAL(cols - qr.rank(), qr.dimensionOfKernel());
   VERIFY(!qr.isInjective());
@@ -67,7 +66,7 @@ template<typename MatrixType> void qr()
   }
 }
 
-template<typename MatrixType> void qr_invertible()
+template<typename MatrixType, typename PermutationIndex> void qr_invertible()
 {
   using std::log;
   using std::abs;
@@ -88,7 +87,7 @@ template<typename MatrixType> void qr_invertible()
     m1 += a * a.adjoint();
   }
 
-  FullPivHouseholderQR<MatrixType> qr(m1);
+  FullPivHouseholderQR<MatrixType, PermutationIndex> qr(m1);
   VERIFY(qr.isInjective());
   VERIFY(qr.isInvertible());
   VERIFY(qr.isSurjective());
@@ -98,19 +97,21 @@ template<typename MatrixType> void qr_invertible()
   // now construct a matrix with prescribed determinant
   m1.setZero();
   for(int i = 0; i < size; i++) m1(i,i) = internal::random<Scalar>();
-  RealScalar absdet = abs(m1.diagonal().prod());
+  Scalar det = m1.diagonal().prod();
+  RealScalar absdet = abs(det);
   m3 = qr.matrixQ(); // get a unitary
-  m1 = m3 * m1 * m3;
+  m1 = m3 * m1 * m3.adjoint();
   qr.compute(m1);
+  VERIFY_IS_APPROX(det, qr.determinant());
   VERIFY_IS_APPROX(absdet, qr.absDeterminant());
   VERIFY_IS_APPROX(log(absdet), qr.logAbsDeterminant());
 }
 
-template<typename MatrixType> void qr_verify_assert()
+template<typename MatrixType, typename PermutationIndex> void qr_verify_assert()
 {
   MatrixType tmp;
 
-  FullPivHouseholderQR<MatrixType> qr;
+  FullPivHouseholderQR<MatrixType, PermutationIndex> qr;
   VERIFY_RAISES_ASSERT(qr.matrixQR())
   VERIFY_RAISES_ASSERT(qr.solve(tmp))
   VERIFY_RAISES_ASSERT(qr.transpose().solve(tmp))
@@ -121,39 +122,42 @@ template<typename MatrixType> void qr_verify_assert()
   VERIFY_RAISES_ASSERT(qr.isSurjective())
   VERIFY_RAISES_ASSERT(qr.isInvertible())
   VERIFY_RAISES_ASSERT(qr.inverse())
+  VERIFY_RAISES_ASSERT(qr.determinant())
   VERIFY_RAISES_ASSERT(qr.absDeterminant())
   VERIFY_RAISES_ASSERT(qr.logAbsDeterminant())
 }
 
 EIGEN_DECLARE_TEST(qr_fullpivoting)
 {
+  typedef int PermutationIndex;
+
   for(int i = 0; i < 1; i++) {
-    CALL_SUBTEST_5( qr<Matrix3f>() );
-    CALL_SUBTEST_6( qr<Matrix3d>() );
-    CALL_SUBTEST_8( qr<Matrix2f>() );
-    CALL_SUBTEST_1( qr<MatrixXf>() );
-    CALL_SUBTEST_2( qr<MatrixXd>() );
-    CALL_SUBTEST_3( qr<MatrixXcd>() );
+    CALL_SUBTEST_5( (qr<Matrix3f, PermutationIndex>()) );
+    CALL_SUBTEST_6( (qr<Matrix3d, PermutationIndex>()) );
+    CALL_SUBTEST_8( (qr<Matrix2f, PermutationIndex>()) );
+    CALL_SUBTEST_1( (qr<MatrixXf, PermutationIndex>()) );
+    CALL_SUBTEST_2( (qr<MatrixXd, PermutationIndex>()) );
+    CALL_SUBTEST_3( (qr<MatrixXcd, PermutationIndex>()) );
   }
 
   for(int i = 0; i < g_repeat; i++) {
-    CALL_SUBTEST_1( qr_invertible<MatrixXf>() );
-    CALL_SUBTEST_2( qr_invertible<MatrixXd>() );
-    CALL_SUBTEST_4( qr_invertible<MatrixXcf>() );
-    CALL_SUBTEST_3( qr_invertible<MatrixXcd>() );
+    CALL_SUBTEST_1( (qr_invertible<MatrixXf, PermutationIndex>()) );
+    CALL_SUBTEST_2( (qr_invertible<MatrixXd, PermutationIndex>()) );
+    CALL_SUBTEST_4( (qr_invertible<MatrixXcf, PermutationIndex>()) );
+    CALL_SUBTEST_3( (qr_invertible<MatrixXcd, PermutationIndex>()) );
   }
 
-  CALL_SUBTEST_5(qr_verify_assert<Matrix3f>());
-  CALL_SUBTEST_6(qr_verify_assert<Matrix3d>());
-  CALL_SUBTEST_1(qr_verify_assert<MatrixXf>());
-  CALL_SUBTEST_2(qr_verify_assert<MatrixXd>());
-  CALL_SUBTEST_4(qr_verify_assert<MatrixXcf>());
-  CALL_SUBTEST_3(qr_verify_assert<MatrixXcd>());
+  CALL_SUBTEST_5( (qr_verify_assert<Matrix3f, PermutationIndex>()) );
+  CALL_SUBTEST_6( (qr_verify_assert<Matrix3d, PermutationIndex>()) );
+  CALL_SUBTEST_1( (qr_verify_assert<MatrixXf, PermutationIndex>()) );
+  CALL_SUBTEST_2( (qr_verify_assert<MatrixXd, PermutationIndex>()) );
+  CALL_SUBTEST_4( (qr_verify_assert<MatrixXcf, PermutationIndex>()) );
+  CALL_SUBTEST_3( (qr_verify_assert<MatrixXcd, PermutationIndex>()) );
 
   // Test problem size constructors
-  CALL_SUBTEST_7(FullPivHouseholderQR<MatrixXf>(10, 20));
-  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,10,20> >(10,20)));
-  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,10,20> >(Matrix<float,10,20>::Random())));
-  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,20,10> >(20,10)));
-  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,20,10> >(Matrix<float,20,10>::Random())));
+  CALL_SUBTEST_7( (FullPivHouseholderQR<MatrixXf,PermutationIndex>(10, 20)));
+  CALL_SUBTEST_7( (FullPivHouseholderQR<Matrix<float, 10, 20>, PermutationIndex>(10, 20)));
+  CALL_SUBTEST_7( (FullPivHouseholderQR<Matrix<float, 10, 20>, PermutationIndex>(Matrix<float,10,20>::Random())));
+  CALL_SUBTEST_7( (FullPivHouseholderQR<Matrix<float, 20, 10>, PermutationIndex>(20, 10)));
+  CALL_SUBTEST_7( (FullPivHouseholderQR<Matrix<float, 20, 10>, PermutationIndex>(Matrix<float,20,10>::Random())));
 }

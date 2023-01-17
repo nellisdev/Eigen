@@ -73,8 +73,8 @@ class qr_preconditioner_impl<MatrixType, Options, FullPivHouseholderQRPreconditi
   void allocate(const SVDType& svd) {
     if (svd.rows() != m_qr.rows() || svd.cols() != m_qr.cols())
     {
-      m_qr.~QRType();
-      ::new (&m_qr) QRType(svd.rows(), svd.cols());
+      internal::destroy_at(&m_qr);
+      internal::construct_at(&m_qr, svd.rows(), svd.cols());
     }
     if (svd.m_computeFullU) m_workspace.resize(svd.rows());
   }
@@ -119,8 +119,8 @@ class qr_preconditioner_impl<MatrixType, Options, FullPivHouseholderQRPreconditi
   void allocate(const SVDType& svd) {
     if (svd.cols() != m_qr.rows() || svd.rows() != m_qr.cols())
     {
-      m_qr.~QRType();
-      ::new (&m_qr) QRType(svd.cols(), svd.rows());
+      internal::destroy_at(&m_qr);
+      internal::construct_at(&m_qr, svd.cols(), svd.rows());
     }
     m_adjoint.resize(svd.cols(), svd.rows());
     if (svd.m_computeFullV) m_workspace.resize(svd.cols());
@@ -165,8 +165,8 @@ class qr_preconditioner_impl<MatrixType, Options, ColPivHouseholderQRPreconditio
   void allocate(const SVDType& svd) {
     if (svd.rows() != m_qr.rows() || svd.cols() != m_qr.cols())
     {
-      m_qr.~QRType();
-      ::new (&m_qr) QRType(svd.rows(), svd.cols());
+      internal::destroy_at(&m_qr);
+      internal::construct_at(&m_qr, svd.rows(), svd.cols());
     }
     if (svd.m_computeFullU) m_workspace.resize(svd.rows());
     else if (svd.m_computeThinU) m_workspace.resize(svd.cols());
@@ -221,8 +221,8 @@ class qr_preconditioner_impl<MatrixType, Options, ColPivHouseholderQRPreconditio
   void allocate(const SVDType& svd) {
     if (svd.cols() != m_qr.rows() || svd.rows() != m_qr.cols())
     {
-      m_qr.~QRType();
-      ::new (&m_qr) QRType(svd.cols(), svd.rows());
+      internal::destroy_at(&m_qr);
+      internal::construct_at(&m_qr, svd.cols(), svd.rows());
     }
     if (svd.m_computeFullV) m_workspace.resize(svd.cols());
     else if (svd.m_computeThinV) m_workspace.resize(svd.rows());
@@ -273,8 +273,8 @@ class qr_preconditioner_impl<MatrixType, Options, HouseholderQRPreconditioner, P
   void allocate(const SVDType& svd) {
     if (svd.rows() != m_qr.rows() || svd.cols() != m_qr.cols())
     {
-      m_qr.~QRType();
-      ::new (&m_qr) QRType(svd.rows(), svd.cols());
+      internal::destroy_at(&m_qr);
+      internal::construct_at(&m_qr, svd.rows(), svd.cols());
     }
     if (svd.m_computeFullU) m_workspace.resize(svd.rows());
     else if (svd.m_computeThinU) m_workspace.resize(svd.cols());
@@ -328,8 +328,8 @@ class qr_preconditioner_impl<MatrixType, Options, HouseholderQRPreconditioner, P
   void allocate(const SVDType& svd) {
     if (svd.cols() != m_qr.rows() || svd.rows() != m_qr.cols())
     {
-      m_qr.~QRType();
-      ::new (&m_qr) QRType(svd.cols(), svd.rows());
+      internal::destroy_at(&m_qr);
+      internal::construct_at(&m_qr, svd.cols(), svd.rows());
     }
     if (svd.m_computeFullV) m_workspace.resize(svd.cols());
     else if (svd.m_computeThinV) m_workspace.resize(svd.rows());
@@ -510,23 +510,25 @@ struct traits<JacobiSVD<MatrixType_, Options> > : svd_traits<MatrixType_, Option
  *
  * \sa MatrixBase::jacobiSvd()
  */
-template <typename MatrixType_, int Options>
-class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options> > {
+template <typename MatrixType_, int Options_>
+class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options_> > {
   typedef SVDBase<JacobiSVD> Base;
 
  public:
   typedef MatrixType_ MatrixType;
-  typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
+  typedef typename Base::Scalar Scalar;
+  typedef typename Base::RealScalar RealScalar;
+  typedef typename Base::Index Index;
   enum {
+    Options = Options_,
     QRPreconditioner = internal::get_qr_preconditioner(Options),
-    RowsAtCompileTime = MatrixType::RowsAtCompileTime,
-    ColsAtCompileTime = MatrixType::ColsAtCompileTime,
-    DiagSizeAtCompileTime = internal::min_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime),
-    MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
-    MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime,
-    MaxDiagSizeAtCompileTime = internal::min_size_prefer_fixed(MaxRowsAtCompileTime, MaxColsAtCompileTime),
-    MatrixOptions = MatrixType::Options
+    RowsAtCompileTime = Base::RowsAtCompileTime,
+    ColsAtCompileTime = Base::ColsAtCompileTime,
+    DiagSizeAtCompileTime = Base::DiagSizeAtCompileTime,
+    MaxRowsAtCompileTime = Base::MaxRowsAtCompileTime,
+    MaxColsAtCompileTime = Base::MaxColsAtCompileTime,
+    MaxDiagSizeAtCompileTime = Base::MaxDiagSizeAtCompileTime,
+    MatrixOptions = Base::MatrixOptions
   };
 
   typedef typename Base::MatrixUType MatrixUType;
@@ -557,15 +559,18 @@ class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options> > {
    * Like the default constructor but with preallocation of the internal data
    * according to the specified problem size.
    *
-   * <b>Note: This constructor is deprecated.</b>
-   * one \b cannot request unitaries using both the \a Options template parameter
+   * One \b cannot request unitaries using both the \a Options template parameter
    * and the constructor. If possible, prefer using the \a Options template parameter.
    *
    * \param computationOptions specify whether to compute Thin/Full unitaries U/V
    * \sa JacobiSVD()
+   *
+   * \deprecated Will be removed in the next major Eigen version. Options should
+   * be specified in the \a Options template parameter.
    */
+  EIGEN_DEPRECATED
   JacobiSVD(Index rows, Index cols, unsigned int computationOptions) {
-    internal::check_svd_constructor_assertions<MatrixType, Options>(computationOptions);
+    internal::check_svd_options_assertions<MatrixType, Options>(computationOptions, rows, cols);
     allocate(rows, cols, computationOptions);
   }
 
@@ -579,15 +584,18 @@ class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options> > {
   /** \brief Constructor performing the decomposition of given matrix using specified options
    *         for computing unitaries.
    *
-   *  <b>Note: This constructor is deprecated.</b>
    *  One \b cannot request unitiaries using both the \a Options template parameter
    *  and the constructor. If possible, prefer using the \a Options template parameter.
    *
    * \param matrix the matrix to decompose
    * \param computationOptions specify whether to compute Thin/Full unitaries U/V
+   *
+   * \deprecated Will be removed in the next major Eigen version. Options should
+   * be specified in the \a Options template parameter.
    */
+  // EIGEN_DEPRECATED // TODO(cantonios): re-enable after fixing a few 3p libraries that error on deprecation warnings.
   JacobiSVD(const MatrixType& matrix, unsigned int computationOptions) {
-    internal::check_svd_constructor_assertions<MatrixType, Options>(computationOptions);
+    internal::check_svd_options_assertions<MatrixType, Options>(computationOptions, matrix.rows(), matrix.cols());
     compute_impl(matrix, computationOptions);
   }
 
@@ -597,6 +605,21 @@ class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options> > {
    * \param matrix the matrix to decompose
    */
   JacobiSVD& compute(const MatrixType& matrix) { return compute_impl(matrix, m_computationOptions); }
+
+  /** \brief Method performing the decomposition of given matrix, as specified by
+   *         the `computationOptions` parameter.
+   *
+   * \param matrix the matrix to decompose
+   * \param computationOptions specify whether to compute Thin/Full unitaries U/V
+   * 
+   * \deprecated Will be removed in the next major Eigen version. Options should
+   * be specified in the \a Options template parameter.
+   */
+  EIGEN_DEPRECATED
+  JacobiSVD& compute(const MatrixType& matrix, unsigned int computationOptions) {
+    internal::check_svd_options_assertions<MatrixType, Options>(m_computationOptions, matrix.rows(), matrix.cols());
+    return compute_impl(matrix, computationOptions);
+  }
 
   using Base::computeU;
   using Base::computeV;
@@ -634,9 +657,9 @@ class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options> > {
                       "JacobiSVD: can't compute thin U or thin V with the FullPivHouseholderQR preconditioner. "
                       "Use the ColPivHouseholderQR preconditioner instead.")
 
-  template <typename MatrixType__, int Options_, bool IsComplex_>
+  template <typename MatrixType__, int Options__, bool IsComplex_>
   friend struct internal::svd_precondition_2x2_block_to_be_real;
-  template <typename MatrixType__, int Options_, int QRPreconditioner_, int Case_, bool DoAnything_>
+  template <typename MatrixType__, int Options__, int QRPreconditioner_, int Case_, bool DoAnything_>
   friend struct internal::qr_preconditioner_impl;
 
   internal::qr_preconditioner_impl<MatrixType, Options, QRPreconditioner, internal::PreconditionIfMoreColsThanRows>
@@ -648,7 +671,7 @@ class JacobiSVD : public SVDBase<JacobiSVD<MatrixType_, Options> > {
 };
 
 template <typename MatrixType, int Options>
-void JacobiSVD<MatrixType, Options>::allocate(Eigen::Index rows, Eigen::Index cols, unsigned int computationOptions) {
+void JacobiSVD<MatrixType, Options>::allocate(Index rows, Index cols, unsigned int computationOptions) {
   if (Base::allocate(rows, cols, computationOptions)) return;
 
   eigen_assert(!(ShouldComputeThinU && int(QRPreconditioner) == int(FullPivHouseholderQRPreconditioner)) &&

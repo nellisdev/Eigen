@@ -10,6 +10,15 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+// We explicitly disable deprecated declarations for this set of tests
+// because we purposely verify assertions for the deprecated SVD runtime
+// option behavior.
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning( disable : 4996 )
+#endif
+
 // discard stack allocation as that too bypasses malloc
 #define EIGEN_STACK_ALLOCATION_LIMIT 0
 #define EIGEN_RUNTIME_NO_MALLOC
@@ -32,12 +41,22 @@ void bdcsvd_method()
   VERIFY_IS_APPROX(m.bdcSvd().singularValues(), RealVecType::Ones());
   VERIFY_RAISES_ASSERT(m.bdcSvd().matrixU());
   VERIFY_RAISES_ASSERT(m.bdcSvd().matrixV());
+  
+  // Deprecated behavior.
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).solve(m), m);
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).transpose().solve(m), m);
   VERIFY_IS_APPROX(m.bdcSvd(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomposition>(ComputeFullU|ComputeFullV).solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomposition>(ComputeFullU|ComputeFullV).transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<DisableQRDecomposition>(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
+
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().solve(m), m);
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().transpose().solve(m), m);
   VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV>().adjoint().solve(m), m);
+
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomposition>().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomposition>().transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.template bdcSvd<ComputeFullU | ComputeFullV | DisableQRDecomposition>().adjoint().solve(m), m);
 }
 
 // compare the Singular values returned with Jacobi and Bdc
@@ -76,7 +95,7 @@ void compare_bdc_jacobi_instance(bool structure_as_m, int algoswap = 16)
 
 template <typename MatrixType>
 void bdcsvd_all_options(const MatrixType& input = MatrixType()) {
-  MatrixType m = input;
+  MatrixType m(input.rows(), input.cols());
   svd_fill_random(m);
   svd_option_checks<MatrixType, 0>(m);
 }
@@ -89,14 +108,14 @@ void bdcsvd_verify_assert(const MatrixType& input = MatrixType()) {
 
 EIGEN_DECLARE_TEST(bdcsvd)
 {
-  CALL_SUBTEST_3((bdcsvd_verify_assert<Matrix3f>()));
-  CALL_SUBTEST_4((bdcsvd_verify_assert<Matrix4d>()));
-  CALL_SUBTEST_7((bdcsvd_verify_assert<Matrix<float, 30, 21>>()));
-  CALL_SUBTEST_7((bdcsvd_verify_assert<Matrix<float, 21, 30>>()));
-  CALL_SUBTEST_9((bdcsvd_verify_assert<Matrix<std::complex<double>, 20, 27>>()));
+  CALL_SUBTEST_1((bdcsvd_verify_assert<Matrix3f>()));
+  CALL_SUBTEST_1((bdcsvd_verify_assert<Matrix4d>()));
+  CALL_SUBTEST_2((bdcsvd_verify_assert<Matrix<float, 10, 7>>()));
+  CALL_SUBTEST_2((bdcsvd_verify_assert<Matrix<float, 7, 10>>()));
+  CALL_SUBTEST_3((bdcsvd_verify_assert<Matrix<std::complex<double>, 6, 9>>()));
 
-  CALL_SUBTEST_101((svd_all_trivial_2x2(bdcsvd_all_options<Matrix2cd>)));
-  CALL_SUBTEST_102((svd_all_trivial_2x2(bdcsvd_all_options<Matrix2d>)));
+  CALL_SUBTEST_4((svd_all_trivial_2x2(bdcsvd_all_options<Matrix2cd>)));
+  CALL_SUBTEST_5((svd_all_trivial_2x2(bdcsvd_all_options<Matrix2d>)));
 
   for (int i = 0; i < g_repeat; i++) {
     int r = internal::random<int>(1, EIGEN_TEST_MAX_SIZE/2),
@@ -105,58 +124,58 @@ EIGEN_DECLARE_TEST(bdcsvd)
     TEST_SET_BUT_UNUSED_VARIABLE(r)
     TEST_SET_BUT_UNUSED_VARIABLE(c)
 
-    CALL_SUBTEST_7((compare_bdc_jacobi<MatrixXf>(MatrixXf(r, c))));
-    CALL_SUBTEST_10((compare_bdc_jacobi<MatrixXd>(MatrixXd(r, c))));
+    CALL_SUBTEST_6((compare_bdc_jacobi<MatrixXf>(MatrixXf(r, c))));
+    CALL_SUBTEST_7((compare_bdc_jacobi<MatrixXd>(MatrixXd(r, c))));
     CALL_SUBTEST_8((compare_bdc_jacobi<MatrixXcd>(MatrixXcd(r, c))));
     // Test on inf/nan matrix
-    CALL_SUBTEST_7((svd_inf_nan<MatrixXf>()));
+    CALL_SUBTEST_9((svd_inf_nan<MatrixXf>()));
     CALL_SUBTEST_10((svd_inf_nan<MatrixXd>()));
 
     // Verify some computations using all combinations of the Options template parameter.
-    CALL_SUBTEST_3((bdcsvd_all_options<Matrix3f>()));
-    CALL_SUBTEST_3((bdcsvd_all_options<Matrix<float, 2, 3>>()));
-    CALL_SUBTEST_4((bdcsvd_all_options<Matrix<double, 20, 17>>()));
-    CALL_SUBTEST_4((bdcsvd_all_options<Matrix<double, 17, 20>>()));
-    CALL_SUBTEST_5((bdcsvd_all_options<Matrix<double, Dynamic, 30>>(Matrix<double, Dynamic, 30>(r, 30))));
-    CALL_SUBTEST_5((bdcsvd_all_options<Matrix<double, 20, Dynamic>>(Matrix<double, 20, Dynamic>(20, c))));
-    CALL_SUBTEST_7((bdcsvd_all_options<MatrixXf>(MatrixXf(r, c))));
-    CALL_SUBTEST_8((bdcsvd_all_options<MatrixXcd>(MatrixXcd(r, c))));
-    CALL_SUBTEST_10((bdcsvd_all_options<MatrixXd>(MatrixXd(r, c))));
-    CALL_SUBTEST_14((bdcsvd_all_options<Matrix<double, 20, 27, RowMajor>>()));
-    CALL_SUBTEST_14((bdcsvd_all_options<Matrix<double, 27, 20, RowMajor>>()));
+    CALL_SUBTEST_11((bdcsvd_all_options<Matrix3f>()));
+    CALL_SUBTEST_12((bdcsvd_all_options<Matrix<float, 2, 3>>()));
+    CALL_SUBTEST_13((bdcsvd_all_options<MatrixXd>(MatrixXd(20, 17))));
+    CALL_SUBTEST_14((bdcsvd_all_options<MatrixXd>(MatrixXd(17, 20))));
+    CALL_SUBTEST_15((bdcsvd_all_options<Matrix<double, Dynamic, 15>>(Matrix<double, Dynamic, 15>(r, 15))));
+    CALL_SUBTEST_16((bdcsvd_all_options<Matrix<double, 13, Dynamic>>(Matrix<double, 13, Dynamic>(13, c))));
+    CALL_SUBTEST_17((bdcsvd_all_options<MatrixXf>(MatrixXf(r, c))));
+    CALL_SUBTEST_18((bdcsvd_all_options<MatrixXcd>(MatrixXcd(r, c))));
+    CALL_SUBTEST_19((bdcsvd_all_options<MatrixXd>(MatrixXd(r, c))));
+    CALL_SUBTEST_20((bdcsvd_all_options<Matrix<double, Dynamic, Dynamic, RowMajor>>(Matrix<double, Dynamic, Dynamic, RowMajor>(20, 27))));
+    CALL_SUBTEST_21((bdcsvd_all_options<Matrix<double, Dynamic, Dynamic, RowMajor>>(Matrix<double, Dynamic, Dynamic, RowMajor>(27, 20))));
 
-    CALL_SUBTEST_15((
+    CALL_SUBTEST_22((
         svd_check_max_size_matrix<Matrix<float, Dynamic, Dynamic, ColMajor, 20, 35>, ColPivHouseholderQRPreconditioner>(
             r, c)));
-    CALL_SUBTEST_15(
+    CALL_SUBTEST_22(
         (svd_check_max_size_matrix<Matrix<float, Dynamic, Dynamic, ColMajor, 35, 20>, HouseholderQRPreconditioner>(r,
                                                                                                                    c)));
-    CALL_SUBTEST_15((
+    CALL_SUBTEST_22((
         svd_check_max_size_matrix<Matrix<float, Dynamic, Dynamic, RowMajor, 20, 35>, ColPivHouseholderQRPreconditioner>(
             r, c)));
-    CALL_SUBTEST_15(
+    CALL_SUBTEST_22(
         (svd_check_max_size_matrix<Matrix<float, Dynamic, Dynamic, RowMajor, 35, 20>, HouseholderQRPreconditioner>(r,
                                                                                                                    c)));
   }
 
   // test matrixbase method
-  CALL_SUBTEST_1(( bdcsvd_method<Matrix2cd>() ));
-  CALL_SUBTEST_3(( bdcsvd_method<Matrix3f>() ));
+  CALL_SUBTEST_23(( bdcsvd_method<Matrix2cd>() ));
+  CALL_SUBTEST_23(( bdcsvd_method<Matrix3f>() ));
 
   // Test problem size constructors
-  CALL_SUBTEST_7( BDCSVD<MatrixXf>(10,10) );
+  CALL_SUBTEST_24( BDCSVD<MatrixXf>(10,10) );
 
   // Check that preallocation avoids subsequent mallocs
   // Disabled because not supported by BDCSVD
   // CALL_SUBTEST_9( svd_preallocate<void>() );
 
-  CALL_SUBTEST_2( svd_underoverflow<void>() );
+  CALL_SUBTEST_25( svd_underoverflow<void>() );
 
   // Without total deflation issues.
-  CALL_SUBTEST_11((  compare_bdc_jacobi_instance(true) ));
-  CALL_SUBTEST_12((  compare_bdc_jacobi_instance(false) ));
+  CALL_SUBTEST_26((  compare_bdc_jacobi_instance(true) ));
+  CALL_SUBTEST_26((  compare_bdc_jacobi_instance(false) ));
 
   // With total deflation issues before, when it shouldn't be triggered.
-  CALL_SUBTEST_13((  compare_bdc_jacobi_instance(true, 3) ));
-  CALL_SUBTEST_14((  compare_bdc_jacobi_instance(false, 3) ));
+  CALL_SUBTEST_27((  compare_bdc_jacobi_instance(true, 3) ));
+  CALL_SUBTEST_27((  compare_bdc_jacobi_instance(false, 3) ));
 }

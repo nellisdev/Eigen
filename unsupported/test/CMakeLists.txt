@@ -60,6 +60,8 @@ else()
   ei_add_property(EIGEN_MISSING_BACKENDS "MPFR C++, ")
 endif()
 
+ei_add_test(NNLS)
+
 ei_add_test(sparse_extra   "" "")
 
 find_package(FFTW)
@@ -73,6 +75,17 @@ if(FFTW_FOUND)
   endif()
 else()
   ei_add_property(EIGEN_MISSING_BACKENDS "fftw, ")
+endif()
+
+find_path(POCKETFFT  pocketfft_hdronly.h)
+if(POCKETFFT)
+  if(EIGEN_TEST_CXX11)
+    ei_add_property(EIGEN_TESTED_BACKENDS "pocketfft, ")
+    include_directories( ${POCKETFFT} )
+    ei_add_test(pocketfft "-pthread" "${CMAKE_THREAD_LIBS_INIT}" "-DEIGEN_POCKETFFT_DEFAULT" )  
+  endif()  
+else()
+  ei_add_property(EIGEN_MISSING_BACKENDS "pocketfft, ")
 endif()
 
 option(EIGEN_TEST_OPENGL "Enable OpenGL support in unit tests" OFF)
@@ -109,6 +122,7 @@ ei_add_test(special_packetmath "-DEIGEN_FAST_MATH=1")
 
 if(EIGEN_TEST_SYCL)
   set(EIGEN_SYCL ON)
+  set(CMAKE_CXX_STANDARD 17)
   # Forward CMake options as preprocessor definitions
   if(EIGEN_SYCL_USE_DEFAULT_SELECTOR)
     add_definitions(-DEIGEN_SYCL_USE_DEFAULT_SELECTOR=${EIGEN_SYCL_USE_DEFAULT_SELECTOR})
@@ -159,17 +173,10 @@ if(EIGEN_TEST_SYCL)
     add_definitions(-DEIGEN_SYCL_DISABLE_ARM_GPU_CACHE_OPTIMISATION=${EIGEN_SYCL_DISABLE_ARM_GPU_CACHE_OPTIMISATION})
   endif()
 
-  if(EIGEN_SYCL_TRISYCL)
-    # triSYCL now requires c++17.
-    set(CMAKE_CXX_STANDARD 17)
-  else()
+  if(EIGEN_SYCL_ComputeCpp)
     if(MSVC)
-      # Set the host and device compilers C++ standard to C++14. On Windows setting this to C++11
-      # can cause issues with the ComputeCpp device compiler parsing Visual Studio Headers.
-      set(CMAKE_CXX_STANDARD 14)
       list(APPEND COMPUTECPP_USER_FLAGS -DWIN32)
     else()
-      set(CMAKE_CXX_STANDARD 11)
       list(APPEND COMPUTECPP_USER_FLAGS -Wall)
     endif()
     # The following flags are not supported by Clang and can cause warnings
@@ -184,7 +191,7 @@ if(EIGEN_TEST_SYCL)
         -no-serial-memop
         -Xclang
         -cl-mad-enable)
-  endif()
+  endif(EIGEN_SYCL_ComputeCpp)
 
   ei_add_test(cxx11_tensor_sycl)
   ei_add_test(cxx11_tensor_image_op_sycl)
@@ -400,4 +407,3 @@ if (EIGEN_TEST_HIP)
   endif()
 
 endif()
-
