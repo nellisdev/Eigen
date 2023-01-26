@@ -210,8 +210,9 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
       colLoopBody<1, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
     }
     if(cols > col){
+      Index extra_cols= cols-col;
+
       for(Index offset_row = 0; offset_row < standard_block_size; offset_row += 4){
-        Index extra_cols= cols-col;
         //Remember: It doesnt make sense use multiple acc to extra_cols as we are unrolling col loop
         colLoopBody<1, 16, true>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
       }
