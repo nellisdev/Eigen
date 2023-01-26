@@ -7,6 +7,14 @@
 #define BFLOAT16_UNROLL _Pragma("GCC unroll(8)")
 #endif
 
+#define TEST_VERBOSE   // Report timings and gemm type, MMA, rows, depth and cols
+
+#ifdef TEST_VERBOSE
+#include <cstdio>
+#include <iostream>
+#include <sys/platform/ppc.h>
+#endif
+
 namespace Eigen {
 
 namespace internal {
@@ -129,7 +137,7 @@ void colLoopBody(Index& col, Index row, Index depth, Index cols, Index rows, Ind
       else{
         if(rhsExtraCols){
           float *r = result + (col+i*4)*rows + row + offset_row;
-          for(Index x = 0; x < cols-col; x++, r += rows){
+          for(Index x = 0; x < extra_cols; x++, r += rows){
             scaleAndStore(r,acc[i][x], pAlpha);
           }
         }
@@ -150,6 +158,10 @@ void colLoopBody(Index& col, Index row, Index depth, Index cols, Index rows, Ind
 template<typename Index, typename Packet, typename RhsPacket, typename DataMapper, const Index accRows, const Index accCols>
 void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat16* blockB, Index rows, Index depth, Index cols, bfloat16 alpha, Index strideA, Index strideB, Index offsetA, Index offsetB)
 {
+#ifdef TEST_VERBOSE
+  uint64_t start, end;
+  start = __ppc_get_timebase();
+#endif
   if(rows == 0 || cols == 0 || depth == 0) return;
   float falpha = Eigen::bfloat16_impl::bfloat16_to_float(alpha);
   if (falpha == float(0)) return;
@@ -196,7 +208,9 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
       colLoopBody<3, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
       colLoopBody<2, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
       colLoopBody<1, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      if(cols > col){
+    }
+    if(cols > col){
+      for(Index offset_row = 0; offset_row < standard_block_size; offset_row += 4){
         Index extra_cols= cols-col;
         //Remember: It doesnt make sense use multiple acc to extra_cols as we are unrolling col loop
         colLoopBody<1, 16, true>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
@@ -266,7 +280,6 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
 
       colLoopBody<1, 8, true, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows_or_four);
     }
-    row += extra_rows_or_four;
   }
 
   //Convert back to bfloat16
@@ -300,6 +313,10 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
     }
     col++;
   }
+#ifdef TEST_VERBOSE
+  end = __ppc_get_timebase();
+  printf("gemm bfloat16 MMA time = %16ld\n", end - start);
+#endif
 }
 
 
