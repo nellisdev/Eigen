@@ -178,6 +178,7 @@ struct packet_traits<double> : default_packet_traits {
     HasExp  = 1,
     HasSqrt = 1,
     HasRsqrt = 1,
+    HasATan = 1,
     HasBlend = 1,
     HasFloor = 1,
     HasCeil = 1,
@@ -646,6 +647,17 @@ template<> EIGEN_STRONG_INLINE Packet4i pabs(const Packet4i& a)
   Packet4i aux = _mm_srai_epi32(a,31);
   return _mm_sub_epi32(_mm_xor_si128(a,aux),aux);
   #endif
+}
+
+template<> EIGEN_STRONG_INLINE Packet4f psignbit(const Packet4f& a) { return _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(a), 31)); }
+template<> EIGEN_STRONG_INLINE Packet2d psignbit(const Packet2d& a)
+{
+    Packet4f tmp = psignbit<Packet4f>(_mm_castpd_ps(a));
+#ifdef EIGEN_VECTORIZE_AVX
+    return _mm_castps_pd(_mm_permute_ps(tmp, (shuffle_mask<1, 1, 3, 3>::mask)));
+#else
+    return _mm_castps_pd(_mm_shuffle_ps(tmp, tmp, (shuffle_mask<1, 1, 3, 3>::mask)));
+#endif // EIGEN_VECTORIZE_AVX
 }
 
 #ifdef EIGEN_VECTORIZE_SSE4_1

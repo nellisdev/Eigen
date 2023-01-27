@@ -694,6 +694,11 @@ class SparseMatrix
       Base::operator=(other);
     }
 
+    inline SparseMatrix(SparseMatrix&& other) : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
+    {
+      *this = other.derived().markAsRValue();
+    }
+
     /** Copy constructor (it performs a deep copy) */
     inline SparseMatrix(const SparseMatrix& other)
       : Base(), m_outerSize(0), m_innerSize(0), m_outerIndex(0), m_innerNonZeros(0)
@@ -742,6 +747,7 @@ class SparseMatrix
       internal::conditional_aligned_delete_auto<StorageIndex, true>(m_innerNonZeros, m_outerSize);
       m_innerNonZeros = 0;
     }
+
     inline SparseMatrix& operator=(const SparseMatrix& other)
     {
       if (other.isRValue())
@@ -765,6 +771,10 @@ class SparseMatrix
         }
       }
       return *this;
+    }
+
+    inline SparseMatrix& operator=(SparseMatrix&& other) {
+      return *this = other.derived().markAsRValue();
     }
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
@@ -1495,6 +1505,126 @@ struct evaluator<SparseMatrix<Scalar_,Options_,StorageIndex_> >
 };
 
 }
+
+// Specialization for SparseMatrix.
+// Serializes [rows, cols, isCompressed, outerSize, innerBufferSize,
+// innerNonZeros, outerIndices, innerIndices, values].
+template <typename Scalar, int Options, typename StorageIndex>
+class Serializer<SparseMatrix<Scalar, Options, StorageIndex>, void> {
+ public:
+  typedef SparseMatrix<Scalar, Options, StorageIndex> SparseMat;
+
+  struct Header {
+    typename SparseMat::Index rows;
+    typename SparseMat::Index cols;
+    bool compressed;
+    Index outer_size;
+    Index inner_buffer_size;
+  };
+
+  EIGEN_DEVICE_FUNC size_t size(const SparseMat& value) const {
+    // innerNonZeros.
+    std::size_t num_storage_indices = value.isCompressed() ? 0 : value.outerSize();
+    // Outer indices.
+    num_storage_indices += value.outerSize() + 1;
+    // Inner indices.
+    const StorageIndex inner_buffer_size = value.outerIndexPtr()[value.outerSize()];
+    num_storage_indices += inner_buffer_size;
+    // Values.
+    std::size_t num_values = inner_buffer_size;
+    return sizeof(Header) + sizeof(Scalar) * num_values +
+           sizeof(StorageIndex) * num_storage_indices;
+  }
+
+  EIGEN_DEVICE_FUNC uint8_t* serialize(uint8_t* dest, uint8_t* end,
+                                       const SparseMat& value) {
+    if (EIGEN_PREDICT_FALSE(dest == nullptr)) return nullptr;
+    if (EIGEN_PREDICT_FALSE(dest + size(value) > end)) return nullptr;
+
+    const size_t header_bytes = sizeof(Header);
+    Header header = {value.rows(), value.cols(), value.isCompressed(),
+                     value.outerSize(), value.outerIndexPtr()[value.outerSize()]};
+    EIGEN_USING_STD(memcpy)
+    memcpy(dest, &header, header_bytes);
+    dest += header_bytes;
+
+    // innerNonZeros.
+    if (!header.compressed) {
+      std::size_t data_bytes = sizeof(StorageIndex) * header.outer_size;
+      memcpy(dest, value.innerNonZeroPtr(), data_bytes);
+      dest += data_bytes;
+    }
+
+    // Outer indices.
+    std::size_t data_bytes = sizeof(StorageIndex) * (header.outer_size + 1);
+    memcpy(dest, value.outerIndexPtr(), data_bytes);
+    dest += data_bytes;
+
+    // Inner indices.
+    data_bytes = sizeof(StorageIndex) * header.inner_buffer_size;
+    memcpy(dest, value.innerIndexPtr(), data_bytes);
+    dest += data_bytes;
+
+    // Values.
+    data_bytes = sizeof(Scalar) * header.inner_buffer_size;
+    memcpy(dest, value.valuePtr(), data_bytes);
+    dest += data_bytes;
+
+    return dest;
+  }
+
+  EIGEN_DEVICE_FUNC const uint8_t* deserialize(const uint8_t* src,
+                                               const uint8_t* end,
+                                               SparseMat& value) const {
+    if (EIGEN_PREDICT_FALSE(src == nullptr)) return nullptr;
+    if (EIGEN_PREDICT_FALSE(src + sizeof(Header) > end)) return nullptr;
+
+    const size_t header_bytes = sizeof(Header);
+    Header header;
+    EIGEN_USING_STD(memcpy)
+    memcpy(&header, src, header_bytes);
+    src += header_bytes;
+
+    value.setZero();
+    value.resize(header.rows, header.cols);
+    if (header.compressed) {
+      value.makeCompressed();
+    } else {
+      value.uncompress();
+    }
+    
+    // Adjust value ptr size.
+    value.data().resize(header.inner_buffer_size);
+
+    // Initialize compressed state and inner non-zeros.
+    if (!header.compressed) {           
+      // Inner non-zero counts.
+      std::size_t data_bytes = sizeof(StorageIndex) * header.outer_size;
+      if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+      memcpy(value.innerNonZeroPtr(), src, data_bytes);
+      src += data_bytes;
+    }
+
+    // Outer indices.
+    std::size_t data_bytes = sizeof(StorageIndex) * (header.outer_size + 1);
+    if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+    memcpy(value.outerIndexPtr(), src, data_bytes);
+    src += data_bytes;
+
+    // Inner indices.
+    data_bytes = sizeof(StorageIndex) * header.inner_buffer_size;
+    if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+    memcpy(value.innerIndexPtr(), src, data_bytes);
+    src += data_bytes;
+
+    // Values.
+    data_bytes = sizeof(Scalar) * header.inner_buffer_size;
+    if (EIGEN_PREDICT_FALSE(src + data_bytes > end)) return nullptr;
+    memcpy(value.valuePtr(), src, data_bytes);
+    src += data_bytes;
+    return src;
+  }
+};
 
 } // end namespace Eigen
 

@@ -650,11 +650,11 @@
 // The macro EIGEN_COMP_CXXVER defines the c++ version expected by the compiler.
 // For instance, if compiling with gcc and -std=c++17, then EIGEN_COMP_CXXVER
 // is defined to 17.
-#if EIGEN_CPLUSPLUS > 201703L
+#if EIGEN_CPLUSPLUS >= 202002L
   #define EIGEN_COMP_CXXVER 20
-#elif EIGEN_CPLUSPLUS > 201402L
+#elif EIGEN_CPLUSPLUS >= 201703L
   #define EIGEN_COMP_CXXVER 17
-#elif EIGEN_CPLUSPLUS > 201103L
+#elif EIGEN_CPLUSPLUS >= 201402L
   #define EIGEN_COMP_CXXVER 14
 #elif EIGEN_CPLUSPLUS >= 201103L
   #define EIGEN_COMP_CXXVER 11
@@ -709,27 +709,20 @@
 
 #define EIGEN_CONSTEXPR constexpr
 
-// Does the compiler support C++11 math?
-// Let's be conservative and enable the default C++11 implementation only if we are sure it exists
-#ifndef EIGEN_HAS_CXX11_MATH
-  #if (EIGEN_ARCH_i386_OR_x86_64 && (EIGEN_OS_GNULINUX || EIGEN_OS_WIN_STRICT || EIGEN_OS_MAC))
-    #define EIGEN_HAS_CXX11_MATH 1
-  #else
-    #define EIGEN_HAS_CXX11_MATH 0
-  #endif
-#endif
-
 // NOTE: the required Apple's clang version is very conservative
 //       and it could be that XCode 9 works just fine.
 // NOTE: the MSVC version is based on https://en.cppreference.com/w/cpp/compiler_support
 //       and not tested.
+// NOTE: Intel C++ Compiler Classic (icc) Version 19.0 and later supports dynamic allocation
+//       for over-aligned data, but not in a manner that is compatible with Eigen.
+//       See https://gitlab.com/libeigen/eigen/-/issues/2575
 #ifndef EIGEN_HAS_CXX17_OVERALIGN
 #if EIGEN_MAX_CPP_VER>=17 && EIGEN_COMP_CXXVER>=17 && (                                 \
            (EIGEN_COMP_MSVC >= 1912)                                                    \
         || (EIGEN_GNUC_AT_LEAST(7,0))                                                   \
         || ((!defined(__apple_build_version__)) && (EIGEN_COMP_CLANG>=500))             \
         || (( defined(__apple_build_version__)) && (__apple_build_version__>=10000000)) \
-      )
+      ) && (!defined(EIGEN_COMP_ICC))
 #define EIGEN_HAS_CXX17_OVERALIGN 1
 #else
 #define EIGEN_HAS_CXX17_OVERALIGN 0
