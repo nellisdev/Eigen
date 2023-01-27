@@ -196,6 +196,7 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
   Index bigSuffix = (2*8) * (strideA-offsetA);
   const bfloat16* indexA = blockA;
   const Index offset_factor = 2;
+  const Index extra_cols = cols & 3;
   Index block_index;
   for(block_index = 0; block_index < standard_blocks_quantity; block_index++){
     indexA += 2*8*offsetA;
@@ -209,7 +210,6 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
       colLoopBody<2, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
       colLoopBody<1, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
     }
-    Index extra_cols = cols & 3;
     if(extra_cols){
       for(Index offset_row = 0; offset_row < standard_block_size; offset_row += 4){
         //Remember: It doesnt make sense use multiple acc to extra_cols as we are unrolling col loop
@@ -232,7 +232,6 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
       colLoopBody<2, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
       colLoopBody<1, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
     }
-    Index extra_cols = cols & 3;
     if(extra_cols){
       for(Index offset_row = 0; offset_row < 8; offset_row += 4){
         colLoopBody<1, 8, true>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
@@ -253,7 +252,6 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
     colLoopBody<3, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
     colLoopBody<2, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
     colLoopBody<1, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    Index extra_cols = cols & 3;
     if(extra_cols){
       colLoopBody<1, 4, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
     }
@@ -272,7 +270,6 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
     colLoopBody<3, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
     colLoopBody<2, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
     colLoopBody<1, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    Index extra_cols = cols & 3;
     if(extra_cols){
       colLoopBody<1, 8, true, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows_or_four);
     }
@@ -304,8 +301,16 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
   //extra cols
   while(col < cols){
     const LinearMapper res2 = res.getLinearMapper(0, col);
-    for(Index r= 0; r< rows; r++){
-      res2(r) = Eigen::bfloat16(result[col*rows + r]);
+    float *result2 = result + col*rows;
+    Index r = 0;
+    for(; r + 8 <= rows; r += 8){
+      Packet16uc fp16_0 = __builtin_vsx_xvcvspbf16(reinterpret_cast<Packet16uc>(ploadu<Packet4f>(result2 + r)));
+      Packet16uc fp16_1 = __builtin_vsx_xvcvspbf16(reinterpret_cast<Packet16uc>(ploadu<Packet4f>(result2 + r + 4)));
+      Packet8bf fp16 = vec_pack(reinterpret_cast<Packet4ui>(fp16_0), reinterpret_cast<Packet4ui>(fp16_1));
+      res2.template storePacket<Packet8bf>(r, fp16);
+    }
+    for(; r< rows; r++){
+      res2(r) = Eigen::bfloat16(result2[r]);
     }
     col++;
   }
