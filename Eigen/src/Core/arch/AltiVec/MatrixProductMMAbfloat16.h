@@ -7,6 +7,14 @@
 #define BFLOAT16_UNROLL _Pragma("GCC unroll(8)")
 #endif
 
+#define TEST_VERBOSE   // Report timings and gemm type, MMA, rows, depth and cols
+
+#ifdef TEST_VERBOSE
+#include <cstdio>
+#include <iostream>
+#include <sys/platform/ppc.h>
+#endif
+
 namespace Eigen {
 
 namespace internal {
@@ -129,7 +137,7 @@ void colLoopBody(Index& col, Index row, Index depth, Index cols, Index rows, Ind
       else{
         if(rhsExtraCols){
           float *r = result + (col+i*4)*rows + row + offset_row;
-          for(Index x = 0; x < cols-col; x++, r += rows){
+          for(Index x = 0; x < extra_cols; x++, r += rows){
             scaleAndStore(r,acc[i][x], pAlpha);
           }
         }
@@ -147,9 +155,25 @@ void colLoopBody(Index& col, Index row, Index depth, Index cols, Index rows, Ind
   }
 }
 
+template<const Index num_packets, bool lhsExtraRows = false>
+EIGEN_ALWAYS_INLINE void colLoops(Index& col, Index row, Index depth, Index cols, Index rows, Index offset_row, Index block_index, const Packet4f& pAlpha, const bfloat16* indexA, Index strideA, const bfloat16* blockB, Index strideB, Index offsetB, float* result, Index extra_cols = 0, Index extra_rows = 0)
+{
+  colLoopBody<7, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<6, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<5, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<4, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<3, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<2, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<1, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+}
+
 template<typename Index, typename Packet, typename RhsPacket, typename DataMapper, const Index accRows, const Index accCols>
 void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat16* blockB, Index rows, Index depth, Index cols, bfloat16 alpha, Index strideA, Index strideB, Index offsetA, Index offsetB)
 {
+#ifdef TEST_VERBOSE
+  uint64_t start, end;
+  start = __ppc_get_timebase();
+#endif
   if(rows == 0 || cols == 0 || depth == 0) return;
   float falpha = Eigen::bfloat16_impl::bfloat16_to_float(alpha);
   if (falpha == float(0)) return;
@@ -184,20 +208,16 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
   Index bigSuffix = (2*8) * (strideA-offsetA);
   const bfloat16* indexA = blockA;
   const Index offset_factor = 2;
+  const Index extra_cols = cols & 3;
   Index block_index;
   for(block_index = 0; block_index < standard_blocks_quantity; block_index++){
     indexA += 2*8*offsetA;
     for(Index offset_row = 0; offset_row < standard_block_size; offset_row += 4){ //This block size has 16 rows maximum
       col = 0;
-      colLoopBody<7, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<6, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<5, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<4, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<3, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<2, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<1, 16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      if(cols > col){
-        Index extra_cols= cols-col;
+      colLoops<16>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
+    }
+    if(extra_cols){
+      for(Index offset_row = 0; offset_row < standard_block_size; offset_row += 4){
         //Remember: It doesnt make sense use multiple acc to extra_cols as we are unrolling col loop
         colLoopBody<1, 16, true>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
       }
@@ -210,17 +230,9 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
     indexA += 1*8*offsetA;
     for(Index offset_row = 0; offset_row < 8; offset_row += 4){
       col = 0;
-      colLoopBody<7, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<6, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<5, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<4, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<3, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<2, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
-      colLoopBody<1, 8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
+      colLoops<8>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result);
     }
-    if(cols > col){
-      Index extra_cols= cols-col;
-
+    if(extra_cols){
       for(Index offset_row = 0; offset_row < 8; offset_row += 4){
         colLoopBody<1, 8, true>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA+offset_row*offset_factor, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
       }
@@ -233,40 +245,22 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
     Index offset_row = (rows & 8);
     indexA += 1*4*offsetA;
     col = 0;
-    colLoopBody<7, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    colLoopBody<6, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    colLoopBody<5, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    colLoopBody<4, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    colLoopBody<3, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    colLoopBody<2, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    colLoopBody<1, 4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
-    if(cols > col){
-      Index extra_cols= cols-col;
-
+    colLoops<4>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result);
+    if(extra_cols){
       colLoopBody<1, 4, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, 4);
     }
     row += 4;
     indexA += (bigSuffix >> 2);
   }
   //extra rows
-  if(row < rows){
-    Index extra_rows_or_four = rows-row;
-
+  Index extra_rows_or_four = rows & 3;
+  if(extra_rows_or_four){
     //This index is the beginning of remaining block.
     col = 0;
-    colLoopBody<7, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    colLoopBody<6, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    colLoopBody<5, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    colLoopBody<4, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    colLoopBody<3, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    colLoopBody<2, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    colLoopBody<1, 8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
-    if(cols > col){
-      Index extra_cols= cols-col;
-
+    colLoops<8, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
+    if(extra_cols){
       colLoopBody<1, 8, true, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows_or_four);
     }
-    row += extra_rows_or_four;
   }
 
   //Convert back to bfloat16
@@ -295,11 +289,23 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
   //extra cols
   while(col < cols){
     const LinearMapper res2 = res.getLinearMapper(0, col);
-    for(Index r= 0; r< rows; r++){
-      res2(r) = Eigen::bfloat16(result[col*rows + r]);
+    float *result2 = result + col*rows;
+    Index r = 0;
+    for(; r + 8 <= rows; r += 8){
+      Packet16uc fp16_0 = __builtin_vsx_xvcvspbf16(reinterpret_cast<Packet16uc>(ploadu<Packet4f>(result2 + r)));
+      Packet16uc fp16_1 = __builtin_vsx_xvcvspbf16(reinterpret_cast<Packet16uc>(ploadu<Packet4f>(result2 + r + 4)));
+      Packet8bf fp16 = vec_pack(reinterpret_cast<Packet4ui>(fp16_0), reinterpret_cast<Packet4ui>(fp16_1));
+      res2.template storePacket<Packet8bf>(r, fp16);
+    }
+    for(; r< rows; r++){
+      res2(r) = Eigen::bfloat16(result2[r]);
     }
     col++;
   }
+#ifdef TEST_VERBOSE
+  end = __ppc_get_timebase();
+  printf("gemm bfloat16 MMA time = %16ld\n", end - start);
+#endif
 }
 
 

@@ -992,7 +992,7 @@ template<> EIGEN_STRONG_INLINE Packet4f pnegate(const Packet4f& a)
 #ifdef __POWER8_VECTOR__
   return vec_neg(a);
 #else
-  return p4f_ZERO - a;
+  return vec_xor(a, p4f_MZERO);
 #endif
 }
 template<> EIGEN_STRONG_INLINE Packet4i pnegate(const Packet4i& a)
@@ -2806,7 +2806,7 @@ template<> EIGEN_STRONG_INLINE Packet2d pnegate(const Packet2d& a)
 #ifdef __POWER8_VECTOR__
   return vec_neg(a);
 #else
-  return p2d_ZERO - a;
+  return vec_xor(a, p2d_MZERO);
 #endif
 }
 
