@@ -155,16 +155,16 @@ void colLoopBody(Index& col, Index row, Index depth, Index cols, Index rows, Ind
   }
 }
 
-template<const Index num_packets, bool rhsExtraCols = false, bool lhsExtraRows = false>
+template<const Index num_packets, bool lhsExtraRows = false>
 EIGEN_ALWAYS_INLINE void colLoops(Index& col, Index row, Index depth, Index cols, Index rows, Index offset_row, Index block_index, const Packet4f& pAlpha, const bfloat16* indexA, Index strideA, const bfloat16* blockB, Index strideB, Index offsetB, float* result, Index extra_cols = 0, Index extra_rows = 0)
 {
-  colLoopBody<7, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
-  colLoopBody<6, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
-  colLoopBody<5, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
-  colLoopBody<4, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
-  colLoopBody<3, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
-  colLoopBody<2, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
-  colLoopBody<1, num_packets, rhsExtraCols, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<7, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<6, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<5, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<4, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<3, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<2, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
+  colLoopBody<1, num_packets, false, lhsExtraRows>(col, row, depth, cols, rows, offset_row, block_index, pAlpha, indexA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows);
 }
 
 template<typename Index, typename Packet, typename RhsPacket, typename DataMapper, const Index accRows, const Index accCols>
@@ -257,7 +257,7 @@ void gemmMMAbfloat16(const DataMapper& res, const bfloat16* blockA, const bfloat
   if(extra_rows_or_four){
     //This index is the beginning of remaining block.
     col = 0;
-    colLoops<8, false, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
+    colLoops<8, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, 4, extra_rows_or_four);
     if(extra_cols){
       colLoopBody<1, 8, true, true>(col, row, depth, cols, rows, 0, block_index, pAlpha, blockA, strideA, blockB, strideB, offsetB, result, extra_cols, extra_rows_or_four);
     }
