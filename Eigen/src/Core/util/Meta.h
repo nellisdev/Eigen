@@ -153,6 +153,21 @@ template<typename T> struct is_same<T,T> { enum { value = 1 }; };
 template< class T >
 struct is_void : is_same<void, std::remove_const_t<T>> {};
 
+/** \internal
+  * Implementation of std::void_t for SFINAE.
+  *
+  * Pre C++17:
+  * Custom implementation.
+  *
+  * Post C++17: Uses std::void_t
+  */
+#if EIGEN_COMP_CXXVER >= 17
+using std::void_t;
+#else
+template<typename...>
+using void_t = void;
+#endif
+
 template<> struct is_arithmetic<signed long long>   { enum { value = true }; };
 template<> struct is_arithmetic<unsigned long long> { enum { value = true }; };
 using std::is_integral;
@@ -232,7 +247,7 @@ template<typename T, std::size_t N> struct array_size<std::array<T,N> > {
   *
   * For C++20, this function just forwards to `std::ssize`, or any ADL discoverable `ssize` function.
   */
-#if EIGEN_COMP_CXXVER < 20  || EIGEN_GNUC_AT_MOST(9,4)
+#if EIGEN_COMP_CXXVER < 20 || EIGEN_GNUC_STRICT_LESS_THAN(10,0,0)
 template <typename T>
 EIGEN_CONSTEXPR auto index_list_size(const T& x) {
   using R = std::common_type_t<std::ptrdiff_t, std::make_signed_t<decltype(x.size())>>;

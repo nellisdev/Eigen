@@ -3,10 +3,8 @@
 
 #include <Eigen/Core>
 
-#ifdef EIGEN_GPUCC
-#define EIGEN_USE_GPU
-#include "../unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h"
-#endif // EIGEN_GPUCC
+// Allow gpu** macros for generic tests.
+#include <unsupported/Eigen/CXX11/src/Tensor/TensorGpuHipCudaDefines.h>
 
 // std::tuple cannot be used on device, and there is a bug in cuda < 9.2 that
 // doesn't allow std::tuple to compile for host code either. In these cases,
@@ -397,7 +395,7 @@ void print_gpu_device_info()
   std::cout << "  EIGEN_CUDA_SDK_VER:          " << int(EIGEN_CUDA_SDK_VER) << std::endl;
   #endif
 
-  #ifdef EIGEN_COMP_NVCC
+  #if EIGEN_COMP_NVCC
   std::cout << "  EIGEN_COMP_NVCC:             " << int(EIGEN_COMP_NVCC) << std::endl;
   #endif
   

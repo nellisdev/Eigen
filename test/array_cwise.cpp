@@ -83,6 +83,7 @@ void binary_op_test(std::string name, Fn fun, RefFn ref) {
       Scalar e = static_cast<Scalar>(ref(x(i,j), y(i,j)));
       Scalar a = actual(i, j);
       bool success = (a==e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) || ((numext::isnan)(a) && (numext::isnan)(e));
+      if ((a == a) && (e == e)) success &= (bool)numext::signbit(e) == (bool)numext::signbit(a);
       all_pass &= success;
       if (!success) {
         std::cout << name << "(" << x(i,j) << "," << y(i,j) << ") = " << a << " !=  " << e << std::endl;
@@ -95,11 +96,11 @@ void binary_op_test(std::string name, Fn fun, RefFn ref) {
 template <typename Scalar>
 void binary_ops_test() {
   binary_op_test<Scalar>("pow",
-                         [](auto x, auto y) { return Eigen::pow(x, y); },
-                         [](auto x, auto y) { return std::pow(x, y); });
+                         [](const auto& x, const auto& y) { return Eigen::pow(x, y); },
+                         [](const auto& x, const auto& y) { return std::pow(x, y); });
   binary_op_test<Scalar>("atan2",
-                         [](auto x, auto y) { return Eigen::atan2(x, y); },
-                         [](auto x, auto y) { return std::atan2(x, y); });
+                         [](const auto& x, const auto& y) { return Eigen::atan2(x, y); },
+                         [](const auto& x, const auto& y) { return std::atan2(x, y); });
 }
 
 template <typename Scalar>
@@ -125,6 +126,7 @@ void pow_scalar_exponent_test() {
           Scalar a = eigenPow(j);
           bool success = (a == e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) ||
                          ((numext::isnan)(a) && (numext::isnan)(e));
+          if ((a == a) && (e == e)) success &= (bool)numext::signbit(e) == (bool)numext::signbit(a);
           all_pass &= success;
           if (!success) {
             std::cout << "pow(" << bases(j) << "," << exponent << ") = " << a << " !=  " << e << std::endl;
@@ -138,6 +140,7 @@ void pow_scalar_exponent_test() {
           Scalar a = eigenPow(j);
           bool success = (a == e) || ((numext::isfinite)(e) && internal::isApprox(a, e, tol)) ||
                          ((numext::isnan)(a) && (numext::isnan)(e));
+          if ((a == a) && (e == e)) success &= (bool)numext::signbit(e) == (bool)numext::signbit(a);
           all_pass &= success;
           if (!success) {
             std::cout << "pow(" << bases(j) << "," << exponent << ")   =   " << a << " !=  " << e << std::endl;

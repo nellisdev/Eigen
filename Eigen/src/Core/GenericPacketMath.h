@@ -1219,6 +1219,54 @@ template <typename Packet>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE constexpr Packet
 psignbit(const Packet& a) { return psignbit_impl<Packet>::run(a); }
 
+/** \internal \returns the 2-argument arc tangent of \a y and \a x (coeff-wise) */
+template <typename Packet, std::enable_if_t<is_scalar<Packet>::value, int> = 0>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet patan2(const Packet& y, const Packet& x) {
+  return numext::atan2(y, x);
+}
+
+/** \internal \returns the 2-argument arc tangent of \a y and \a x (coeff-wise) */
+template <typename Packet, std::enable_if_t<!is_scalar<Packet>::value, int> = 0>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet patan2(const Packet& y, const Packet& x) {
+  typedef typename internal::unpacket_traits<Packet>::type Scalar;
+
+  // See https://en.cppreference.com/w/cpp/numeric/math/atan2
+  // for how corner cases are supposed to be handled according to the
+  // IEEE floating-point standard (IEC 60559).
+
+  // bend two rules:
+  // 1) inf / inf == 1
+  // 2) 0 / 0 == 0
+  // otherwise, evaluate atan(y/x) as usual and shift to the appropriate quadrant
+
+  const Packet kSignMask = pset1<Packet>(-Scalar(0));
+  const Packet kZero = pzero(x);
+  const Packet kOne = pset1<Packet>(Scalar(1));
+  const Packet kPi = pset1<Packet>(Scalar(EIGEN_PI));
+
+  const Packet x_has_signbit = psignbit(x);
+  const Packet y_signmask = pand(y, kSignMask);
+  const Packet shift = por(pand(x_has_signbit, kPi), y_signmask);
+
+  const Packet xor_xy = pxor(x, y);
+  // if x and y have the same absolute value, then xor(x,y) is zero
+  // make sure that neither x nor y is nan
+  // furthermore, xor(x,y) has the sign of the result
+  const Packet x_and_y_are_same = pand(pcmp_eq(xor_xy, kZero), pcmp_eq(x, x));
+  // more strictly, if x and y are both zero, then or(x,y) is zero
+  // this implicitly checks for nan
+  // the sign of or(x,y) is not meaningful
+  const Packet x_and_y_are_zero = pcmp_eq(por(x, y), kZero);
+
+  Packet arg = pdiv(y, x);
+  arg = pselect(x_and_y_are_same, por(kOne, xor_xy), arg);
+  arg = pselect(x_and_y_are_zero, xor_xy, arg);
+
+  Packet result = patan(arg);
+  result = padd(result, shift);
+  return result;
+}
+
 } // end namespace internal
 
 } // end namespace Eigen
