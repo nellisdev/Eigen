@@ -230,6 +230,10 @@ template<typename Derived> class MatrixBase
     EIGEN_DEVICE_FUNC
     const Diagonal<const Derived, DynamicIndex> diagonal(Index index) const;
 
+    template<int DiagIndex_>
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<Derived, DiagIndex_>> diagonalView();
+
     template<unsigned int Mode> struct TriangularViewReturnType { typedef TriangularView<Derived, Mode> Type; };
     template<unsigned int Mode> struct ConstTriangularViewReturnType { typedef const TriangularView<const Derived, Mode> Type; };
 
