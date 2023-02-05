@@ -131,17 +131,64 @@ class DiagonalBase : public EigenBase<Derived>
     *              A positive value means a superdiagonal, a negative value means a subdiagonal.            
     *
     * \sa class DiagonalWrapper, class DiagonalMatrix, diagonal(), asDiagonal()
-    **/
+    **/   
     template <typename Derived>
     template <int DiagIndex_>
     EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<Derived, DiagIndex_>> MatrixBase<Derived>::diagonalView()
+    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > MatrixBase<Derived>::diagonalView(Index index)
     {
       typedef Diagonal<Derived, DiagIndex_> DiagType;
       typedef DiagonalWrapper<DiagType> ReturnType;
       DiagType diag(derived(), index);
       return ReturnType(diag);
+    } 
+
+    // const dynamic index version
+    template <typename Derived>
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<const Derived, DynamicIndex> > MatrixBase<Derived>::asDiagonalMatrix(Index index) const
+    {
+      typedef Diagonal<const Derived, DynamicIndex> DiagType;
+      typedef DiagonalWrapper<DiagType> ReturnType;
+      DiagType diag(derived(), index);
+      return ReturnType(diag);
     }
+
+    // non-const dynamic index version
+    template <typename Derived>
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<Derived, DynamicIndex> > MatrixBase<Derived>::asDiagonalMatrix(Index index)
+    {
+      typedef Diagonal<Derived, DynamicIndex> DiagType;
+      typedef DiagonalWrapper<DiagType> ReturnType;
+      DiagType diag(derived(), index);
+      return ReturnType(diag);
+    }
+
+    //const DiagIndex_ version
+    template <typename Derived>
+    template <int DiagIndex_>
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<const Derived, DiagIndex_> > MatrixBase<Derived>::asDiagonalMatrix() const
+    {
+      typedef Diagonal<const Derived, DiagIndex_> DiagType;
+      typedef DiagonalWrapper<DiagType> ReturnType;
+      DiagType diag(derived());
+      return ReturnType(diag);
+    }
+
+    // non-const DiagIndex_ version
+    template <typename Derived>
+    template <int DiagIndex_>
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > MatrixBase<Derived>::asDiagonalMatrix()
+    {
+      typedef Diagonal<Derived, DiagIndex_> DiagType;
+      typedef DiagonalWrapper<DiagType> ReturnType;
+      DiagType diag(derived());
+      return ReturnType(diag);
+    }
+
 
     using ScaleDiagonalReturnType =
         DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar, DiagonalVectorType, product)>;

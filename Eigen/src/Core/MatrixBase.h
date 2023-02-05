@@ -232,7 +232,25 @@ template<typename Derived> class MatrixBase
 
     template<int DiagIndex_>
     EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<Derived, DiagIndex_>> diagonalView();
+    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > diagonalView(Index index);
+
+    // const dynamic index version
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<const Derived, DynamicIndex> > asDiagonalMatrix(Index index) const;
+
+    // non-const dynamic index version
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<Derived, DynamicIndex> > asDiagonalMatrix(Index index);
+
+    //const DiagIndex_ version
+    EIGEN_DEVICE_FUNC
+    template<int DiagIndex_ = 0>
+    DiagonalWrapper<Diagonal<const Derived, DiagIndex_> > asDiagonalMatrix() const;
+
+    // non-const DiagIndex_ version
+    EIGEN_DEVICE_FUNC
+    template<int DiagIndex_ = 0>
+    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > asDiagonalMatrix();
 
     template<unsigned int Mode> struct TriangularViewReturnType { typedef TriangularView<Derived, Mode> Type; };
     template<unsigned int Mode> struct ConstTriangularViewReturnType { typedef const TriangularView<const Derived, Mode> Type; };
