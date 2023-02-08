@@ -124,7 +124,7 @@ class DiagonalBase : public EigenBase<Derived>
 
     /** \returns a pseudo-expression of a diagonal matrix with mat as vector of diagonal coefficients
     *
-    * \only_for_vectors
+    * \for_vectors and \for_matrices
     *
     * \tparam MatrixType the type of the object in which we are taking a sub/main/super
     * \tparam Index of sub/super diagonal. The default is 0 and it means the main diagonal.
@@ -133,31 +133,8 @@ class DiagonalBase : public EigenBase<Derived>
     * \sa class DiagonalWrapper, class DiagonalMatrix, diagonal(), asDiagonal()
     **/   
     template <typename Derived>
-    template <int DiagIndex_>
     EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > MatrixBase<Derived>::diagonalView(Index index)
-    {
-      typedef Diagonal<Derived, DiagIndex_> DiagType;
-      typedef DiagonalWrapper<DiagType> ReturnType;
-      DiagType diag(derived(), index);
-      return ReturnType(diag);
-    } 
-
-    // const dynamic index version
-    template <typename Derived>
-    EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<const Derived, DynamicIndex> > MatrixBase<Derived>::asDiagonalMatrix(Index index) const
-    {
-      typedef Diagonal<const Derived, DynamicIndex> DiagType;
-      typedef DiagonalWrapper<DiagType> ReturnType;
-      DiagType diag(derived(), index);
-      return ReturnType(diag);
-    }
-
-    // non-const dynamic index version
-    template <typename Derived>
-    EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<Derived, DynamicIndex> > MatrixBase<Derived>::asDiagonalMatrix(Index index)
+    DiagonalWrapper<Diagonal<Derived, DynamicIndex> > MatrixBase<Derived>::diagonalView(Index index)
     {
       typedef Diagonal<Derived, DynamicIndex> DiagType;
       typedef DiagonalWrapper<DiagType> ReturnType;
@@ -165,11 +142,22 @@ class DiagonalBase : public EigenBase<Derived>
       return ReturnType(diag);
     }
 
-    //const DiagIndex_ version
+    /** This is the const version of diagonalView() with dynamic index. */
+    template <typename Derived>
+    EIGEN_DEVICE_FUNC
+    DiagonalWrapper<Diagonal<const Derived, DynamicIndex> > MatrixBase<Derived>::diagonalView(Index index) const
+    {
+      typedef Diagonal<const Derived, DynamicIndex> DiagType;
+      typedef DiagonalWrapper<DiagType> ReturnType;
+      DiagType diag(derived(), index);
+      return ReturnType(diag);
+    }
+
+    /** This is the const version of diagonalView() with DiagIndex_ . */
     template <typename Derived>
     template <int DiagIndex_>
     EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<const Derived, DiagIndex_> > MatrixBase<Derived>::asDiagonalMatrix() const
+    DiagonalWrapper<Diagonal<const Derived, DiagIndex_> > MatrixBase<Derived>::diagonalView() const
     {
       typedef Diagonal<const Derived, DiagIndex_> DiagType;
       typedef DiagonalWrapper<DiagType> ReturnType;
@@ -177,18 +165,17 @@ class DiagonalBase : public EigenBase<Derived>
       return ReturnType(diag);
     }
 
-    // non-const DiagIndex_ version
+    /** This is the non-const version of diagonalView() with DiagIndex_ . */
     template <typename Derived>
     template <int DiagIndex_>
     EIGEN_DEVICE_FUNC
-    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > MatrixBase<Derived>::asDiagonalMatrix()
+    DiagonalWrapper<Diagonal<Derived, DiagIndex_> > MatrixBase<Derived>::diagonalView()
     {
       typedef Diagonal<Derived, DiagIndex_> DiagType;
       typedef DiagonalWrapper<DiagType> ReturnType;
       DiagType diag(derived());
       return ReturnType(diag);
     }
-
 
     using ScaleDiagonalReturnType =
         DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar, DiagonalVectorType, product)>;
@@ -452,22 +439,6 @@ EIGEN_DEVICE_FUNC inline const DiagonalWrapper<const Derived>
 MatrixBase<Derived>::asDiagonal() const
 {
   return DiagonalWrapper<const Derived>(derived());
-}
-
-/** \returns a pseudo-expression of a diagonal matrix with mat as vector of diagonal coefficients
-  *
-  * \only_for_vectors
-  *
-  * \tparam MatrixType the type of the object in which we are taking a sub/main/super
-  * \tparam Index of sub/super diagonal. The default is 0 and it means the main diagonal.
-  *              A positive value means a superdiagonal, a negative value means a subdiagonal.            
-  *
-  * \sa class DiagonalWrapper, class DiagonalMatrix, diagonal(), asDiagonal()
-  **/
-template <typename Derived>
-Derived diagonalView(const MatrixBase<Derived>& mat, Index index)
-{
-    return mat.diagonal(index).asDiagonal();
 }
 
 /** \returns true if *this is approximately equal to a diagonal matrix,
