@@ -155,6 +155,15 @@ using std::ptrdiff_t;
   * \endcode
   */
 
+#ifdef EIGEN_USE_LAPACKE
+  #ifdef EIGEN_USE_MKL
+    #include "mkl_lapacke.h"
+  #else
+    #include "src/misc/lapacke.h"
+  #endif
+#endif
+
+// IWYU pragma: begin_exports
 #include "src/Core/util/Constants.h"
 #include "src/Core/util/Meta.h"
 #include "src/Core/util/Assert.h"
@@ -390,6 +399,7 @@ using std::ptrdiff_t;
 #endif
 
 #include "src/Core/GlobalFunctions.h"
+// IWYU pragma: end_exports
 
 #include "src/Core/util/ReenableStupidWarnings.h"
 
