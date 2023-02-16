@@ -100,7 +100,18 @@ void binary_ops_test() {
                          [](const auto& x, const auto& y) { return std::pow(x, y); });
   binary_op_test<Scalar>("atan2",
                          [](const auto& x, const auto& y) { return Eigen::atan2(x, y); },
-                         [](const auto& x, const auto& y) { return std::atan2(x, y); });
+                         [](const auto& x, const auto& y) {
+                            auto t = std::atan2(x, y);
+#if EIGEN_COMP_MSVC
+                            // Work around MSVC return value on underflow.
+                            // |atan(y/x)| is bounded above by |y/x|, so on underflow return y/x according to POSIX spec.
+                            // MSVC otherwise returns denorm_min.
+                            if (EIGEN_PREDICT_FALSE(std::abs(t) == std::numeric_limits<decltype(t)>::denorm_min())) {
+                              return x/y;
+                            }
+#endif
+                            return t;
+                          });
 }
 
 template <typename Scalar>
@@ -251,9 +262,9 @@ void mixed_pow_test() {
   unary_pow_test<double, long long>();
 
   // The following cases will test promoting a wider exponent type
-  // to a narrower base type. This should compile but generate a
+  // to a narrower base type. This should compile but would generate a
   // deprecation warning:
-  unary_pow_test<float, double>();
+  // unary_pow_test<float, double>();
 }
 
 void int_pow_test() {
@@ -762,6 +773,8 @@ template<typename ArrayType> void array_complex(const ArrayType& m)
   VERIFY_IS_APPROX(m1.tanh(), tanh(m1));
   VERIFY_IS_APPROX(m1.logistic(), logistic(m1));
   VERIFY_IS_APPROX(m1.arg(), arg(m1));
+  VERIFY_IS_APPROX(m1.carg(), carg(m1));
+  VERIFY_IS_APPROX(arg(m1), carg(m1));
   VERIFY((m1.isNaN() == (Eigen::isnan)(m1)).all());
   VERIFY((m1.isInf() == (Eigen::isinf)(m1)).all());
   VERIFY((m1.isFinite() == (Eigen::isfinite)(m1)).all());
@@ -795,6 +808,7 @@ template<typename ArrayType> void array_complex(const ArrayType& m)
     for (Index j = 0; j < m.cols(); ++j)
       m3(i,j) = std::atan2(m1(i,j).imag(), m1(i,j).real());
   VERIFY_IS_APPROX(arg(m1), m3);
+  VERIFY_IS_APPROX(carg(m1), m3);
 
   std::complex<RealScalar> zero(0.0,0.0);
   VERIFY((Eigen::isnan)(m1*zero/zero).all());
@@ -994,6 +1008,7 @@ EIGEN_DECLARE_TEST(array_cwise)
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_4( array_complex(ArrayXXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_5( array_complex(ArrayXXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))));
   }
 
   for(int i = 0; i < g_repeat; i++) {
