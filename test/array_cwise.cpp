@@ -649,28 +649,44 @@ template<typename ArrayType> void comparisons(const ArrayType& m)
   // use typed comparisons, regardless of operator overload behavior
   typename ArrayType::ConstantReturnType typed_true = ArrayType::Constant(rows, cols, Scalar(1));
   // (m1 + Scalar(1)) > m1).all()
-  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).binaryExpr(m1, typed_gt()), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).cwiseTypedGreater(m1), typed_true);
   // (m1 - Scalar(1)) < m1).all()
-  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).binaryExpr(m1, typed_lt()), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).cwiseTypedLesser(m1), typed_true);
   // (m1 + Scalar(1)) == (m1 + Scalar(1))).all()
-  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).binaryExpr(m1 + Scalar(1), typed_eq()), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).cwiseTypedEqual(m1 + Scalar(1)), typed_true);
   // (m1 - Scalar(1)) != m1).all()
-  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).binaryExpr(m1, typed_ne()), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).cwiseTypedNotEqual(m1), typed_true);
   // (m1 <= m2 || m1 >= m2).all()
-  VERIFY_IS_CWISE_EQUAL(m1.binaryExpr(m2, typed_le()) || m1.binaryExpr(m2, typed_ge()), typed_true);
+  VERIFY_IS_CWISE_EQUAL(m1.cwiseTypedGreaterOrEqual(m2) || m1.cwiseTypedLesserOrEqual(m2), typed_true);
 
   // use boolean comparisons, regardless of operator overload behavior
   ArrayXX<bool>::ConstantReturnType bool_true = ArrayXX<bool>::Constant(rows, cols, true);
   // (m1 + Scalar(1)) > m1).all()
-  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).binaryExpr(m1, bool_gt()), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).cwiseGreater(m1), bool_true);
   // (m1 - Scalar(1)) < m1).all()
-  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).binaryExpr(m1, bool_lt()), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).cwiseLesser(m1), bool_true);
   // (m1 + Scalar(1)) == (m1 + Scalar(1))).all()
-  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).binaryExpr(m1 + Scalar(1), bool_eq()), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).cwiseEqual(m1 + Scalar(1)), bool_true);
   // (m1 - Scalar(1)) != m1).all()
-  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).binaryExpr(m1, bool_ne()), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).cwiseNotEqual(m1), bool_true);
   // (m1 <= m2 || m1 >= m2).all()
-  VERIFY_IS_CWISE_EQUAL(m1.binaryExpr(m2, bool_le()) || m1.binaryExpr(m2, bool_ge()), bool_true);
+  VERIFY_IS_CWISE_EQUAL(m1.cwiseLesserOrEqual(m2) || m1.cwiseGreaterOrEqual(m2), bool_true);
+
+  // test typed comparisons with scalar argument
+  VERIFY_IS_CWISE_EQUAL((m1 - m1).cwiseTypedEqual(Scalar(0)), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1.abs() + Scalar(1)).cwiseTypedNotEqual(Scalar(0)), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).cwiseTypedGreater(m1.minCoeff()), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).cwiseTypedLesser(m1.maxCoeff()), typed_true);
+  VERIFY_IS_CWISE_EQUAL(m1.abs().cwiseTypedLesserOrEqual(NumTraits<Scalar>::highest()), typed_true);
+  VERIFY_IS_CWISE_EQUAL((m1 * m1).cwiseTypedGreaterOrEqual(Scalar(0)), typed_true);
+
+  // test boolean comparisons with scalar argument
+  VERIFY_IS_CWISE_EQUAL((m1 - m1).cwiseEqual(Scalar(0)), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1.abs() + Scalar(1)).cwiseNotEqual(Scalar(0)), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 + Scalar(1)).cwiseGreater(m1.minCoeff()), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 - Scalar(1)).cwiseLesser(m1.maxCoeff()), bool_true);
+  VERIFY_IS_CWISE_EQUAL(m1.abs().cwiseLesserOrEqual(NumTraits<Scalar>::highest()), bool_true);
+  VERIFY_IS_CWISE_EQUAL((m1 * m1).cwiseGreaterOrEqual(Scalar(0)), bool_true);
 
   // test Select
   VERIFY_IS_APPROX( (m1<m2).select(m1,m2), m1.cwiseMin(m2) );
@@ -1056,9 +1072,9 @@ struct signed_shift_test_impl {
   static constexpr size_t Size = sizeof(Scalar);
   static constexpr size_t MaxShift = (CHAR_BIT * Size) - 1;
 
-  template <size_t N = 0>
+  template <size_t N = 1>
   static inline std::enable_if_t<(N >  MaxShift), void> run(const ArrayType&  ) {}
-  template <size_t N = 0>
+  template <size_t N = 1>
   static inline std::enable_if_t<(N <= MaxShift), void> run(const ArrayType& m) {
     const Index rows = m.rows();
     const Index cols = m.cols();
