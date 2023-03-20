@@ -171,10 +171,16 @@ struct packet_traits<float> : default_packet_traits {
     HasACos = 1,
     HasASin = 1,
     HasATan = 1,
+    HasATanh = 1,
     HasLog = 1,
     HasExp = 1,
 #ifdef EIGEN_VECTORIZE_VSX
     HasSqrt = 1,
+#if !EIGEN_COMP_CLANG
+    HasRsqrt = 1,
+#else
+    HasRsqrt = 0,
+#endif
     HasTanh = EIGEN_FAST_MATH,
     HasErf = EIGEN_FAST_MATH,
     HasRint = 1,
@@ -215,6 +221,11 @@ struct packet_traits<bfloat16> : default_packet_traits {
     HasExp = 1,
 #ifdef EIGEN_VECTORIZE_VSX
     HasSqrt = 1,
+#if !EIGEN_COMP_CLANG
+    HasRsqrt = 1,
+#else
+    HasRsqrt = 0,
+#endif
     HasRint = 1,
 #else
     HasSqrt = 0,
@@ -245,7 +256,11 @@ struct packet_traits<int> : default_packet_traits {
     HasSub   = 1,
     HasShift = 1,
     HasMul   = 1,
+#if defined(_ARCH_PWR10) && (EIGEN_COMP_LLVM || EIGEN_GNUC_STRICT_AT_LEAST(11,0,0))
+    HasDiv   = 1,
+#else
     HasDiv   = 0,
+#endif
     HasBlend = 1,
     HasCmp = 1
   };
@@ -512,7 +527,7 @@ EIGEN_ALWAYS_INLINE Packet pload_partial_common(const __UNPACK_TYPE__(Packet)* f
   // some versions of GCC throw "unused-but-set-parameter".
   // ignoring these warnings for now.
   const Index packet_size = unpacket_traits<Packet>::size;
-  eigen_assert(n + offset <= packet_size && "number of elements plus offset will read past end of packet");
+  eigen_internal_assert(n + offset <= packet_size && "number of elements plus offset will read past end of packet");
   const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(packet_size);
@@ -645,7 +660,7 @@ template<typename Packet> EIGEN_ALWAYS_INLINE void pstore_partial_common(__UNPAC
   // some versions of GCC throw "unused-but-set-parameter" (float *to).
   // ignoring these warnings for now.
   const Index packet_size = unpacket_traits<Packet>::size;
-  eigen_assert(n + offset <= packet_size && "number of elements plus offset will write past end of packet");
+  eigen_internal_assert(n + offset <= packet_size && "number of elements plus offset will write past end of packet");
   const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(packet_size);
@@ -805,7 +820,7 @@ pbroadcast4<Packet4i>(const int *a,
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pgather_common(const __UNPACK_TYPE__(Packet)* from, Index stride, const Index n = unpacket_traits<Packet>::size)
 {
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
-  eigen_assert(n <= unpacket_traits<Packet>::size && "number of elements will gather past end of packet");
+  eigen_internal_assert(n <= unpacket_traits<Packet>::size && "number of elements will gather past end of packet");
   LOAD_STORE_UNROLL_16
   for (Index i = 0; i < n; i++) {
     a[i] = from[i*stride];
@@ -887,7 +902,7 @@ template<> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet16uc pgather_partial<unsi
 template<typename Packet> EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void pscatter_common(__UNPACK_TYPE__(Packet)* to, const Packet& from, Index stride, const Index n = unpacket_traits<Packet>::size)
 {
   EIGEN_ALIGN16 __UNPACK_TYPE__(Packet) a[unpacket_traits<Packet>::size];
-  eigen_assert(n <= unpacket_traits<Packet>::size && "number of elements will scatter past end of packet");
+  eigen_internal_assert(n <= unpacket_traits<Packet>::size && "number of elements will scatter past end of packet");
   pstore<__UNPACK_TYPE__(Packet)>(a, from);
   LOAD_STORE_UNROLL_16
   for (Index i = 0; i < n; i++) {
@@ -1033,9 +1048,16 @@ template<> EIGEN_STRONG_INLINE Packet4f pdiv<Packet4f>(const Packet4f& a, const 
 #endif
 }
 
-template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& /*a*/, const Packet4i& /*b*/)
-{ eigen_assert(false && "packet integer division are not supported by AltiVec");
+template<> EIGEN_STRONG_INLINE Packet4i pdiv<Packet4i>(const Packet4i& a, const Packet4i& b)
+{
+#if defined(_ARCH_PWR10) && (EIGEN_COMP_LLVM || EIGEN_GNUC_STRICT_AT_LEAST(11,0,0))
+  return vec_div(a, b);
+#else
+  EIGEN_UNUSED_VARIABLE(a);
+  EIGEN_UNUSED_VARIABLE(b);
+  eigen_assert(false && "packet integer division are not supported by AltiVec");
   return pset1<Packet4i>(0);
+#endif
 }
 
 // for some weird raisons, it has to be overloaded for packet of integers
@@ -1086,7 +1108,10 @@ template<> EIGEN_STRONG_INLINE Packet16c pmax<Packet16c>(const Packet16c& a, con
 template<> EIGEN_STRONG_INLINE Packet16uc pmax<Packet16uc>(const Packet16uc& a, const Packet16uc& b) { return vec_max(a, b); }
 
 template<> EIGEN_STRONG_INLINE Packet4f pcmp_le(const Packet4f& a, const Packet4f& b) { return reinterpret_cast<Packet4f>(vec_cmple(a,b)); }
+// To fix bug with vec_cmplt on older versions
+#if defined(__POWER8_VECTOR__) || EIGEN_COMP_LLVM
 template<> EIGEN_STRONG_INLINE Packet4f pcmp_lt(const Packet4f& a, const Packet4f& b) { return reinterpret_cast<Packet4f>(vec_cmplt(a,b)); }
+#endif
 template<> EIGEN_STRONG_INLINE Packet4f pcmp_eq(const Packet4f& a, const Packet4f& b) { return reinterpret_cast<Packet4f>(vec_cmpeq(a,b)); }
 template<> EIGEN_STRONG_INLINE Packet4f pcmp_lt_or_nan(const Packet4f& a, const Packet4f& b) {
   Packet4f c = reinterpret_cast<Packet4f>(vec_cmpge(a,b));
@@ -1230,7 +1255,7 @@ template<> EIGEN_STRONG_INLINE Packet16uc ploadu<Packet16uc>(const unsigned char
 template<typename Packet> EIGEN_ALWAYS_INLINE Packet ploadu_partial_common(const __UNPACK_TYPE__(Packet)* from, const Index n)
 {
   const Index packet_size = unpacket_traits<Packet>::size;
-  eigen_assert(n <= packet_size && "number of elements will read past end of packet");
+  eigen_internal_assert(n <= packet_size && "number of elements will read past end of packet");
   const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(packet_size);
@@ -1418,7 +1443,7 @@ template<> EIGEN_STRONG_INLINE void pstoreu<unsigned char>(unsigned char*      t
 template<typename Packet> EIGEN_ALWAYS_INLINE void pstoreu_partial_common(__UNPACK_TYPE__(Packet)*  to, const Packet& from, const Index n)
 {
   const Index packet_size = unpacket_traits<Packet>::size;
-  eigen_assert(n <= packet_size && "number of elements will write past end of packet");
+  eigen_internal_assert(n <= packet_size && "number of elements will write past end of packet");
   const Index size = sizeof(__UNPACK_TYPE__(Packet));
 #ifdef _ARCH_PWR9
   EIGEN_UNUSED_VARIABLE(packet_size);
@@ -2700,7 +2725,11 @@ template<> struct packet_traits<double> : default_packet_traits
     HasLog  = 0,
     HasExp  = 1,
     HasSqrt = 1,
+#if !EIGEN_COMP_CLANG
+    HasRsqrt = 1,
+#else
     HasRsqrt = 0,
+#endif
     HasRound = 1,
     HasFloor = 1,
     HasCeil = 1,

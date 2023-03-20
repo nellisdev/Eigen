@@ -82,6 +82,7 @@ struct default_packet_traits
     HasASin   = 0,
     HasACos   = 0,
     HasATan   = 0,
+    HasATanh  = 0,
     HasSinh   = 0,
     HasCosh   = 0,
     HasTanh   = 0,
@@ -857,9 +858,6 @@ Packet pasin(const Packet& a) { EIGEN_USING_STD(asin); return asin(a); }
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet pacos(const Packet& a) { EIGEN_USING_STD(acos); return acos(a); }
 
-/** \internal \returns the arc tangent of \a a (coeff-wise) */
-template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-Packet patan(const Packet& a) { EIGEN_USING_STD(atan); return atan(a); }
 
 /** \internal \returns the hyperbolic sine of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
@@ -869,9 +867,17 @@ Packet psinh(const Packet& a) { EIGEN_USING_STD(sinh); return sinh(a); }
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet pcosh(const Packet& a) { EIGEN_USING_STD(cosh); return cosh(a); }
 
+/** \internal \returns the arc tangent of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet patan(const Packet& a) { EIGEN_USING_STD(atan); return atan(a); }
+
 /** \internal \returns the hyperbolic tan of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 Packet ptanh(const Packet& a) { EIGEN_USING_STD(tanh); return tanh(a); }
+
+/** \internal \returns the arc tangent of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet patanh(const Packet& a) { EIGEN_USING_STD(atanh); return atanh(a); }
 
 /** \internal \returns the exp of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
@@ -1192,27 +1198,27 @@ Packet prsqrt(const Packet& a) {
 }
 
 template <typename Packet, bool IsScalar = is_scalar<Packet>::value,
-    bool IsInteger = NumTraits<typename unpacket_traits<Packet>::type>::IsInteger>
-    struct psignbit_impl;
+          bool IsInteger = NumTraits<typename unpacket_traits<Packet>::type>::IsInteger>
+struct psignbit_impl;
 template <typename Packet, bool IsInteger>
 struct psignbit_impl<Packet, true, IsInteger> {
-     EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Packet run(const Packet& a) { return numext::signbit(a); }
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Packet run(const Packet& a) { return numext::signbit(a); }
 };
 template <typename Packet>
 struct psignbit_impl<Packet, false, false> {
-    // generic implementation if not specialized in PacketMath.h
-    // slower than arithmetic shift
-    typedef typename unpacket_traits<Packet>::type Scalar;
-    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static Packet run(const Packet& a) {
-        const Packet cst_pos_one = pset1<Packet>(Scalar(1));
-        const Packet cst_neg_one = pset1<Packet>(Scalar(-1));
-        return pcmp_eq(por(pand(a, cst_neg_one), cst_pos_one), cst_neg_one);
-    }
+  // generic implementation if not specialized in PacketMath.h
+  // slower than arithmetic shift
+  typedef typename unpacket_traits<Packet>::type Scalar;
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static Packet run(const Packet& a) {
+    const Packet cst_pos_one = pset1<Packet>(Scalar(1));
+    const Packet cst_neg_one = pset1<Packet>(Scalar(-1));
+    return pcmp_eq(por(pand(a, cst_neg_one), cst_pos_one), cst_neg_one);
+  }
 };
 template <typename Packet>
 struct psignbit_impl<Packet, false, true> {
-    // generic implementation for integer packets
-    EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Packet run(const Packet& a) { return pcmp_lt(a, pzero(a)); }
+  // generic implementation for integer packets
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE static constexpr Packet run(const Packet& a) { return pcmp_lt(a, pzero(a)); }
 };
 /** \internal \returns the sign bit of \a a as a bitmask*/
 template <typename Packet>
@@ -1233,40 +1239,45 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet patan2(const Packet& y, const Packe
   // See https://en.cppreference.com/w/cpp/numeric/math/atan2
   // for how corner cases are supposed to be handled according to the
   // IEEE floating-point standard (IEC 60559).
-
   const Packet kSignMask = pset1<Packet>(-Scalar(0));
   const Packet kZero = pzero(x);
   const Packet kOne = pset1<Packet>(Scalar(1));
   const Packet kPi = pset1<Packet>(Scalar(EIGEN_PI));
-  const Packet kInf = pset1<Packet>(NumTraits<Scalar>::infinity());
 
-  const Packet abs_x = pabs(x);
-  const Packet x_is_zero = pcmp_eq(abs_x, kZero);
-  const Packet x_is_inf = pcmp_eq(abs_x, kInf);
   const Packet x_has_signbit = psignbit(x);
-
-  const Packet abs_y = pabs(y);
-  const Packet y_is_zero = pcmp_eq(abs_y, kZero);
-  const Packet y_is_inf = pcmp_eq(abs_y, kInf);
   const Packet y_signmask = pand(y, kSignMask);
+  const Packet x_signmask = pand(x, kSignMask);
+  const Packet result_signmask = pxor(y_signmask, x_signmask);
+  const Packet shift = por(pand(x_has_signbit, kPi), y_signmask);
 
-  const Packet arg_signmask = pand(pxor(x, y), kSignMask);
-  const Packet shift = pxor(pand(x_has_signbit, kPi), y_signmask);
+  const Packet x_and_y_are_same = pcmp_eq(pabs(x), pabs(y));
+  const Packet x_and_y_are_zero = pcmp_eq(por(x, y), kZero);
 
-  // bend two rules:
-  // 1) 0 / 0 == 0
-  // 2) inf / inf == 1
-  // otherwise, evaluate atan(y/x) as usual and shift to the appropriate quadrant
-
-  Packet arg = pdiv(abs_y, abs_x);
-  arg = pselect(pand(x_is_zero, y_is_zero), kZero, arg);
-  arg = pselect(pand(x_is_inf, y_is_inf), kOne, arg);
+  Packet arg = pdiv(y, x);
+  arg = pselect(x_and_y_are_same, por(kOne, result_signmask), arg);
+  arg = pselect(x_and_y_are_zero, result_signmask, arg);
 
   Packet result = patan(arg);
-  result = pxor(result, arg_signmask);
   result = padd(result, shift);
-
   return result;
+}
+
+/** \internal \returns the argument of \a a as a complex number */
+template <typename Packet, std::enable_if_t<is_scalar<Packet>::value, int> = 0>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pcarg(const Packet& a) {
+  return Packet(numext::arg(a));
+}
+
+/** \internal \returns the argument of \a a as a complex number */
+template <typename Packet, std::enable_if_t<!is_scalar<Packet>::value, int> = 0>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet pcarg(const Packet& a) {
+  using Scalar = typename unpacket_traits<Packet>::type;
+  EIGEN_STATIC_ASSERT(NumTraits<Scalar>::IsComplex, THIS METHOD IS FOR COMPLEX TYPES ONLY)
+  using RealPacket = typename unpacket_traits<Packet>::as_real;
+  // a                                              // r     i    r     i    ...
+  RealPacket aflip = pcplxflip(a).v;                // i     r    i     r    ...
+  RealPacket result = patan2(aflip, a.v);           // atan2 crap atan2 crap ...
+  return (Packet)pand(result, peven_mask(result));  // atan2 0    atan2 0    ...
 }
 
 } // end namespace internal

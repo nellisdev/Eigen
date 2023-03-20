@@ -14,10 +14,12 @@
 using Eigen::Tensor;
 using Eigen::RowMajor;
 
+using Scalar = float;
+
 static void test_orderings()
 {
-  Tensor<float, 3> mat1(2,3,7);
-  Tensor<float, 3> mat2(2,3,7);
+  Tensor<Scalar, 3> mat1(2,3,7);
+  Tensor<Scalar, 3> mat2(2,3,7);
   Tensor<bool, 3> lt(2,3,7);
   Tensor<bool, 3> le(2,3,7);
   Tensor<bool, 3> gt(2,3,7);
@@ -46,8 +48,8 @@ static void test_orderings()
 
 static void test_equality()
 {
-  Tensor<float, 3> mat1(2,3,7);
-  Tensor<float, 3> mat2(2,3,7);
+  Tensor<Scalar, 3> mat1(2,3,7);
+  Tensor<Scalar, 3> mat2(2,3,7);
 
   mat1.setRandom();
   mat2.setRandom();

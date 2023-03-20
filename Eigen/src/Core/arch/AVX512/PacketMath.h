@@ -30,13 +30,6 @@ namespace internal {
 #endif
 #endif
 
-// Disable the code for older versions of gcc that don't support many of the required avx512 math instrinsics.
-#if EIGEN_GNUC_STRICT_AT_LEAST(5,3,0) || EIGEN_COMP_CLANG || EIGEN_COMP_MSVC >= 1923 || EIGEN_COMP_ICC >= 1900
-#define EIGEN_HAS_AVX512_MATH 1
-#else
-#define EIGEN_HAS_AVX512_MATH 0
-#endif
-
 typedef __m512 Packet16f;
 typedef __m512i Packet16i;
 typedef __m512d Packet8d;
@@ -84,14 +77,14 @@ struct packet_traits<half> : default_packet_traits {
     HasMax    = 1,
     HasConj   = 1,
     HasSetLinear = 0,
-    HasLog    = EIGEN_HAS_AVX512_MATH,
-    HasLog1p  = EIGEN_HAS_AVX512_MATH,
-    HasExp    = EIGEN_HAS_AVX512_MATH,
-    HasExpm1  = EIGEN_HAS_AVX512_MATH,
-    HasSqrt   = EIGEN_HAS_AVX512_MATH,
-    HasRsqrt  = EIGEN_HAS_AVX512_MATH,
-    HasBessel = EIGEN_HAS_AVX512_MATH,
-    HasNdtri  = EIGEN_HAS_AVX512_MATH,
+    HasSqrt   = 1,
+    HasRsqrt  = 1,
+    HasLog    = 1,
+    HasLog1p  = 1,
+    HasExp    = 1,
+    HasExpm1  = 1,
+    HasBessel = 1,
+    HasNdtri  = 1,
     HasSin    = EIGEN_FAST_MATH,
     HasCos    = EIGEN_FAST_MATH,
     HasTanh   = EIGEN_FAST_MATH,
@@ -125,19 +118,18 @@ template<> struct packet_traits<float>  : default_packet_traits
     HasACos = 1,
     HasASin = 1,
     HasATan = 1,
-#if EIGEN_HAS_AVX512_MATH
+    HasATanh = 1,
+    HasSqrt = 1,
+    HasRsqrt = 1,
     HasLog = 1,
     HasLog1p  = 1,
     HasExpm1  = 1,
     HasNdtri = 1,
     HasBessel  = 1,
     HasExp = 1,
-    HasSqrt = EIGEN_FAST_MATH,
-    HasRsqrt = EIGEN_FAST_MATH,
     HasReciprocal = EIGEN_FAST_MATH,
     HasTanh = EIGEN_FAST_MATH,
     HasErf = EIGEN_FAST_MATH,
-#endif
     HasCmp  = 1,
     HasDiv = 1,
     HasRound = 1,
@@ -155,12 +147,10 @@ template<> struct packet_traits<double> : default_packet_traits
     AlignedOnScalar = 1,
     size = 8,
     HasHalfPacket = 1,
-#if EIGEN_HAS_AVX512_MATH
+    HasSqrt = 1,
+    HasRsqrt = 1,
     HasLog  = 1,
     HasExp = 1,
-    HasSqrt = EIGEN_FAST_MATH,
-    HasRsqrt = EIGEN_FAST_MATH,
-#endif
     HasATan = 1,
     HasCmp  = 1,
     HasDiv = 1,
@@ -346,12 +336,19 @@ EIGEN_STRONG_INLINE Packet16i psub<Packet16i>(const Packet16i& a,
 
 template <>
 EIGEN_STRONG_INLINE Packet16f pnegate(const Packet16f& a) {
-  const __m512i mask = _mm512_set1_epi32(0x80000000);
+  // NOTE: MSVC seems to struggle with _mm512_set1_epi32, leading to random results.
+  //       The intel docs give it a relatively high latency as well, so we're probably
+  //       better off with using _mm512_set_epi32 directly anyways.
+  const __m512i mask = _mm512_set_epi32(0x80000000,0x80000000,0x80000000,0x80000000,
+                                        0x80000000,0x80000000,0x80000000,0x80000000,
+                                        0x80000000,0x80000000,0x80000000,0x80000000,
+                                        0x80000000,0x80000000,0x80000000,0x80000000);
   return _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a), mask));
 }
 template <>
 EIGEN_STRONG_INLINE Packet8d pnegate(const Packet8d& a) {
-  const __m512i mask = _mm512_set1_epi64(0x8000000000000000ULL);
+  const __m512i mask = _mm512_set_epi64(0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL,
+                                        0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL, 0x8000000000000000ULL);
   return _mm512_castsi512_pd(_mm512_xor_epi64(_mm512_castpd_si512(a), mask));
 }
 template <>
@@ -2293,20 +2290,18 @@ struct packet_traits<bfloat16> : default_packet_traits {
     HasInsert = 1,
     HasSin = EIGEN_FAST_MATH,
     HasCos = EIGEN_FAST_MATH,
-#if EIGEN_HAS_AVX512_MATH
+    HasSqrt = 1,
+    HasRsqrt = 1,
 #ifdef EIGEN_VECTORIZE_AVX512DQ
     HasLog = 1,  // Currently fails test with bad accuracy.
     HasLog1p  = 1,
     HasExpm1  = 1,
     HasNdtri = 1,
-    HasBessel  = 1,
+    HasBessel = 1,
 #endif
     HasExp = 1,
-    HasSqrt = EIGEN_FAST_MATH,
-    HasRsqrt = EIGEN_FAST_MATH,
     HasTanh = EIGEN_FAST_MATH,
     HasErf = EIGEN_FAST_MATH,
-#endif
     HasCmp  = 1,
     HasDiv = 1
   };
