@@ -339,6 +339,10 @@ EIGEN_ALWAYS_INLINE void convertArrayF32toBF16(float *result, Index cols, Index 
     }
     col++;
   }
+#ifdef TEST_VERBOSE
+  end = __ppc_get_timebase();
+  printf("gemm bfloat16 MMA time = %16ld\n", end - start);
+#endif
 }
 
 template<Index size>
