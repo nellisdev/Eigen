@@ -710,6 +710,8 @@ void gemv_bfloat16_col(
   bfloat16* res, Index resIncr,
   bfloat16 alpha)
 {
+  typedef typename RhsMapper::LinearMapper LinearMapper;
+
   EIGEN_UNUSED_VARIABLE(resIncr);
   eigen_internal_assert(resIncr == 1);
 
