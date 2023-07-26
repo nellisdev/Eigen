@@ -65,7 +65,7 @@ class AnnoyingScalar
 
     AnnoyingScalar operator-() const
     { return AnnoyingScalar(-*v); }
-    
+
     AnnoyingScalar operator-(const AnnoyingScalar& other) const
     { return AnnoyingScalar(*v-*other.v); }
     

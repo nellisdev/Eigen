@@ -16,12 +16,54 @@ namespace Eigen {
 
 namespace internal {
 
+template <>
+struct type_casting_traits<float, bool> {
+  enum {
+    VectorizedCast = 1,
+    SrcCoeffRatio = 1,
+    TgtCoeffRatio = 1
+  };
+};
+
+template <>
+struct type_casting_traits<bool, float> {
+  enum {
+    VectorizedCast = 1,
+    SrcCoeffRatio = 1,
+    TgtCoeffRatio = 1
+  };
+};
+
+template<> EIGEN_STRONG_INLINE Packet16b pcast<Packet16f, Packet16b>(const Packet16f& a) {
+  __mmask16 mask = _mm512_cmpneq_ps_mask(a, pzero(a));
+  return _mm512_maskz_cvtepi32_epi8(mask, _mm512_set1_epi32(1));
+}
+
+template<> EIGEN_STRONG_INLINE Packet16f pcast<Packet16b, Packet16f>(const Packet16b& a) {
+  return _mm512_cvtepi32_ps(_mm512_and_si512(_mm512_cvtepi8_epi32(a), _mm512_set1_epi32(1)));
+}
+
 template<> EIGEN_STRONG_INLINE Packet16i pcast<Packet16f, Packet16i>(const Packet16f& a) {
   return _mm512_cvttps_epi32(a);
 }
 
 template<> EIGEN_STRONG_INLINE Packet16f pcast<Packet16i, Packet16f>(const Packet16i& a) {
   return _mm512_cvtepi32_ps(a);
+}
+
+template<> EIGEN_STRONG_INLINE Packet16f pcast<Packet8d, Packet16f>(const Packet8d& a, const Packet8d& b) {
+  return  cat256(_mm512_cvtpd_ps(a), _mm512_cvtpd_ps(b));
+}
+
+template<> EIGEN_STRONG_INLINE Packet16i pcast<Packet8d, Packet16i>(const Packet8d& a, const Packet8d& b) {
+  return  cat256i(_mm512_cvttpd_epi32(a), _mm512_cvttpd_epi32(b));
+}
+
+template<> EIGEN_STRONG_INLINE Packet8i pcast<Packet8d, Packet8i>(const Packet8d& a) {
+  return _mm512_cvtpd_epi32(a);
+}
+template<> EIGEN_STRONG_INLINE Packet8f pcast<Packet8d, Packet8f>(const Packet8d& a) {
+  return _mm512_cvtpd_ps(a);
 }
 
 template<> EIGEN_STRONG_INLINE Packet16i preinterpret<Packet16i, Packet16f>(const Packet16f& a) {
@@ -72,12 +114,19 @@ template<> EIGEN_STRONG_INLINE Packet8d preinterpret<Packet8d, Packet2d>(const P
   return _mm512_castpd128_pd512(a);
 }
 
-template<> EIGEN_STRONG_INLINE Packet16f preinterpret<Packet16f, Packet16f>(const Packet16f& a) {
-  return a;
+template<> EIGEN_STRONG_INLINE Packet8i preinterpret<Packet8i, Packet16i>(const Packet16i& a) {
+  return _mm512_castsi512_si256(a);
+}
+template<> EIGEN_STRONG_INLINE Packet4i preinterpret<Packet4i, Packet16i>(const Packet16i& a) {
+  return _mm512_castsi512_si128(a);
 }
 
-template<> EIGEN_STRONG_INLINE Packet8d preinterpret<Packet8d, Packet8d>(const Packet8d& a) {
-  return a;
+template<> EIGEN_STRONG_INLINE Packet8h preinterpret<Packet8h, Packet16h>(const Packet16h& a) {
+  return _mm256_castsi256_si128(a);
+}
+
+template<> EIGEN_STRONG_INLINE Packet8bf preinterpret<Packet8bf, Packet16bf>(const Packet16bf& a) {
+  return _mm256_castsi256_si128(a);
 }
 
 #ifndef EIGEN_VECTORIZE_AVX512FP16
@@ -155,6 +204,13 @@ struct type_casting_traits<float, half> {
     TgtCoeffRatio = 1
   };
 };
+
+template<> EIGEN_STRONG_INLINE Packet16h preinterpret<Packet16h, Packet32h>(const Packet32h& a) {
+  return _mm256_castpd_si256(_mm512_extractf64x4_pd(_mm512_castph_pd(a), 0));
+}
+template<> EIGEN_STRONG_INLINE Packet8h preinterpret<Packet8h, Packet32h>(const Packet32h& a) {
+  return _mm256_castsi256_si128(preinterpret<Packet16h>(a));
+}
 
 template <>
 EIGEN_STRONG_INLINE Packet16f pcast<Packet32h, Packet16f>(const Packet32h& a) {

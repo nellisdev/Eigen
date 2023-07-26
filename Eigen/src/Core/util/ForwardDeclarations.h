@@ -192,6 +192,8 @@ template<typename Scalar> struct scalar_sin_op;
 template<typename Scalar> struct scalar_acos_op;
 template<typename Scalar> struct scalar_asin_op;
 template<typename Scalar> struct scalar_tan_op;
+template<typename Scalar> struct scalar_atan_op;
+template <typename LhsScalar, typename RhsScalar = LhsScalar> struct scalar_atan2_op;
 template<typename Scalar> struct scalar_inverse_op;
 template<typename Scalar> struct scalar_square_op;
 template<typename Scalar> struct scalar_cube_op;
@@ -208,6 +210,15 @@ struct scalar_unary_pow_op;
 template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_hypot_op;
 template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_product_op;
 template<typename LhsScalar,typename RhsScalar=LhsScalar> struct scalar_quotient_op;
+// logical and bitwise operations
+template <typename Scalar> struct scalar_boolean_and_op;
+template <typename Scalar> struct scalar_boolean_or_op;
+template <typename Scalar> struct scalar_boolean_xor_op;
+template <typename Scalar> struct scalar_boolean_not_op;
+template <typename Scalar> struct scalar_bitwise_and_op;
+template <typename Scalar> struct scalar_bitwise_or_op;
+template <typename Scalar> struct scalar_bitwise_xor_op;
+template <typename Scalar> struct scalar_bitwise_not_op;
 
 // SpecialFunctions module
 template<typename Scalar> struct scalar_lgamma_op;
@@ -252,15 +263,15 @@ template<typename ExpressionType, int Direction> class VectorwiseOp;
 template<typename MatrixType,int RowFactor,int ColFactor> class Replicate;
 template<typename MatrixType, int Direction = BothDirections> class Reverse;
 
-#if defined(EIGEN_USE_LAPACKE)
+#if defined(EIGEN_USE_LAPACKE) && defined(lapack_int)
 // Lapacke interface requires StorageIndex to be lapack_int
 typedef lapack_int DefaultPermutationIndex;
 #else
 typedef int DefaultPermutationIndex;
 #endif
 
-template<typename MatrixType> class FullPivLU;
-template<typename MatrixType> class PartialPivLU;
+template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class FullPivLU;
+template<typename MatrixType, typename PermutationIndex = DefaultPermutationIndex> class PartialPivLU;
 namespace internal {
 template<typename MatrixType> struct inverse_impl;
 }

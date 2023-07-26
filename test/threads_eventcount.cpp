@@ -10,12 +10,12 @@
 
 #define EIGEN_USE_THREADS
 #include "main.h"
-#include <Eigen/CXX11/ThreadPool>
+#include <Eigen/ThreadPool>
 
 // Visual studio doesn't implement a rand_r() function since its
 // implementation of rand() is already thread safe
 int rand_reentrant(unsigned int* s) {
-#ifdef EIGEN_COMP_MSVC_STRICT
+#if EIGEN_COMP_MSVC_STRICT
   EIGEN_UNUSED_VARIABLE(s);
   return rand();
 #else

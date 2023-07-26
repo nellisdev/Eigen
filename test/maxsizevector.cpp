@@ -2,7 +2,7 @@
 
 #include <exception>  // std::exception
 
-#include <unsupported/Eigen/CXX11/Tensor>
+#include <Eigen/src/Core/util/MaxSizeVector.h>
 
 struct Foo
 {
@@ -18,13 +18,13 @@ struct Foo
 #endif
     std::cout << '+';
     ++Foo::object_count;
-    eigen_assert((internal::UIntPtr(this) & (127)) == 0);
+    eigen_assert((std::uintptr_t(this) & (127)) == 0);
   }
   Foo(const Foo&)
   {
     std::cout << 'c';
     ++Foo::object_count;
-    eigen_assert((internal::UIntPtr(this) & (127)) == 0);
+    eigen_assert((std::uintptr_t(this) & (127)) == 0);
   }
 
   ~Foo()
