@@ -125,6 +125,10 @@ EIGEN_STRONG_INLINE Packet generic_trunc(const Packet& a);
 template <typename Packet, int N>
 struct ppolevl;
 
+/** \internal \returns log(x) for complex types */
+template <typename Packet>
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS Packet plog_complex(const Packet& x);
+
 // Macros for instantiating these generic functions for different backends.
 #define EIGEN_PACKET_FUNCTION(METHOD, SCALAR, PACKET)                                             \
   template <>                                                                                     \
