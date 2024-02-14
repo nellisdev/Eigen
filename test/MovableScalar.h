@@ -12,11 +12,9 @@
 
 #include <vector>
 
-namespace Eigen
-{
+namespace Eigen {
 template <typename Scalar, typename Base = std::vector<Scalar>>
-struct MovableScalar : public Base
-{
+struct MovableScalar : public Base {
   MovableScalar() = default;
   ~MovableScalar() = default;
   MovableScalar(const MovableScalar&) = default;
@@ -28,8 +26,25 @@ struct MovableScalar : public Base
   operator Scalar() const { return this->size() > 0 ? this->back() : Scalar(); }
 };
 
-template<> struct NumTraits<MovableScalar<float>> : GenericNumTraits<float> {};
-}
+template <>
+struct NumTraits<MovableScalar<float>> : GenericNumTraits<float> {};
+
+namespace internal {
+template <typename T>
+struct random_impl<MovableScalar<T>> {
+  using MoveableT = MovableScalar<T>;
+  using Impl = random_impl<T>;
+  static EIGEN_DEVICE_FUNC inline MoveableT run(const MoveableT& x, const MoveableT& y) {
+    T result = Impl::run(x, y);
+    return MoveableT(result);
+  }
+  static EIGEN_DEVICE_FUNC inline MoveableT run() {
+    T result = Impl::run();
+    return MoveableT(result);
+  }
+};
+}  // namespace internal
+
+}  // namespace Eigen
 
 #endif
-
