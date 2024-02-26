@@ -881,7 +881,9 @@ struct random_default_impl<Scalar, false, true> {
       // if the random draw is outside [0, range), try again (rejection sampling)
       // in the worst-case scenario, the probability of rejection is: 1/2 - 1/2^numRandomBits < 50%
     } while (randomBits >= range);
-    Scalar result = x + static_cast<Scalar>(randomBits);
+    // Avoid overflow in the case where `x` is negative and there is a large range so
+    // `randomBits` would also be negative if cast to `Scalar` first.
+    Scalar result = static_cast<Scalar>(static_cast<BitsType>(x) + randomBits);
     return result;
   }
 
@@ -980,7 +982,7 @@ EIGEN_DEVICE_FUNC bool isnan_impl(const std::complex<T>& x);
 template <typename T>
 EIGEN_DEVICE_FUNC bool isinf_impl(const std::complex<T>& x);
 template <typename T>
-T generic_fast_tanh_float(const T& a_x);
+EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS T ptanh_float(const T& a_x);
 
 /****************************************************************************
  * Implementation of sign                                                 *
@@ -1798,7 +1800,7 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE T tanh(const T& x) {
 }
 
 #if (!defined(EIGEN_GPUCC)) && EIGEN_FAST_MATH && !defined(SYCL_DEVICE_ONLY)
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float tanh(float x) { return internal::generic_fast_tanh_float(x); }
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float tanh(float x) { return internal::ptanh_float(x); }
 #endif
 
 #if defined(SYCL_DEVICE_ONLY)
