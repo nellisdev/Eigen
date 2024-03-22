@@ -57,6 +57,7 @@ struct default_packet_traits {
     HasConj = 1,
     HasSetLinear = 1,
     HasSign = 1,
+    HasRound = 1,
 
     HasArg = 0,
     HasAbsDiff = 0,
@@ -64,10 +65,6 @@ struct default_packet_traits {
     // This flag is used to indicate whether packet comparison is supported.
     // pcmp_eq, pcmp_lt and pcmp_le should be defined for it to be true.
     HasCmp = 0,
-    HasRound = 0,
-    HasRint = 0,
-    HasFloor = 0,
-    HasCeil = 0,
 
     HasDiv = 0,
     HasReciprocal = 0,
