@@ -389,7 +389,7 @@ EIGEN_STRONG_INLINE Packet32h pfloor<Packet32h>(const Packet32h& a) {
 // ptrunc
 
 template <>
-EIGEN_STRONG_INLINE Packet32h pfloor<Packet32h>(const Packet32h& a) {
+EIGEN_STRONG_INLINE Packet32h ptrunc<Packet32h>(const Packet32h& a) {
   return _mm512_roundscale_ph(a, _MM_FROUND_TO_ZERO);
 }
 
