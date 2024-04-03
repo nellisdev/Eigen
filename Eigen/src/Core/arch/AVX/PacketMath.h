@@ -270,9 +270,7 @@ struct packet_traits<uint32_t> : default_packet_traits {
 template <>
 struct packet_traits<int64_t> : default_packet_traits {
   typedef Packet4l type;
-  // There is no half-size packet for current Packet4l.
-  // TODO: support as SSE path.
-  typedef Packet4l half;
+  typedef Packet2l half;
   enum { Vectorizable = 1, AlignedOnScalar = 1, HasCmp = 1, size = 4 };
 };
 template <>
@@ -332,6 +330,9 @@ template <>
 struct unpacket_traits<Packet4d> {
   typedef double type;
   typedef Packet2d half;
+#ifdef EIGEN_VECTORIZE_AVX2
+  typedef Packet4l integer_packet;
+#endif
   enum {
     size = 4,
     alignment = Aligned32,
@@ -368,7 +369,7 @@ struct unpacket_traits<Packet8ui> {
 template <>
 struct unpacket_traits<Packet4l> {
   typedef int64_t type;
-  typedef Packet4l half;
+  typedef Packet2l half;
   enum {
     size = 4,
     alignment = Aligned32,
@@ -561,7 +562,7 @@ EIGEN_STRONG_INLINE std::enable_if_t<(N >= 32) && (N < 63), Packet4l> parithmeti
 }
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t<(N == 63), Packet4l> parithmetic_shift_right(Packet4l a) {
-  return _mm256_shuffle_epi32(_mm256_srai_epi32(a, 31), (shuffle_mask<1, 1, 3, 3>::mask));
+  return _mm256_cmpgt_epi64(_mm256_setzero_si256(), a);
 }
 template <int N>
 EIGEN_STRONG_INLINE std::enable_if_t<(N < 0) || (N > 63), Packet4l> parithmetic_shift_right(Packet4l a) {
@@ -623,22 +624,22 @@ EIGEN_DEVICE_FUNC inline Packet4ul pgather<uint64_t, Packet4ul>(const uint64_t* 
 template <>
 EIGEN_DEVICE_FUNC inline void pscatter<int64_t, Packet4l>(int64_t* to, const Packet4l& from, Index stride) {
   __m128i low = _mm256_extractf128_si256(from, 0);
-  to[stride * 0] = _mm_extract_epi64(low, 0);
-  to[stride * 1] = _mm_extract_epi64(low, 1);
+  to[stride * 0] = _mm_extract_epi64_0(low);
+  to[stride * 1] = _mm_extract_epi64_1(low);
 
   __m128i high = _mm256_extractf128_si256(from, 1);
-  to[stride * 2] = _mm_extract_epi64(high, 0);
-  to[stride * 3] = _mm_extract_epi64(high, 1);
+  to[stride * 2] = _mm_extract_epi64_0(high);
+  to[stride * 3] = _mm_extract_epi64_1(high);
 }
 template <>
 EIGEN_DEVICE_FUNC inline void pscatter<uint64_t, Packet4ul>(uint64_t* to, const Packet4ul& from, Index stride) {
   __m128i low = _mm256_extractf128_si256(from, 0);
-  to[stride * 0] = _mm_extract_epi64(low, 0);
-  to[stride * 1] = _mm_extract_epi64(low, 1);
+  to[stride * 0] = _mm_extract_epi64_0(low);
+  to[stride * 1] = _mm_extract_epi64_1(low);
 
   __m128i high = _mm256_extractf128_si256(from, 1);
-  to[stride * 2] = _mm_extract_epi64(high, 0);
-  to[stride * 3] = _mm_extract_epi64(high, 1);
+  to[stride * 2] = _mm_extract_epi64_0(high);
+  to[stride * 3] = _mm_extract_epi64_1(high);
 }
 template <>
 EIGEN_STRONG_INLINE void pstore1<Packet4l>(int64_t* to, const int64_t& a) {
@@ -652,21 +653,21 @@ EIGEN_STRONG_INLINE void pstore1<Packet4ul>(uint64_t* to, const uint64_t& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet4l>(const Packet4l& a) {
-  return _mm_cvtsi128_si64(_mm256_castsi256_si128(a));
+  return _mm_extract_epi64_0(_mm256_castsi256_si128(a));
 }
 template <>
 EIGEN_STRONG_INLINE uint64_t pfirst<Packet4ul>(const Packet4ul& a) {
-  return _mm_cvtsi128_si64(_mm256_castsi256_si128(a));
+  return _mm_extract_epi64_0(_mm256_castsi256_si128(a));
 }
 template <>
 EIGEN_STRONG_INLINE int64_t predux<Packet4l>(const Packet4l& a) {
   __m128i r = _mm_add_epi64(_mm256_castsi256_si128(a), _mm256_extractf128_si256(a, 1));
-  return _mm_extract_epi64(r, 0) + _mm_extract_epi64(r, 1);
+  return _mm_extract_epi64_0(r) + _mm_extract_epi64_1(r);
 }
 template <>
 EIGEN_STRONG_INLINE uint64_t predux<Packet4ul>(const Packet4ul& a) {
   __m128i r = _mm_add_epi64(_mm256_castsi256_si128(a), _mm256_extractf128_si256(a, 1));
-  return numext::bit_cast<uint64_t>(_mm_extract_epi64(r, 0) + _mm_extract_epi64(r, 1));
+  return numext::bit_cast<uint64_t>(_mm_extract_epi64_0(r) + _mm_extract_epi64_1(r));
 }
 #define MM256_SHUFFLE_EPI64(A, B, M) _mm256_shuffle_pd(_mm256_castsi256_pd(A), _mm256_castsi256_pd(B), M)
 EIGEN_DEVICE_FUNC inline void ptranspose(PacketBlock<Packet4l, 4>& kernel) {
@@ -1803,14 +1804,12 @@ EIGEN_STRONG_INLINE Packet4ul preverse(const Packet4ul& a) {
 // pabs should be ok
 template <>
 EIGEN_STRONG_INLINE Packet8f pabs(const Packet8f& a) {
-  const Packet8f mask = _mm256_castsi256_ps(_mm256_setr_epi32(0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF,
-                                                              0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF));
+  const Packet8f mask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7FFFFFFF));
   return _mm256_and_ps(a, mask);
 }
 template <>
 EIGEN_STRONG_INLINE Packet4d pabs(const Packet4d& a) {
-  const Packet4d mask = _mm256_castsi256_pd(_mm256_setr_epi32(0xFFFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF,
-                                                              0xFFFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF));
+  const Packet4d mask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FFFFFFFFFFFFFFF));
   return _mm256_and_pd(a, mask);
 }
 template <>
@@ -1830,28 +1829,28 @@ EIGEN_STRONG_INLINE Packet8ui pabs(const Packet8ui& a) {
 
 template <>
 EIGEN_STRONG_INLINE Packet8h psignbit(const Packet8h& a) {
-  return _mm_srai_epi16(a, 15);
+  return _mm_cmpgt_epi16(_mm_setzero_si128(), a);
 }
 template <>
 EIGEN_STRONG_INLINE Packet8bf psignbit(const Packet8bf& a) {
-  return _mm_srai_epi16(a, 15);
+  return _mm_cmpgt_epi16(_mm_setzero_si128(), a);
 }
 template <>
 EIGEN_STRONG_INLINE Packet8f psignbit(const Packet8f& a) {
-  return _mm256_castsi256_ps(parithmetic_shift_right<31>((Packet8i)_mm256_castps_si256(a)));
+  return _mm256_castsi256_ps(_mm256_cmpgt_epi32(_mm256_setzero_si256(), _mm256_castps_si256(a)));
 }
 template <>
 EIGEN_STRONG_INLINE Packet8ui psignbit(const Packet8ui& a) {
-  return pzero(a);
+  return _mm256_setzero_si256();
 }
 #ifdef EIGEN_VECTORIZE_AVX2
 template <>
 EIGEN_STRONG_INLINE Packet4d psignbit(const Packet4d& a) {
-  return _mm256_castsi256_pd(parithmetic_shift_right<63>((Packet4l)_mm256_castpd_si256(a)));
+  return _mm256_castsi256_pd(_mm256_cmpgt_epi64(_mm256_setzero_si256(), _mm256_castpd_si256(a)));
 }
 template <>
 EIGEN_STRONG_INLINE Packet4ul psignbit(const Packet4ul& a) {
-  return pzero(a);
+  return _mm256_setzero_si256();
 }
 #endif
 
