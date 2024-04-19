@@ -841,14 +841,12 @@ struct ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased
 };
 
 // specialization for expresions like (a < b).select(c, d) to enable full vectorization
-template <typename Scalar, typename Arg1, typename Arg2, typename CmpLhsType, typename CmpRhsType, ComparisonName cmp>
-struct ternary_evaluator<
-    CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, bool>, Arg1, Arg2,
-                   CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, false>, CmpLhsType, CmpRhsType>>,
-    IndexBased, IndexBased>
-    : ternary_evaluator<CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, Scalar>, Arg1, Arg2,
-                                       CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>>,
-                        IndexBased, IndexBased> {
+template <typename Arg1, typename Arg2, typename Scalar, typename CmpLhsType, typename CmpRhsType, ComparisonName cmp>
+struct evaluator<CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, bool>, Arg1, Arg2,
+                                CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, false>, CmpLhsType, CmpRhsType>>>
+    : public ternary_evaluator<
+          CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, Scalar>, Arg1, Arg2,
+                         CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>>> {
   using DummyTernaryOp = scalar_boolean_select_op<Scalar, Scalar, bool>;
   using DummyArg3 = CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, false>, CmpLhsType, CmpRhsType>;
   using DummyXprType = CwiseTernaryOp<DummyTernaryOp, Arg1, Arg2, DummyArg3>;
@@ -857,13 +855,10 @@ struct ternary_evaluator<
   using Arg3 = CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>;
   using XprType = CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>;
 
-  using Base = ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased, IndexBased>;
+  using Base = ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>>;
 
-  // convert DummyXprType to XprType
-  EIGEN_DEVICE_FUNC explicit ternary_evaluator(const DummyXprType& xpr)
+  EIGEN_DEVICE_FUNC explicit evaluator(const DummyXprType& xpr)
       : Base(XprType(xpr.arg1(), xpr.arg2(), Arg3(xpr.arg3().lhs(), xpr.arg3().rhs()))) {}
-  // helps to avoid some msvc compilation problems
-  EIGEN_DEVICE_FUNC explicit ternary_evaluator(const XprType& xpr) : Base(xpr) {}
 };
 
 // -------------------- CwiseBinaryOp --------------------
