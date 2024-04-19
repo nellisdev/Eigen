@@ -80,6 +80,9 @@ void test_threaded_assignment(const PlainObject&, Index rows = PlainObject::Rows
 }
 
 EIGEN_DECLARE_TEST(test) {
-  CALL_SUBTEST(test_threaded_assignment(MatrixXd(), 123, 123));
-  CALL_SUBTEST(test_threaded_assignment(Matrix<float, 16, 16>()));
+  for (int i = 0; i < g_repeat; i++)
+  {
+    CALL_SUBTEST(test_threaded_assignment(MatrixXd(), 123, 123));
+    CALL_SUBTEST(test_threaded_assignment(Matrix<float, 16, 16>()));
+  }
 }

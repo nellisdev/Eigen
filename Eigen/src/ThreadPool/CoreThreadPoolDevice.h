@@ -77,7 +77,7 @@ struct CoreThreadPoolDevice {
       Index size = end - begin;
       eigen_assert(size % PacketSize == 0 && "this function assumes size is a multiple of PacketSize");
       Index mid = begin + numext::round_down(size >> 1, Index(PacketSize));
-      Task right = [=, this, &f, &barrier]() {
+      Task right = [=, this, /*&f, */&barrier]() {
         parallelForImpl<UnaryFunctor, PacketSize>(mid, end, f, barrier, level);
       };
       pool().Schedule(std::move(right));
@@ -95,7 +95,7 @@ struct CoreThreadPoolDevice {
       Index outerSize = outerEnd - outerBegin;
       if (outerSize > 1) {
         Index outerMid = outerBegin + (outerSize >> 1);
-        Task right = [=, this, &barrier]() {
+        Task right = [=, this, /*&f, */&barrier]() {
           parallelForImpl<BinaryFunctor, PacketSize>(outerMid, outerEnd, innerBegin, innerEnd, f, barrier, level);
         };
         pool().Schedule(std::move(right));
@@ -164,15 +164,12 @@ struct cost_helper {
   using DstEvaluatorType = typename Kernel::DstEvaluatorType;
   using SrcXprType = typename SrcEvaluatorType::XprType;
   using DstXprType = typename DstEvaluatorType::XprType;
-  enum : Index {
-    ScalarCost = functor_cost<SrcXprType>::ScalarCost + functor_cost<DstXprType>::ScalarCost,
-    VectorCost = functor_cost<SrcXprType>::VectorCost + functor_cost<DstXprType>::VectorCost
-  };
+  static constexpr Index Cost = functor_cost<SrcXprType>::Cost + functor_cost<DstXprType>::Cost;
 };
 
 template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, DefaultTraversal, NoUnrolling> {
-  enum : Index { XprEvaluationCost = cost_helper<Kernel>::ScalarCost };
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index outer, Index inner) {
@@ -192,7 +189,7 @@ struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, DefaultTr
 template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, DefaultTraversal, InnerUnrolling> {
   using DstXprType = typename Kernel::DstEvaluatorType::XprType;
-  enum : Index { XprEvaluationCost = cost_helper<Kernel>::ScalarCost, InnerSize = DstXprType::InnerSizeAtCompileTime };
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost, InnerSize = DstXprType::InnerSizeAtCompileTime;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index outer) {
@@ -210,12 +207,9 @@ struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, DefaultTr
 template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, InnerVectorizedTraversal, NoUnrolling> {
   using PacketType = typename Kernel::PacketType;
-  enum : Index {
-    XprEvaluationCost = cost_helper<Kernel>::VectorCost,
-    PacketSize = unpacket_traits<PacketType>::size,
-    SrcAlignment = Kernel::AssignmentTraits::SrcAlignment,
-    DstAlignment = Kernel::AssignmentTraits::DstAlignment
-  };
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost, PacketSize = unpacket_traits<PacketType>::size,
+                         SrcAlignment = Kernel::AssignmentTraits::SrcAlignment,
+                         DstAlignment = Kernel::AssignmentTraits::DstAlignment;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index outer, Index inner) {
@@ -235,13 +229,10 @@ template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, InnerVectorizedTraversal, InnerUnrolling> {
   using PacketType = typename Kernel::PacketType;
   using DstXprType = typename Kernel::DstEvaluatorType::XprType;
-  enum : Index {
-    XprEvaluationCost = cost_helper<Kernel>::VectorCost,
-    PacketSize = unpacket_traits<PacketType>::size,
-    SrcAlignment = Kernel::AssignmentTraits::SrcAlignment,
-    DstAlignment = Kernel::AssignmentTraits::DstAlignment,
-    InnerSize = DstXprType::InnerSizeAtCompileTime
-  };
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost, PacketSize = unpacket_traits<PacketType>::size,
+                         SrcAlignment = Kernel::AssignmentTraits::SrcAlignment,
+                         DstAlignment = Kernel::AssignmentTraits::DstAlignment,
+                         InnerSize = DstXprType::InnerSizeAtCompileTime;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index outer) {
@@ -260,11 +251,9 @@ template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, SliceVectorizedTraversal, NoUnrolling> {
   using Scalar = typename Kernel::Scalar;
   using PacketType = typename Kernel::PacketType;
-  enum : Index {
-    XprVectorEvaluationCost = cost_helper<Kernel>::VectorCost,
-    XprScalarEvaluationCost = cost_helper<Kernel>::ScalarCost,
-    PacketSize = unpacket_traits<PacketType>::size,
-  };
+  static constexpr Index XprVectorEvaluationCost = cost_helper<Kernel>::Cost,
+                         XprScalarEvaluationCost = cost_helper<Kernel>::Cost,
+                         PacketSize = unpacket_traits<PacketType>::size;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index outer) {
@@ -288,7 +277,8 @@ struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, SliceVect
 
 template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, LinearTraversal, NoUnrolling> {
-  enum : Index { XprEvaluationCost = cost_helper<Kernel>::ScalarCost };
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost;
+  ;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index index) { this->assignCoeff(index); }
@@ -305,14 +295,13 @@ template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, LinearVectorizedTraversal, NoUnrolling> {
   using Scalar = typename Kernel::Scalar;
   using PacketType = typename Kernel::PacketType;
-  enum : Index {
-    XprEvaluationCost = cost_helper<Kernel>::VectorCost,
-    RequestedAlignment = Kernel::AssignmentTraits::LinearRequiredAlignment,
-    PacketSize = unpacket_traits<PacketType>::size,
-    DstIsAligned = Kernel::AssignmentTraits::DstAlignment >= RequestedAlignment,
-    DstAlignment = packet_traits<Scalar>::AlignedOnScalar ? RequestedAlignment : Kernel::AssignmentTraits::DstAlignment,
-    SrcAlignment = Kernel::AssignmentTraits::JointAlignment
-  };
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost,
+                         RequestedAlignment = Kernel::AssignmentTraits::LinearRequiredAlignment,
+                         PacketSize = unpacket_traits<PacketType>::size,
+                         DstIsAligned = Kernel::AssignmentTraits::DstAlignment >= RequestedAlignment,
+                         DstAlignment = packet_traits<Scalar>::AlignedOnScalar ? RequestedAlignment
+                                                                               : Kernel::AssignmentTraits::DstAlignment,
+                         SrcAlignment = Kernel::AssignmentTraits::JointAlignment;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index index) {

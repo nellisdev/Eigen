@@ -209,17 +209,17 @@ struct functor_traits {
 // estimates the cost of lazily evaluating a generic functor by unwinding the expression
 template <typename Xpr>
 struct nested_functor_cost {
-  enum : Index { ScalarCost = static_cast<Index>(functor_traits<Xpr>::Cost), VectorCost = ScalarCost };
+  static constexpr Index Cost = static_cast<Index>(functor_traits<Xpr>::Cost);
 };
 
 template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
 struct nested_functor_cost<Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
-  enum : Index { ScalarCost = 0, VectorCost = 4 };
+  static constexpr Index Cost = 1;
 };
 
 template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
 struct nested_functor_cost<Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols>> {
-  enum : Index { ScalarCost = 0, VectorCost = 4 };
+  static constexpr Index Cost = 1;
 };
 
 // TODO: assign a cost to the stride type?
@@ -230,20 +230,14 @@ template <typename Func, typename Xpr>
 struct nested_functor_cost<CwiseUnaryOp<Func, Xpr>> {
   using XprCleaned = remove_all_t<Xpr>;
   using FuncCleaned = remove_all_t<Func>;
-  enum : Index {
-    ScalarCost = nested_functor_cost<FuncCleaned>::ScalarCost + nested_functor_cost<XprCleaned>::ScalarCost,
-    VectorCost = nested_functor_cost<FuncCleaned>::VectorCost + nested_functor_cost<XprCleaned>::VectorCost
-  };
+  static constexpr Index Cost = nested_functor_cost<FuncCleaned>::Cost + nested_functor_cost<XprCleaned>::Cost;
 };
 
 template <typename Func, typename Xpr>
 struct nested_functor_cost<CwiseNullaryOp<Func, Xpr>> {
   using XprCleaned = remove_all_t<Xpr>;
   using FuncCleaned = remove_all_t<Func>;
-  enum : Index {
-    ScalarCost = nested_functor_cost<FuncCleaned>::ScalarCost + nested_functor_cost<XprCleaned>::ScalarCost,
-    VectorCost = nested_functor_cost<FuncCleaned>::VectorCost + nested_functor_cost<XprCleaned>::VectorCost
-  };
+  static constexpr Index Cost = nested_functor_cost<FuncCleaned>::Cost + nested_functor_cost<XprCleaned>::Cost;
 };
 
 template <typename Func, typename LhsXpr, typename RhsXpr>
@@ -251,12 +245,8 @@ struct nested_functor_cost<CwiseBinaryOp<Func, LhsXpr, RhsXpr>> {
   using LhsXprCleaned = remove_all_t<LhsXpr>;
   using RhsXprCleaned = remove_all_t<RhsXpr>;
   using FuncCleaned = remove_all_t<Func>;
-  enum : Index {
-    ScalarCost = nested_functor_cost<FuncCleaned>::ScalarCost + nested_functor_cost<LhsXprCleaned>::ScalarCost +
-                 nested_functor_cost<RhsXprCleaned>::ScalarCost,
-    VectorCost = nested_functor_cost<FuncCleaned>::VectorCost + nested_functor_cost<LhsXprCleaned>::VectorCost +
-                 nested_functor_cost<RhsXprCleaned>::VectorCost
-  };
+  static constexpr Index Cost = nested_functor_cost<FuncCleaned>::Cost + nested_functor_cost<LhsXprCleaned>::Cost +
+                                nested_functor_cost<RhsXprCleaned>::Cost;
 };
 
 template <typename Func, typename LhsXpr, typename MidXpr, typename RhsXpr>
@@ -265,20 +255,13 @@ struct nested_functor_cost<CwiseTernaryOp<Func, LhsXpr, MidXpr, RhsXpr>> {
   using MidXprCleaned = remove_all_t<MidXpr>;
   using RhsXprCleaned = remove_all_t<RhsXpr>;
   using FuncCleaned = remove_all_t<Func>;
-  enum : Index {
-    ScalarCost = nested_functor_cost<FuncCleaned>::ScalarCost + nested_functor_cost<LhsXprCleaned>::ScalarCost +
-                 nested_functor_cost<MidXprCleaned>::ScalarCost + nested_functor_cost<RhsXprCleaned>::ScalarCost,
-    VectorCost = nested_functor_cost<FuncCleaned>::VectorCost + nested_functor_cost<LhsXprCleaned>::VectorCost +
-                 nested_functor_cost<MidXprCleaned>::VectorCost + nested_functor_cost<RhsXprCleaned>::VectorCost
-  };
+  static constexpr Index Cost = nested_functor_cost<FuncCleaned>::Cost + nested_functor_cost<LhsXprCleaned>::Cost +
+                                nested_functor_cost<MidXprCleaned>::Cost + nested_functor_cost<RhsXprCleaned>::Cost;
 };
 
 template <typename Xpr>
 struct functor_cost {
-  enum : Index {
-    ScalarCost = plain_enum_max(nested_functor_cost<Xpr>::ScalarCost, 1),
-    VectorCost = plain_enum_max(nested_functor_cost<Xpr>::VectorCost, 1)
-  };
+  static constexpr Index Cost = plain_enum_max(nested_functor_cost<Xpr>::Cost, 1);
 };
 
 template <typename T>

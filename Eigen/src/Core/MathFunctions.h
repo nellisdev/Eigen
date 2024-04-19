@@ -1269,7 +1269,7 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE EIGEN_CONSTEXPR T round_down(T a, T b) {
 
 /** Log base 2 for 32 bits positive integers.
  * Conveniently returns 0 for x==0. */
-inline int log2(int x) {
+EIGEN_CONSTEXPR inline int log2(int x) {
   eigen_assert(x >= 0);
   unsigned int v(x);
   static const int table[32] = {0, 9,  1,  10, 13, 21, 2,  29, 11, 14, 16, 18, 22, 25, 3, 30,
