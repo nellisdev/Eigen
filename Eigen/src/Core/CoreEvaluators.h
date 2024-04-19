@@ -859,17 +859,6 @@ struct ternary_evaluator<
 
   using Impl = ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased, IndexBased>;
 
-  enum {
-    CoeffReadCost = Impl::CoeffReadCost,
-    Arg1Flags = Impl::Arg1Flags,
-    Arg2Flags = Impl::Arg2Flags,
-    Arg3Flags = Impl::Arg3Flags,
-    SameType = Impl::SameType,
-    StorageOrdersAgree = Impl::StorageOrdersAgree,
-    Flags = Impl::Flags,
-    Alignment = Impl::Alignment
-  };
-
   // convert DummyXprType to XprType
   EIGEN_DEVICE_FUNC explicit ternary_evaluator(const DummyXprType& xpr)
       : Impl(XprType(xpr.arg1(), xpr.arg2(), Arg3(xpr.arg3().lhs(), xpr.arg3().rhs()))) {}
