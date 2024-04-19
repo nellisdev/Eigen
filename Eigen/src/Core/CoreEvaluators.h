@@ -846,8 +846,9 @@ struct ternary_evaluator<
     CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, bool>, Arg1, Arg2,
                    CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, false>, CmpLhsType, CmpRhsType>>,
     IndexBased, IndexBased>
-    : evaluator_base<CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, Scalar>, Arg1, Arg2,
-                                    CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>>> {
+    : ternary_evaluator<CwiseTernaryOp<scalar_boolean_select_op<Scalar, Scalar, Scalar>, Arg1, Arg2,
+                                       CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>>,
+                        IndexBased, IndexBased> {
   using DummyTernaryOp = scalar_boolean_select_op<Scalar, Scalar, bool>;
   using DummyArg3 = CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, false>, CmpLhsType, CmpRhsType>;
   using DummyXprType = CwiseTernaryOp<DummyTernaryOp, Arg1, Arg2, DummyArg3>;
@@ -856,70 +857,22 @@ struct ternary_evaluator<
   using Arg3 = CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>;
   using XprType = CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>;
 
+  using Impl = ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased, IndexBased>;
+
   enum {
-    CoeffReadCost = int(evaluator<Arg1>::CoeffReadCost) + int(evaluator<Arg2>::CoeffReadCost) +
-                    int(evaluator<Arg3>::CoeffReadCost) + int(functor_traits<TernaryOp>::Cost),
-
-    Arg1Flags = evaluator<Arg1>::Flags,
-    Arg2Flags = evaluator<Arg2>::Flags,
-    Arg3Flags = evaluator<Arg3>::Flags,
-    SameType = is_same<typename Arg1::Scalar, typename Arg2::Scalar>::value &&
-               is_same<typename Arg1::Scalar, typename Arg3::Scalar>::value,
-    StorageOrdersAgree = (int(Arg1Flags) & RowMajorBit) == (int(Arg2Flags) & RowMajorBit) &&
-                         (int(Arg1Flags) & RowMajorBit) == (int(Arg3Flags) & RowMajorBit),
-    Flags0 = (int(Arg1Flags) | int(Arg2Flags) | int(Arg3Flags)) &
-             (HereditaryBits |
-              (int(Arg1Flags) & int(Arg2Flags) & int(Arg3Flags) &
-               ((StorageOrdersAgree ? LinearAccessBit : 0) |
-                (functor_traits<TernaryOp>::PacketAccess && StorageOrdersAgree && SameType ? PacketAccessBit : 0)))),
-    Flags = (Flags0 & ~RowMajorBit) | (Arg1Flags & RowMajorBit),
-    Alignment = plain_enum_min(plain_enum_min(evaluator<Arg1>::Alignment, evaluator<Arg2>::Alignment),
-                               evaluator<Arg3>::Alignment)
+    CoeffReadCost = Impl::CoeffReadCost,
+    Arg1Flags = Impl::Arg1Flags,
+    Arg2Flags = Impl::Arg2Flags,
+    Arg3Flags = Impl::Arg3Flags,
+    SameType = Impl::SameType,
+    StorageOrdersAgree = Impl::StorageOrdersAgree,
+    Flags = Impl::Flags,
+    Alignment = Impl::Alignment
   };
 
+  // convert DummyXprType to XprType
   EIGEN_DEVICE_FUNC explicit ternary_evaluator(const DummyXprType& xpr)
-      : m_d(XprType(xpr.arg1(), xpr.arg2(), Arg3(xpr.arg3().lhs(), xpr.arg3().rhs()))) {
-    EIGEN_INTERNAL_CHECK_COST_VALUE(functor_traits<TernaryOp>::Cost);
-    EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
-  }
-
-  typedef typename XprType::CoeffReturnType CoeffReturnType;
-
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const {
-    return m_d.func()(m_d.arg1Impl.coeff(row, col), m_d.arg2Impl.coeff(row, col), m_d.arg3Impl.coeff(row, col));
-  }
-
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index index) const {
-    return m_d.func()(m_d.arg1Impl.coeff(index), m_d.arg2Impl.coeff(index), m_d.arg3Impl.coeff(index));
-  }
-
-  template <int LoadMode, typename PacketType>
-  EIGEN_STRONG_INLINE PacketType packet(Index row, Index col) const {
-    return m_d.func().packetOp(m_d.arg1Impl.template packet<LoadMode, PacketType>(row, col),
-                               m_d.arg2Impl.template packet<LoadMode, PacketType>(row, col),
-                               m_d.arg3Impl.template packet<LoadMode, PacketType>(row, col));
-  }
-
-  template <int LoadMode, typename PacketType>
-  EIGEN_STRONG_INLINE PacketType packet(Index index) const {
-    return m_d.func().packetOp(m_d.arg1Impl.template packet<LoadMode, PacketType>(index),
-                               m_d.arg2Impl.template packet<LoadMode, PacketType>(index),
-                               m_d.arg3Impl.template packet<LoadMode, PacketType>(index));
-  }
-
- protected:
-  // this helper permits to completely eliminate the functor if it is empty
-  struct Data {
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Data(const XprType& xpr)
-        : op(xpr.functor()), arg1Impl(xpr.arg1()), arg2Impl(xpr.arg2()), arg3Impl(xpr.arg3()) {}
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const TernaryOp& func() const { return op; }
-    TernaryOp op;
-    evaluator<Arg1> arg1Impl;
-    evaluator<Arg2> arg2Impl;
-    evaluator<Arg3> arg3Impl;
-  };
-
-  Data m_d;
+      : Impl(XprType(xpr.arg1(), xpr.arg2(), Arg3(xpr.arg3().lhs(), xpr.arg3().rhs()))) {}
 };
 
 // -------------------- CwiseBinaryOp --------------------
