@@ -857,11 +857,13 @@ struct ternary_evaluator<
   using Arg3 = CwiseBinaryOp<scalar_cmp_op<Scalar, Scalar, cmp, true>, CmpLhsType, CmpRhsType>;
   using XprType = CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>;
 
-  using Impl = ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased, IndexBased>;
+  using Base = ternary_evaluator<CwiseTernaryOp<TernaryOp, Arg1, Arg2, Arg3>, IndexBased, IndexBased>;
 
   // convert DummyXprType to XprType
   EIGEN_DEVICE_FUNC explicit ternary_evaluator(const DummyXprType& xpr)
-      : Impl(XprType(xpr.arg1(), xpr.arg2(), Arg3(xpr.arg3().lhs(), xpr.arg3().rhs()))) {}
+      : Base(XprType(xpr.arg1(), xpr.arg2(), Arg3(xpr.arg3().lhs(), xpr.arg3().rhs()))) {}
+  // helps to avoid some msvc compilation problems
+  EIGEN_DEVICE_FUNC explicit ternary_evaluator(const XprType& xpr) : Base(xpr) {}
 };
 
 // -------------------- CwiseBinaryOp --------------------
