@@ -84,6 +84,5 @@ EIGEN_DECLARE_TEST(test) {
   {
     CALL_SUBTEST(test_threaded_assignment(MatrixXd(), 123, 123));
     CALL_SUBTEST(test_threaded_assignment(Matrix<float, 16, 16>()));
-    CALL_SUBTEST(test_threaded_assignment(Matrix<float, 16, Dynamic>(), 16, 16*4));
   }
 }

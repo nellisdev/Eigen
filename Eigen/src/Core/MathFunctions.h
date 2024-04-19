@@ -1255,15 +1255,17 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE EIGEN_CONSTEXPR T div_ceil(T a, T b) {
 
 // Integer round down to nearest power of b
 // T is assumed to be an integer type with a>=0, and b>0
-template <typename T>
-EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE EIGEN_CONSTEXPR T round_down(T a, T b) {
+template <typename T, typename U>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE EIGEN_CONSTEXPR T round_down(T a, U b) {
   using UnsignedT = typename internal::make_unsigned<T>::type;
+  using UnsignedU = typename internal::make_unsigned<U>::type;
   EIGEN_STATIC_ASSERT((NumTraits<T>::IsInteger), THIS FUNCTION IS FOR INTEGER TYPES)
+  EIGEN_STATIC_ASSERT((NumTraits<U>::IsInteger), THIS FUNCTION IS FOR INTEGER TYPES)
   eigen_assert(a >= 0);
   eigen_assert(b > 0);
   // Note: explicitly declaring a,b as non-negative enables several compiler optimizations
   const UnsignedT ua = UnsignedT(a);
-  const UnsignedT ub = UnsignedT(b);
+  const UnsignedU ub = UnsignedU(b);
   return ub * (ua / ub);
 }
 
