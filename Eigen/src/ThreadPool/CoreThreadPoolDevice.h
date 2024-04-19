@@ -77,9 +77,8 @@ struct CoreThreadPoolDevice {
       Index size = end - begin;
       eigen_assert(size % PacketSize == 0 && "this function assumes size is a multiple of PacketSize");
       Index mid = begin + numext::round_down(size >> 1, Index(PacketSize));
-      Task right = [=, this, /*&f, */&barrier]() {
-        parallelForImpl<UnaryFunctor, PacketSize>(mid, end, f, barrier, level);
-      };
+      // passing f by reference causes null ptr deference errors
+      Task right = [=, this, &barrier]() { parallelForImpl<UnaryFunctor, PacketSize>(mid, end, f, barrier, level); };
       pool().Schedule(std::move(right));
       end = mid;
     }
@@ -95,7 +94,8 @@ struct CoreThreadPoolDevice {
       Index outerSize = outerEnd - outerBegin;
       if (outerSize > 1) {
         Index outerMid = outerBegin + (outerSize >> 1);
-        Task right = [=, this, /*&f, */&barrier]() {
+        // passing f by reference causes null ptr deference errors
+        Task right = [=, this, &barrier]() {
           parallelForImpl<BinaryFunctor, PacketSize>(outerMid, outerEnd, innerBegin, innerEnd, f, barrier, level);
         };
         pool().Schedule(std::move(right));
@@ -251,9 +251,7 @@ template <typename Kernel>
 struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, SliceVectorizedTraversal, NoUnrolling> {
   using Scalar = typename Kernel::Scalar;
   using PacketType = typename Kernel::PacketType;
-  static constexpr Index XprVectorEvaluationCost = cost_helper<Kernel>::Cost,
-                         XprScalarEvaluationCost = cost_helper<Kernel>::Cost,
-                         PacketSize = unpacket_traits<PacketType>::size;
+  static constexpr Index XprEvaluationCost = cost_helper<Kernel>::Cost, PacketSize = unpacket_traits<PacketType>::size;
   struct AssignmentFunctor : public Kernel {
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AssignmentFunctor(Kernel& kernel) : Kernel(kernel) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void operator()(Index outer) {
@@ -268,8 +266,8 @@ struct dense_assignment_loop_with_device<Kernel, CoreThreadPoolDevice, SliceVect
     const Index outerSize = kernel.outerSize();
     const Index innerSize = kernel.innerSize();
     const Index packetAccessSize = numext::round_down(innerSize, Index(PacketSize));
-    const float cost = static_cast<float>(XprVectorEvaluationCost) * static_cast<float>(packetAccessSize / PacketSize) +
-                       static_cast<float>(XprScalarEvaluationCost) * static_cast<float>(innerSize - packetAccessSize);
+    const float cost = static_cast<float>(XprEvaluationCost) * static_cast<float>(packetAccessSize / PacketSize) +
+                       static_cast<float>(XprEvaluationCost) * static_cast<float>(innerSize - packetAccessSize);
     AssignmentFunctor functor(kernel);
     device.template parallelFor<AssignmentFunctor, 1>(0, outerSize, functor, cost);
   };
