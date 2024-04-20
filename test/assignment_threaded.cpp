@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2023 Rasmus Munk Larsen <rmlarsen@google.com>
+// Copyright (C) 2023 Charlie Schlosser <cs.schlosser@gmail.com>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -80,8 +80,7 @@ void test_threaded_assignment(const PlainObject&, Index rows = PlainObject::Rows
 }
 
 EIGEN_DECLARE_TEST(test) {
-  for (int i = 0; i < g_repeat; i++)
-  {
+  for (int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST(test_threaded_assignment(MatrixXd(), 123, 123));
     CALL_SUBTEST(test_threaded_assignment(Matrix<float, 16, 16>()));
   }
