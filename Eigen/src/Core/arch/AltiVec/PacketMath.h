@@ -94,9 +94,7 @@ static Packet16uc p16uc_COUNTDOWN = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1
 
 static Packet16uc p16uc_REVERSE32 = {12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3};
 static Packet16uc p16uc_REVERSE16 = {14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1};
-#ifndef _ARCH_PWR9
 static Packet16uc p16uc_REVERSE8 = {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
-#endif
 
 #ifdef _BIG_ENDIAN
 static Packet16uc p16uc_DUPLICATE32_HI = {0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7};
@@ -1922,19 +1920,11 @@ EIGEN_STRONG_INLINE Packet8us preverse(const Packet8us& a) {
 }
 template <>
 EIGEN_STRONG_INLINE Packet16c preverse(const Packet16c& a) {
-#ifdef _ARCH_PWR9
-  return vec_revb(a);
-#else
   return vec_perm(a, a, p16uc_REVERSE8);
-#endif
 }
 template <>
 EIGEN_STRONG_INLINE Packet16uc preverse(const Packet16uc& a) {
-#ifdef _ARCH_PWR9
-  return vec_revb(a);
-#else
   return vec_perm(a, a, p16uc_REVERSE8);
-#endif
 }
 template <>
 EIGEN_STRONG_INLINE Packet8bf preverse(const Packet8bf& a) {
@@ -3186,8 +3176,8 @@ struct packet_traits<double> : default_packet_traits {
     HasMin = 1,
     HasMax = 1,
     HasAbs = 1,
-    HasSin = 0,
-    HasCos = 0,
+    HasSin = EIGEN_FAST_MATH,
+    HasCos = EIGEN_FAST_MATH,
     HasATan = 0,
     HasLog = 0,
     HasExp = 1,
@@ -3205,6 +3195,7 @@ struct packet_traits<double> : default_packet_traits {
 template <>
 struct unpacket_traits<Packet2d> {
   typedef double type;
+  typedef Packet2l integer_packet;
   enum {
     size = 2,
     alignment = Aligned16,
@@ -3213,6 +3204,18 @@ struct unpacket_traits<Packet2d> {
     masked_store_available = false
   };
   typedef Packet2d half;
+};
+template <>
+struct unpacket_traits<Packet2l> {
+  typedef int64_t type;
+  typedef Packet2l half;
+  enum {
+    size = 2,
+    alignment = Aligned16,
+    vectorizable = false,
+    masked_load_available = false,
+    masked_store_available = false
+  };
 };
 
 inline std::ostream& operator<<(std::ostream& s, const Packet2l& v) {
@@ -3261,6 +3264,11 @@ EIGEN_ALWAYS_INLINE void pstore_partial<double>(double* to, const Packet2d& from
 template <>
 EIGEN_STRONG_INLINE Packet2d pset1<Packet2d>(const double& from) {
   Packet2d v = {from, from};
+  return v;
+}
+template <>
+EIGEN_STRONG_INLINE Packet2l pset1<Packet2l>(const int64_t& from) {
+  Packet2l v = {from, from};
   return v;
 }
 

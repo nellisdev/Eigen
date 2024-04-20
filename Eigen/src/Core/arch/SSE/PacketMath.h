@@ -145,6 +145,27 @@ EIGEN_STRONG_INLINE Packet2d vec2d_unpackhi(const Packet2d& a, const Packet2d& b
 
 #define EIGEN_DECLARE_CONST_Packet4ui(NAME, X) const Packet4ui p4ui_##NAME = pset1<Packet4ui>(X)
 
+// Work around lack of extract/cvt for epi64 when compiling for 32-bit.
+#if EIGEN_ARCH_x86_64
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_0(const __m128i& a) { return _mm_cvtsi128_si64(a); }
+#ifdef EIGEN_VECTORIZE_SSE4_1
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_1(const __m128i& a) { return _mm_extract_epi64(a, 1); }
+#else
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_1(const __m128i& a) {
+  return _mm_cvtsi128_si64(_mm_castpd_si128(_mm_shuffle_pd(_mm_castsi128_pd(a), _mm_castsi128_pd(a), 0x1)));
+}
+#endif
+#else
+// epi64 instructions are not available.  The following seems to generate the same instructions
+// with -O2 in GCC/Clang.
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_0(const __m128i& a) {
+  return numext::bit_cast<int64_t>(_mm_cvtsd_f64(_mm_castsi128_pd(a)));
+}
+EIGEN_ALWAYS_INLINE int64_t _mm_extract_epi64_1(const __m128i& a) {
+  return numext::bit_cast<int64_t>(_mm_cvtsd_f64(_mm_shuffle_pd(_mm_castsi128_pd(a), _mm_castsi128_pd(a), 0x1)));
+}
+#endif
+
 // Use the packet_traits defined in AVX/PacketMath.h instead if we're going
 // to leverage AVX instructions.
 #ifndef EIGEN_VECTORIZE_AVX
@@ -191,6 +212,8 @@ struct packet_traits<double> : default_packet_traits {
 
     HasCmp = 1,
     HasDiv = 1,
+    HasSin = EIGEN_FAST_MATH,
+    HasCos = EIGEN_FAST_MATH,
     HasLog = 1,
     HasExp = 1,
     HasSqrt = 1,
@@ -263,6 +286,7 @@ struct packet_traits<bool> : default_packet_traits {
     HasMax = 0,
     HasConj = 0,
     HasSqrt = 1,
+    HasNegate = 0,
     HasSign = 0  // Don't try to vectorize psign<bool> = identity.
   };
 };
@@ -566,11 +590,6 @@ EIGEN_STRONG_INLINE Packet2l pnegate(const Packet2l& a) {
 template <>
 EIGEN_STRONG_INLINE Packet4i pnegate(const Packet4i& a) {
   return psub(pzero(a), a);
-}
-
-template <>
-EIGEN_STRONG_INLINE Packet16b pnegate(const Packet16b& a) {
-  return a;
 }
 
 template <>
@@ -1539,11 +1558,7 @@ EIGEN_STRONG_INLINE double pfirst<Packet2d>(const Packet2d& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet2l>(const Packet2l& a) {
-#if EIGEN_ARCH_x86_64
-  int64_t x = _mm_cvtsi128_si64(a);
-#else
-  int64_t x = numext::bit_cast<int64_t>(_mm_cvtsd_f64(_mm_castsi128_pd(a)));
-#endif
+  int64_t x = _mm_extract_epi64_0(a);
   return x;
 }
 template <>
@@ -1570,7 +1585,7 @@ EIGEN_STRONG_INLINE double pfirst<Packet2d>(const Packet2d& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet2l>(const Packet2l& a) {
-  int64_t x = _mm_cvtsi128_si64(a);
+  int64_t x = _mm_extract_epi64_0(a);
   return x;
 }
 template <>
@@ -1594,11 +1609,7 @@ EIGEN_STRONG_INLINE double pfirst<Packet2d>(const Packet2d& a) {
 }
 template <>
 EIGEN_STRONG_INLINE int64_t pfirst<Packet2l>(const Packet2l& a) {
-#if EIGEN_ARCH_x86_64
-  return _mm_cvtsi128_si64(a);
-#else
-  return numext::bit_cast<int64_t>(_mm_cvtsd_f64(_mm_castsi128_pd(a)));
-#endif
+  return _mm_extract_epi64_0(a);
 }
 template <>
 EIGEN_STRONG_INLINE int pfirst<Packet4i>(const Packet4i& a) {
@@ -2150,29 +2161,25 @@ EIGEN_STRONG_INLINE void ptranspose(PacketBlock<Packet16b, 16>& kernel) {
   kernel.packet[15] = _mm_unpackhi_epi64(u7, uf);
 }
 
+EIGEN_STRONG_INLINE __m128i sse_blend_mask(const Selector<2>& ifPacket) {
+  return _mm_set_epi64x(0 - ifPacket.select[1], 0 - ifPacket.select[0]);
+}
+
+EIGEN_STRONG_INLINE __m128i sse_blend_mask(const Selector<4>& ifPacket) {
+  return _mm_set_epi32(0 - ifPacket.select[3], 0 - ifPacket.select[2], 0 - ifPacket.select[1], 0 - ifPacket.select[0]);
+}
+
 template <>
 EIGEN_STRONG_INLINE Packet2l pblend(const Selector<2>& ifPacket, const Packet2l& thenPacket,
                                     const Packet2l& elsePacket) {
-  const __m128i zero = _mm_setzero_si128();
-  const __m128i select = _mm_set_epi64x(ifPacket.select[1], ifPacket.select[0]);
-  __m128i false_mask = pcmp_eq<Packet2l>(select, zero);
-#ifdef EIGEN_VECTORIZE_SSE4_1
-  return _mm_blendv_epi8(thenPacket, elsePacket, false_mask);
-#else
-  return _mm_or_si128(_mm_andnot_si128(false_mask, thenPacket), _mm_and_si128(false_mask, elsePacket));
-#endif
+  const __m128i true_mask = sse_blend_mask(ifPacket);
+  return pselect<Packet2l>(true_mask, thenPacket, elsePacket);
 }
 template <>
 EIGEN_STRONG_INLINE Packet4i pblend(const Selector<4>& ifPacket, const Packet4i& thenPacket,
                                     const Packet4i& elsePacket) {
-  const __m128i zero = _mm_setzero_si128();
-  const __m128i select = _mm_set_epi32(ifPacket.select[3], ifPacket.select[2], ifPacket.select[1], ifPacket.select[0]);
-  __m128i false_mask = _mm_cmpeq_epi32(select, zero);
-#ifdef EIGEN_VECTORIZE_SSE4_1
-  return _mm_blendv_epi8(thenPacket, elsePacket, false_mask);
-#else
-  return _mm_or_si128(_mm_andnot_si128(false_mask, thenPacket), _mm_and_si128(false_mask, elsePacket));
-#endif
+  const __m128i true_mask = sse_blend_mask(ifPacket);
+  return pselect<Packet4i>(true_mask, thenPacket, elsePacket);
 }
 template <>
 EIGEN_STRONG_INLINE Packet4ui pblend(const Selector<4>& ifPacket, const Packet4ui& thenPacket,
@@ -2182,26 +2189,14 @@ EIGEN_STRONG_INLINE Packet4ui pblend(const Selector<4>& ifPacket, const Packet4u
 template <>
 EIGEN_STRONG_INLINE Packet4f pblend(const Selector<4>& ifPacket, const Packet4f& thenPacket,
                                     const Packet4f& elsePacket) {
-  const __m128 zero = _mm_setzero_ps();
-  const __m128 select = _mm_set_ps(ifPacket.select[3], ifPacket.select[2], ifPacket.select[1], ifPacket.select[0]);
-  __m128 false_mask = _mm_cmpeq_ps(select, zero);
-#ifdef EIGEN_VECTORIZE_SSE4_1
-  return _mm_blendv_ps(thenPacket, elsePacket, false_mask);
-#else
-  return _mm_or_ps(_mm_andnot_ps(false_mask, thenPacket), _mm_and_ps(false_mask, elsePacket));
-#endif
+  const __m128i true_mask = sse_blend_mask(ifPacket);
+  return pselect<Packet4f>(_mm_castsi128_ps(true_mask), thenPacket, elsePacket);
 }
 template <>
 EIGEN_STRONG_INLINE Packet2d pblend(const Selector<2>& ifPacket, const Packet2d& thenPacket,
                                     const Packet2d& elsePacket) {
-  const __m128d zero = _mm_setzero_pd();
-  const __m128d select = _mm_set_pd(ifPacket.select[1], ifPacket.select[0]);
-  __m128d false_mask = _mm_cmpeq_pd(select, zero);
-#ifdef EIGEN_VECTORIZE_SSE4_1
-  return _mm_blendv_pd(thenPacket, elsePacket, false_mask);
-#else
-  return _mm_or_pd(_mm_andnot_pd(false_mask, thenPacket), _mm_and_pd(false_mask, elsePacket));
-#endif
+  const __m128i true_mask = sse_blend_mask(ifPacket);
+  return pselect<Packet2d>(_mm_castsi128_pd(true_mask), thenPacket, elsePacket);
 }
 
 // Scalar path for pmadd with FMA to ensure consistency with vectorized path.
