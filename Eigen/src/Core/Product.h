@@ -94,14 +94,14 @@ class Product
   typedef internal::remove_all_t<RhsNested> RhsNestedCleaned;
 
  private:
-  using LhsTransposeType = Transpose<const LhsNestedCleaned>;
-  using LhsScalar = typename internal::traits<LhsNestedCleaned>::Scalar;
+  using LhsTransposeType = Transpose<const Lhs>;
+  using LhsScalar = typename internal::traits<Lhs>::Scalar;
   using LhsConjugateTransposeType = CwiseUnaryOp<internal::scalar_conjugate_op<LhsScalar>, LhsTransposeType>;
   using LhsAdjointType =
       std::conditional_t<is_complex_helper<LhsScalar>::value, LhsConjugateTransposeType, LhsTransposeType>;
 
-  using RhsTransposeType = Transpose<const RhsNestedCleaned>;
-  using RhsScalar = typename internal::traits<RhsNestedCleaned>::Scalar;
+  using RhsTransposeType = Transpose<const Rhs>;
+  using RhsScalar = typename internal::traits<Rhs>::Scalar;
   using RhsConjugateTransposeType = CwiseUnaryOp<internal::scalar_conjugate_op<RhsScalar>, RhsTransposeType>;
   using RhsAdjointType =
       std::conditional_t<is_complex_helper<RhsScalar>::value, RhsConjugateTransposeType, RhsTransposeType>;

@@ -199,13 +199,17 @@ EIGEN_DEVICE_FUNC inline const typename MatrixBase<Derived>::AdjointReturnType M
 template <typename Lhs_, typename Rhs_, int Option>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename Product<Lhs_, Rhs_, Option>::TransposeReturnType
 Product<Lhs_, Rhs_, Option>::transpose() const {
-  return TransposeReturnType(m_rhs.transpose(), m_lhs.transpose());
+  RhsTransposeType lhs(m_rhs);
+  LhsTransposeType rhs(m_lhs);
+  return TransposeReturnType(lhs, rhs);
 }
 
 template <typename Lhs_, typename Rhs_, int Option>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename Product<Lhs_, Rhs_, Option>::AdjointReturnType
 Product<Lhs_, Rhs_, Option>::adjoint() const {
-  return AdjointReturnType(m_rhs.adjoint(), m_lhs.adjoint());
+  RhsAdjointType lhs(m_rhs);
+  LhsAdjointType rhs(m_lhs);
+  return AdjointReturnType(lhs, rhs);
 }
 
 /***************************************************************************
