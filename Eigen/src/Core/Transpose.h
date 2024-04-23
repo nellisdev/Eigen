@@ -205,7 +205,7 @@ Product<Lhs_, Rhs_, Option>::transpose() const {
 template <typename Lhs_, typename Rhs_, int Option>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename Product<Lhs_, Rhs_, Option>::AdjointReturnType
 Product<Lhs_, Rhs_, Option>::adjoint() const {
-  return AdjointReturnType(RhsAdjointType(m_rhs), LhsAdjointType(m_lhs));
+  return AdjointReturnType(RhsAdjointType(RhsTransposeType(m_rhs)), LhsAdjointType(LhsTransposeType(m_lhs)));
 }
 
 /***************************************************************************
