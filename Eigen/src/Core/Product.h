@@ -117,8 +117,6 @@ struct product_transpose_helper<Lhs, Rhs, Option, TransposeProductEnum::MatrixMa
   using TransposeType = Product<RhsTransposeType, LhsTransposeType, Option>;
   using AdjointType = Product<RhsAdjointType, LhsAdjointType, Option>;
 
-
-
   // return rhs^T * lhs^T
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TransposeType run_transpose(const Derived& derived) {
     return TransposeType(RhsTransposeType(derived.rhs()), LhsTransposeType(derived.lhs()));
