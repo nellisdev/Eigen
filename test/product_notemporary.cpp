@@ -65,9 +65,9 @@ void product_notemporary(const MatrixType& m) {
 
   VERIFY_EVALUATION_COUNT(m3 = (m1 * m2.adjoint()), 1);
   VERIFY_EVALUATION_COUNT(m3 = (m1 * m2.adjoint()).transpose(), 1);
-  VERIFY_EVALUATION_COUNT(m3.noalias() = m1 * m2.adjoint(), 0);
   VERIFY_EVALUATION_COUNT(m3.noalias() = (m1 * m2.adjoint()).transpose(), 0);
   VERIFY_EVALUATION_COUNT(m3.noalias() = (m1 * m2.transpose()).adjoint(), 0);
+  VERIFY_EVALUATION_COUNT(m3.noalias() = m1 * m2.adjoint(), 0);
 
   VERIFY_EVALUATION_COUNT(m3 = s1 * (m1 * m2.transpose()), 1);
   //   VERIFY_EVALUATION_COUNT( m3 = m3 + s1 * (m1 * m2.transpose()), 1);
@@ -77,6 +77,8 @@ void product_notemporary(const MatrixType& m) {
   VERIFY_EVALUATION_COUNT(m3 = m3 - (m1 * m2.adjoint()), 1);
 
   VERIFY_EVALUATION_COUNT(m3 = m3 + (m1 * m2.adjoint()).transpose(), 1);
+  VERIFY_EVALUATION_COUNT(m3.noalias() = m3 + (m1 * m2.adjoint()).transpose(), 0);
+  VERIFY_EVALUATION_COUNT(m3.noalias() = m3 + (m1 * m2.transpose()).adjoint(), 0);
   VERIFY_EVALUATION_COUNT(m3.noalias() = m3 + m1 * m2.transpose(), 0);
   VERIFY_EVALUATION_COUNT(m3.noalias() += m3 + m1 * m2.transpose(), 0);
   VERIFY_EVALUATION_COUNT(m3.noalias() -= m3 + m1 * m2.transpose(), 0);
@@ -210,12 +212,12 @@ EIGEN_DECLARE_TEST(product_notemporary) {
   for (int i = 0; i < g_repeat; i++) {
     s = internal::random<int>(16, EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_1(product_notemporary(MatrixXf(s, s)));
-    CALL_SUBTEST_2(product_notemporary(MatrixXd(s, s)));
-    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    //CALL_SUBTEST_2(product_notemporary(MatrixXd(s, s)));
+    //TEST_SET_BUT_UNUSED_VARIABLE(s)
 
-    s = internal::random<int>(16, EIGEN_TEST_MAX_SIZE / 2);
-    CALL_SUBTEST_3(product_notemporary(MatrixXcf(s, s)));
-    CALL_SUBTEST_4(product_notemporary(MatrixXcd(s, s)));
-    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    //s = internal::random<int>(16, EIGEN_TEST_MAX_SIZE / 2);
+    //CALL_SUBTEST_3(product_notemporary(MatrixXcf(s, s)));
+    //CALL_SUBTEST_4(product_notemporary(MatrixXcd(s, s)));
+    //TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
 }

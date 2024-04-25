@@ -21,7 +21,7 @@ class ProductImpl;
 namespace internal {
 
 template <typename Lhs, typename Rhs, int Option>
-struct traits<Product<Lhs, Rhs, Option>> {
+struct traits<Product<Lhs, Rhs, Option> > {
   typedef remove_all_t<Lhs> LhsCleaned;
   typedef remove_all_t<Rhs> RhsCleaned;
   typedef traits<LhsCleaned> LhsTraits;
@@ -55,39 +55,43 @@ struct traits<Product<Lhs, Rhs, Option>> {
   };
 };
 
-template <typename Derived, typename LhsKind = typename traits<typename Derived::Lhs>::StorageKind,
-          typename RhsKind = typename traits<typename Derived::Rhs>::StorageKind>
+template <typename Lhs, typename Rhs, int Option, typename LhsKind = typename traits<Lhs>::StorageKind,
+          typename RhsKind = typename traits<Rhs>::StorageKind>
 struct product_transpose_helper {
   // by default, don't optimize the transposed product
+  using Derived = Product<Lhs, Rhs, Option>;
   using Transpose = Transpose<const Derived>;
   static Transpose run(const Derived& derived) { return Transpose(derived); }
 };
-template <typename Derived>
-struct product_transpose_helper<Derived, MatrixXpr, MatrixXpr> {
+template <typename Lhs, typename Rhs, int Option>
+struct product_transpose_helper<Lhs, Rhs, Option, Dense, Dense> {
   // return rhs.transpose() * lhs.transpose()
-  using LhsTranspose = typename MatrixBase<typename Derived::Lhs>::ConstTransposeReturnType;
-  using RhsTranspose = typename MatrixBase<typename Derived::Rhs>::ConstTransposeReturnType;
-  using Transpose = Product<RhsTranspose, LhsTranspose, Derived::Option>;
+  using Derived = Product<Lhs, Rhs, Option>;
+  using LhsTranspose = typename MatrixBase<Lhs>::ConstTransposeReturnType;
+  using RhsTranspose = typename MatrixBase<Rhs>::ConstTransposeReturnType;
+  using Transpose = Product<RhsTranspose, LhsTranspose, Option>;
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Transpose run(const Derived& derived) {
     return Transpose(RhsTranspose(derived.rhs()), LhsTranspose(derived.lhs()));
   }
 };
-template <typename Derived>
-struct product_transpose_helper<Derived, PermutationStorage, MatrixXpr> {
+template <typename Lhs, typename Rhs, int Option>
+struct product_transpose_helper<Lhs, Rhs, Option, PermutationStorage, Dense> {
   // return rhs.transpose() * lhs.inverse()
-  using LhsTranspose = typename PermutationBase<typename Derived::Lhs>::InverseReturnType;
-  using RhsTranspose = typename MatrixBase<typename Derived::Rhs>::ConstTransposeReturnType;
-  using Transpose = Product<RhsTranspose, LhsTranspose, Derived::Option>;
-  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE run(const Derived& derived) {
+  using Derived = Product<Lhs, Rhs, Option>;
+  using LhsTranspose = typename PermutationBase<Lhs>::InverseReturnType;
+  using RhsTranspose = typename MatrixBase<Rhs>::ConstTransposeReturnType;
+  using Transpose = Product<RhsTranspose, LhsTranspose, Option>;
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Transpose run(const Derived& derived) {
     return Transpose(RhsTranspose(derived.rhs()), LhsTranspose(derived.lhs()));
   }
 };
-template <typename Derived>
-struct product_transpose_helper<Derived, MatrixXpr, PermutationStorage> {
+template <typename Lhs, typename Rhs, int Option>
+struct product_transpose_helper<Lhs, Rhs, Option, Dense, PermutationStorage> {
   // return rhs.inverse() * lhs.transpose()
-  using LhsTranspose = typename MatrixBase<typename Derived::Lhs>::ConstTransposeReturnType;
-  using RhsTranspose = typename PermutationBase<typename Derived::Rhs>::InverseReturnType;
-  using Transpose = Product<RhsTranspose, LhsTranspose, Derived::Option>;
+  using Derived = Product<Lhs, Rhs, Option>;
+  using LhsTranspose = typename MatrixBase<Lhs>::ConstTransposeReturnType;
+  using RhsTranspose = typename PermutationBase<Rhs>::InverseReturnType;
+  using Transpose = Product<RhsTranspose, LhsTranspose, Option>;
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Transpose run(const Derived& derived) {
     return Transpose(RhsTranspose(derived.rhs()), LhsTranspose(derived.lhs()));
   }
@@ -131,7 +135,7 @@ class Product
   typedef internal::remove_all_t<LhsNested> LhsNestedCleaned;
   typedef internal::remove_all_t<RhsNested> RhsNestedCleaned;
 
-  using TransposeReturnType = typename internal::product_transpose_helper<Product>::Transpose;
+  using TransposeReturnType = typename internal::product_transpose_helper<Lhs, Rhs, Option>::Transpose;
   using AdjointReturnType =
       std::conditional_t<NumTraits<Scalar>::IsComplex,
                          CwiseUnaryOp<internal::scalar_conjugate_op<Scalar>, TransposeReturnType>, TransposeReturnType>;
@@ -148,7 +152,7 @@ class Product
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const RhsNestedCleaned& rhs() const { return m_rhs; }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TransposeReturnType transpose() const {
-    return internal::product_transpose_helper<Product>::run(*this);
+    return internal::product_transpose_helper<Lhs, Rhs, Option>::run(*this);
   }
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AdjointReturnType adjoint() const { return AdjointReturnType(transpose()); }
 
@@ -160,12 +164,12 @@ class Product
 namespace internal {
 
 template <typename Lhs, typename Rhs, int Option, int ProductTag = internal::product_type<Lhs, Rhs>::ret>
-class dense_product_base : public internal::dense_xpr_base<Product<Lhs, Rhs, Option>>::type {};
+class dense_product_base : public internal::dense_xpr_base<Product<Lhs, Rhs, Option> >::type {};
 
 /** Conversion to scalar for inner-products */
 template <typename Lhs, typename Rhs, int Option>
 class dense_product_base<Lhs, Rhs, Option, InnerProduct>
-    : public internal::dense_xpr_base<Product<Lhs, Rhs, Option>>::type {
+    : public internal::dense_xpr_base<Product<Lhs, Rhs, Option> >::type {
   typedef Product<Lhs, Rhs, Option> ProductXpr;
   typedef typename internal::dense_xpr_base<ProductXpr>::type Base;
 
