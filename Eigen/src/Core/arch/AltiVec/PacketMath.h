@@ -3178,8 +3178,8 @@ struct packet_traits<double> : default_packet_traits {
     HasMin = 1,
     HasMax = 1,
     HasAbs = 1,
-    HasSin = 0,
-    HasCos = 0,
+    HasSin = EIGEN_FAST_MATH,
+    HasCos = EIGEN_FAST_MATH,
     HasATan = 0,
     HasLog = 0,
     HasExp = 1,
@@ -3214,10 +3214,11 @@ struct unpacket_traits<Packet2d> {
 template <>
 struct unpacket_traits<Packet2l> {
   typedef int64_t type;
+  typedef Packet2l half;
   enum {
     size = 2,
     alignment = Aligned16,
-    vectorizable = true,
+    vectorizable = false,
     masked_load_available = false,
     masked_store_available = false
   };
@@ -3395,6 +3396,10 @@ EIGEN_STRONG_INLINE Packet2d pcmp_lt(const Packet2d& a, const Packet2d& b) {
 template <>
 EIGEN_STRONG_INLINE Packet2d pcmp_eq(const Packet2d& a, const Packet2d& b) {
   return reinterpret_cast<Packet2d>(vec_cmpeq(a, b));
+}
+template <>
+EIGEN_STRONG_INLINE Packet2l pcmp_eq(const Packet2l& a, const Packet2l& b) {
+  return reinterpret_cast<Packet2l>(vec_cmpeq(a, b));
 }
 template <>
 EIGEN_STRONG_INLINE Packet2d pcmp_lt_or_nan(const Packet2d& a, const Packet2d& b) {
