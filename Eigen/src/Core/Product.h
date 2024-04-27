@@ -143,11 +143,11 @@ struct product_transpose_helper<Lhs, Rhs, Option, TransposeProductEnum::Permutat
   using TransposeType = Product<RhsTransposeType, LhsInverseType, Option>;
   using AdjointType = Product<RhsAdjointType, LhsInverseType, Option>;
 
-  // return rhs^-1 * lhs^T
+  // return rhs^T * lhs^-1
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TransposeType run_transpose(const Derived& derived) {
     return TransposeType(RhsTransposeType(derived.rhs()), LhsInverseType(derived.lhs()));
   }
-  // return rhs^-1 * lhs^H
+  // return rhs^H * lhs^-1
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AdjointType run_adjoint(const Derived& derived) {
     return AdjointType(RhsAdjointType(RhsTransposeType(derived.rhs())), LhsInverseType(derived.lhs()));
   }
@@ -168,11 +168,11 @@ struct product_transpose_helper<Lhs, Rhs, Option, TransposeProductEnum::MatrixPe
   using TransposeType = Product<RhsInverseType, LhsTransposeType, Option>;
   using AdjointType = Product<RhsInverseType, LhsAdjointType, Option>;
 
-  // return rhs^T * lhs^-1
+  // return rhs^-1 * lhs^T
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TransposeType run_transpose(const Derived& derived) {
     return TransposeType(RhsInverseType(derived.rhs()), LhsTransposeType(derived.lhs()));
   }
-  // return rhs^H * lhs^-1
+  // return rhs^-1 * lhs^H
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE AdjointType run_adjoint(const Derived& derived) {
     return AdjointType(RhsInverseType(derived.rhs()), LhsAdjointType(LhsTransposeType(derived.lhs())));
   }
