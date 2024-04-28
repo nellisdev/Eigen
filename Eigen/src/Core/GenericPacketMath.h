@@ -57,6 +57,8 @@ struct default_packet_traits {
     HasConj = 1,
     HasSetLinear = 1,
     HasSign = 1,
+    // By default, the nearest integer functions (rint, round, floor, ceil, trunc) are enabled for all scalar and packet
+    // types
     HasRound = 1,
 
     HasArg = 0,
