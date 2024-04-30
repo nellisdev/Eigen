@@ -74,7 +74,6 @@ struct packet_traits<float> : default_packet_traits {
     HasGammaSampleDerAlpha = 1,
     HasIGammac = 1,
     HasBetaInc = 1,
-    //    HasRound = 0,
     HasBlend = 0
   };
 };
@@ -106,7 +105,6 @@ struct packet_traits<double> : default_packet_traits {
     HasGammaSampleDerAlpha = 1,
     HasIGammac = 1,
     HasBetaInc = 1,
-    //    HasRound = 0,
     HasBlend = 0,
   };
 };
