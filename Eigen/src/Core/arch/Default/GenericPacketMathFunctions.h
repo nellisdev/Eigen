@@ -2480,9 +2480,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Packet generic_rint(const Packet& a) {
   Packet sign_a = pandnot(a, abs_a);
   Packet rint_a = padd(abs_a, cst_limit);
   // Don't compile-away addition and subtraction.
-#ifndef EIGEN_GPUCC
   EIGEN_OPTIMIZATION_BARRIER(rint_a);
-#endif
   rint_a = psub(rint_a, cst_limit);
   rint_a = por(rint_a, sign_a);
   // If greater than limit (or NaN), simply return a.
