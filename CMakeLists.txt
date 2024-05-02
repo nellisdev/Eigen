@@ -132,17 +132,6 @@ set ( EIGEN_VERSION_MAJOR  ${EIGEN_WORLD_VERSION} )
 set ( EIGEN_VERSION_MINOR  ${EIGEN_MAJOR_VERSION} )
 set ( EIGEN_VERSION_PATCH  ${EIGEN_MINOR_VERSION} )
 
-# Imported target support
-add_library (eigen INTERFACE)
-add_library (Eigen3::Eigen ALIAS eigen)
-target_include_directories (eigen INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
-)
-
-# Export as title case Eigen
-set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)
-
 # Alias Eigen_*_DIR to Eigen3_*_DIR:
 set(Eigen_SOURCE_DIR ${Eigen3_SOURCE_DIR})
 set(Eigen_BINARY_DIR ${Eigen3_BINARY_DIR})
@@ -189,6 +178,17 @@ foreach(var INCLUDE_INSTALL_DIR CMAKEPACKAGE_INSTALL_DIR PKGCONFIG_INSTALL_DIR)
     file(RELATIVE_PATH "${var}" "${CMAKE_INSTALL_PREFIX}" "${${var}}")
   endif()
 endforeach()
+
+# Imported target support
+add_library (eigen INTERFACE)
+add_library (Eigen3::Eigen ALIAS eigen)
+target_include_directories (eigen INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
+)
+
+# Export as title case Eigen
+set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)
 
 install(FILES
   signature_of_eigen3_matrix_library
