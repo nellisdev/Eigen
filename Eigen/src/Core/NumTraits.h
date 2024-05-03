@@ -92,38 +92,26 @@ struct default_max_digits10_impl<T, false, true>  // Integer
   EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR static int run() { return 0; }
 };
 
-template <typename Tgt, typename Src>
-struct bit_cast_impl {
-  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED)
-  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value&& std::is_default_constructible<Tgt>::value,
-                      THIS_TYPE_IS_NOT_SUPPORTED)
-  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED)
-  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt run(const Src& src) {
-    // The behaviour of memcpy is not specified for non-trivially copyable types
-    Tgt tgt;
-    // Load src into registers first. This allows the memcpy to be elided by CUDA.
-    const Src staged = src;
-    EIGEN_USING_STD(memcpy)
-    memcpy(static_cast<void*>(&tgt), static_cast<const void*>(&staged), sizeof(Tgt));
-    return tgt;
-  }
-};
-// not all compilers are able to automatically optimize bit_cast_impl<T,T>
-template <typename T>
-struct bit_cast_impl<T, T> {
-  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<T>::value&& std::is_default_constructible<T>::value,
-                      THIS_TYPE_IS_NOT_SUPPORTED)
-  static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC T run(const T& src) { return src; }
-};
-
 }  // end namespace internal
 
 namespace numext {
-// TODO: Replace by std::bit_cast (available in C++20)
 /** \internal bit-wise cast without changing the underlying bit representation. */
+
+// TODO: Replace by std::bit_cast (available in C++20)
 template <typename Tgt, typename Src>
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
-  return internal::bit_cast_impl<Tgt, Src>::run(src);
+  // The behaviour of memcpy is not specified for non-trivially copyable types
+  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value && std::is_default_constructible<Tgt>::value,
+                      THIS_TYPE_IS_NOT_SUPPORTED);
+  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED);
+
+  Tgt tgt;
+  // Load src into registers first. This allows the memcpy to be elided by CUDA.
+  const Src staged = src;
+  EIGEN_USING_STD(memcpy)
+  memcpy(static_cast<void*>(&tgt), static_cast<const void*>(&staged), sizeof(Tgt));
+  return tgt;
 }
 }  // namespace numext
 
