@@ -1061,24 +1061,48 @@ void min_max(const ArrayType& m) {
   }
 }
 
-template <int N>
-struct shift_left {
+template <typename Scalar>
+struct shift_imm_traits {
+  enum { Cost = 1, PacketAccess = internal::packet_traits<Scalar>::HasShift };
+};
+
+template <int N, typename Scalar>
+struct slli_op {
   template <typename Scalar>
   Scalar operator()(const Scalar& v) const {
-    return (v << N);
+    return numext::bsll(v, N);
+  }
+  template <typename Packet>
+  Packet packetOp(const Packet& v) const {
+    return internal::plogical_shift_left<N>(v);
+  }
+};
+template <int N, typename Scalar>
+struct srli_op {
+  Scalar operator()(const Scalar& v) const { return numext::bsrl(v, N); }
+  template <typename Packet>
+  Packet packetOp(const Packet& v) const {
+    return internal::plogical_shift_right<N>(v);
+  }
+};
+template <int N, typename Scalar>
+struct srai_op {
+  Scalar operator()(const Scalar& v) const { return numext::bsra(v, N); }
+  template <typename Packet>
+  Packet packetOp(const Packet& v) const {
+    return internal::parithmetic_shift_right<N>(v);
   }
 };
 
-template <int N>
-struct arithmetic_shift_right {
-  template <typename Scalar>
-  Scalar operator()(const Scalar& v) const {
-    return (v >> N);
-  }
-};
+template <int N, typename Scalar>
+struct internal::functor_traits<slli_op<N, Scalar>> : shift_imm_traits<Scalar> {};
+template <int N, typename Scalar>
+struct internal::functor_traits<srli_op<N, Scalar>> : shift_imm_traits<Scalar> {};
+template <int N, typename Scalar>
+struct internal::functor_traits<srai_op<N, Scalar>> : shift_imm_traits<Scalar> {};
 
 template <typename ArrayType>
-struct signed_shift_test_impl {
+struct shift_test_impl {
   typedef typename ArrayType::Scalar Scalar;
   static constexpr size_t Size = sizeof(Scalar);
   static constexpr size_t MaxShift = (CHAR_BIT * Size) - 1;
@@ -1092,20 +1116,26 @@ struct signed_shift_test_impl {
 
     ArrayType m1 = ArrayType::Random(rows, cols), m2(rows, cols), m3(rows, cols);
 
-    m2 = m1.unaryExpr(internal::scalar_shift_right_op<Scalar, N>());
-    m3 = m1.unaryExpr(arithmetic_shift_right<N>());
+    volatile int n = N;
+
+    m2 = m1.unaryExpr([](const Scalar& v) { return numext::bsll(v, N); });
+    m3 = m1.unaryExpr(slli_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
-    m2 = m1.unaryExpr(internal::scalar_shift_left_op<Scalar, N>());
-    m3 = m1.unaryExpr(shift_left<N>());
+    m2 = m1.unaryExpr([](const Scalar& v) { return numext::bsrl(v, N); });
+    m3 = m1.unaryExpr(srli_op<N, Scalar>());
+    VERIFY_IS_CWISE_EQUAL(m2, m3);
+
+    m2 = m1.unaryExpr([](const Scalar& v) { return numext::bsra(v, N); });
+    m3 = m1.unaryExpr(srai_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
     run<N + 1>(m);
   }
 };
 template <typename ArrayType>
-void signed_shift_test(const ArrayType& m) {
-  signed_shift_test_impl<ArrayType>::run(m);
+void shift_test(const ArrayType& m) {
+  shift_test_impl<ArrayType>::run(m);
 }
 
 template <typename ArrayType>
@@ -1354,10 +1384,10 @@ EIGEN_DECLARE_TEST(array_cwise) {
         ArrayXXi(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
     CALL_SUBTEST_7(array_generic(Array<Index, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE),
                                                                 internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
-    CALL_SUBTEST_8(signed_shift_test(
+    CALL_SUBTEST_8(shift_test(
         ArrayXXi(internal::random<int>(1, EIGEN_TEST_MAX_SIZE), internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
-    CALL_SUBTEST_9(signed_shift_test(Array<Index, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE),
-                                                                    internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
+    CALL_SUBTEST_9(shift_test(Array<Index, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE),
+                                                             internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
     CALL_SUBTEST_10(array_generic(Array<uint32_t, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE),
                                                                     internal::random<int>(1, EIGEN_TEST_MAX_SIZE))));
     CALL_SUBTEST_11(array_generic(Array<uint64_t, Dynamic, Dynamic>(internal::random<int>(1, EIGEN_TEST_MAX_SIZE),

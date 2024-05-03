@@ -292,6 +292,26 @@ void check_signbit() {
   check_signbit_impl<T>::run();
 }
 
+template <typename T>
+void check_shift() {
+  using SignedT = typename numext::get_integer_by_size<sizeof(T)>::signed_type;
+  using UnsignedT = typename numext::get_integer_by_size<sizeof(T)>::unsigned_type;
+  for (int i = 0; i < 1000; ++i) {
+    const T a = internal::random<T>();
+    for (int s = 1; s < CHAR_BIT * sizeof(T); s++) {
+      T a_bsll = numext::bsll(a, s);
+      T a_bsll_ref = a << s;
+      VERIFY_IS_EQUAL(a_bsll, a_bsll_ref);
+      T a_bsrl = numext::bsrl(a, s);
+      T a_bsrl_ref = numext::bit_cast<T, UnsignedT>(numext::bit_cast<UnsignedT, T>(a) >> s);
+      VERIFY_IS_EQUAL(a_bsrl, a_bsrl_ref);
+      T a_bsra = numext::bsra(a, s);
+      T a_bsra_ref = numext::bit_cast<T, SignedT>(numext::bit_cast<SignedT, T>(a) >> s);
+      VERIFY_IS_EQUAL(a_bsra, a_bsra_ref);
+    }
+  }
+}
+
 EIGEN_DECLARE_TEST(numext) {
   for (int k = 0; k < g_repeat; ++k) {
     CALL_SUBTEST(check_negate<signed char>());
@@ -354,5 +374,15 @@ EIGEN_DECLARE_TEST(numext) {
     CALL_SUBTEST(check_signbit<int16_t>());
     CALL_SUBTEST(check_signbit<int32_t>());
     CALL_SUBTEST(check_signbit<int64_t>());
+
+    CALL_SUBTEST(check_shift<int8_t>());
+    CALL_SUBTEST(check_shift<int16_t>());
+    CALL_SUBTEST(check_shift<int32_t>());
+    CALL_SUBTEST(check_shift<int64_t>());
+
+    CALL_SUBTEST(check_shift<uint8_t>());
+    CALL_SUBTEST(check_shift<uint16_t>());
+    CALL_SUBTEST(check_shift<uint32_t>());
+    CALL_SUBTEST(check_shift<uint64_t>());
   }
 }

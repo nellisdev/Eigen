@@ -219,7 +219,7 @@ struct functor_traits<core_cast_op<SrcType, DstType>> {
  */
 template <typename Scalar, int N>
 struct scalar_shift_right_op {
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return a >> N; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return numext::bsra(a); }
   template <typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
     return internal::parithmetic_shift_right<N>(a);
@@ -237,7 +237,7 @@ struct functor_traits<scalar_shift_right_op<Scalar, N>> {
  */
 template <typename Scalar, int N>
 struct scalar_shift_left_op {
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return a << N; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return numext::bsll(a); }
   template <typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
     return internal::plogical_shift_left<N>(a);
