@@ -296,9 +296,10 @@ template <typename T>
 void check_shift() {
   using SignedT = typename numext::get_integer_by_size<sizeof(T)>::signed_type;
   using UnsignedT = typename numext::get_integer_by_size<sizeof(T)>::unsigned_type;
+  constexpr int kNumBits = CHAR_BIT * sizeof(T);
   for (int i = 0; i < 1000; ++i) {
     const T a = internal::random<T>();
-    for (int s = 1; s < CHAR_BIT * sizeof(T); s++) {
+    for (int s = 1; s < kNumBits; s++) {
       T a_bsll = numext::logical_shift_left(a, s);
       T a_bsll_ref = a << s;
       VERIFY_IS_EQUAL(a_bsll, a_bsll_ref);
