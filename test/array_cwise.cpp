@@ -1074,7 +1074,7 @@ struct shift_imm_traits {
 };
 
 template <int N, typename Scalar>
-struct slli_op {
+struct logical_left_shift_op {
   Scalar operator()(const Scalar& v) const { return numext::logical_shift_left(v, N); }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
@@ -1082,7 +1082,7 @@ struct slli_op {
   }
 };
 template <int N, typename Scalar>
-struct srli_op {
+struct logical_right_shift_op {
   Scalar operator()(const Scalar& v) const { return numext::logical_shift_right(v, N); }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
@@ -1090,7 +1090,7 @@ struct srli_op {
   }
 };
 template <int N, typename Scalar>
-struct srai_op {
+struct arithmetic_right_shift_op {
   Scalar operator()(const Scalar& v) const { return numext::arithmetic_shift_right(v, N); }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
@@ -1099,11 +1099,11 @@ struct srai_op {
 };
 
 template <int N, typename Scalar>
-struct internal::functor_traits<slli_op<N, Scalar>> : shift_imm_traits<Scalar> {};
+struct internal::functor_traits<logical_left_shift_op<N, Scalar>> : shift_imm_traits<Scalar> {};
 template <int N, typename Scalar>
-struct internal::functor_traits<srli_op<N, Scalar>> : shift_imm_traits<Scalar> {};
+struct internal::functor_traits<logical_right_shift_op<N, Scalar>> : shift_imm_traits<Scalar> {};
 template <int N, typename Scalar>
-struct internal::functor_traits<srai_op<N, Scalar>> : shift_imm_traits<Scalar> {};
+struct internal::functor_traits<arithmetic_right_shift_op<N, Scalar>> : shift_imm_traits<Scalar> {};
 
 template <typename ArrayType>
 struct shift_test_impl {
@@ -1121,15 +1121,15 @@ struct shift_test_impl {
     ArrayType m1 = ArrayType::Random(rows, cols), m2(rows, cols), m3(rows, cols);
 
     m2 = m1.unaryExpr([](const Scalar& v) { return numext::logical_shift_left(v, N); });
-    m3 = m1.unaryExpr(slli_op<N, Scalar>());
+    m3 = m1.unaryExpr(logical_left_shift_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
     m2 = m1.unaryExpr([](const Scalar& v) { return numext::logical_shift_right(v, N); });
-    m3 = m1.unaryExpr(srli_op<N, Scalar>());
+    m3 = m1.unaryExpr(logical_right_shift_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
     m2 = m1.unaryExpr([](const Scalar& v) { return numext::arithmetic_shift_right(v, N); });
-    m3 = m1.unaryExpr(srai_op<N, Scalar>());
+    m3 = m1.unaryExpr(arithmetic_right_shift_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
     run<N + 1>(m);
