@@ -1075,7 +1075,6 @@ struct shift_imm_traits {
 
 template <int N, typename Scalar>
 struct slli_op {
-  template <typename Scalar>
   Scalar operator()(const Scalar& v) const {
     return numext::logical_shift_left(v, N);
   }
@@ -1122,8 +1121,6 @@ struct shift_test_impl {
     const Index cols = m.cols();
 
     ArrayType m1 = ArrayType::Random(rows, cols), m2(rows, cols), m3(rows, cols);
-
-    volatile int n = N;
 
     m2 = m1.unaryExpr([](const Scalar& v) { return numext::logical_shift_left(v, N); });
     m3 = m1.unaryExpr(slli_op<N, Scalar>());

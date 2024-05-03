@@ -94,10 +94,10 @@ struct default_max_digits10_impl<T, false, true>  // Integer
 
 template <typename Tgt, typename Src>
 struct bit_cast_impl {
-  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
+  EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED)
   EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Tgt>::value&& std::is_default_constructible<Tgt>::value,
-                      THIS_TYPE_IS_NOT_SUPPORTED);
-  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED);
+                      THIS_TYPE_IS_NOT_SUPPORTED)
+  EIGEN_STATIC_ASSERT(sizeof(Src) == sizeof(Tgt), THIS_TYPE_IS_NOT_SUPPORTED)
   static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt run(const Src& src) {
     // The behaviour of memcpy is not specified for non-trivially copyable types
     Tgt tgt;
@@ -112,7 +112,7 @@ struct bit_cast_impl {
 template <typename T>
 struct bit_cast_impl<T, T> {
   EIGEN_STATIC_ASSERT(std::is_trivially_copyable<T>::value&& std::is_default_constructible<T>::value,
-                      THIS_TYPE_IS_NOT_SUPPORTED);
+                      THIS_TYPE_IS_NOT_SUPPORTED)
   static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC T run(const T& src) { return src; }
 };
 
