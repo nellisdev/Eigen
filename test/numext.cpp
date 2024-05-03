@@ -299,13 +299,13 @@ void check_shift() {
   for (int i = 0; i < 1000; ++i) {
     const T a = internal::random<T>();
     for (int s = 1; s < CHAR_BIT * sizeof(T); s++) {
-      T a_bsll = numext::bsll(a, s);
+      T a_bsll = numext::logical_shift_left(a, s);
       T a_bsll_ref = a << s;
       VERIFY_IS_EQUAL(a_bsll, a_bsll_ref);
-      T a_bsrl = numext::bsrl(a, s);
+      T a_bsrl = numext::logical_shift_right(a, s);
       T a_bsrl_ref = numext::bit_cast<T, UnsignedT>(numext::bit_cast<UnsignedT, T>(a) >> s);
       VERIFY_IS_EQUAL(a_bsrl, a_bsrl_ref);
-      T a_bsra = numext::bsra(a, s);
+      T a_bsra = numext::arithmetic_shift_right(a, s);
       T a_bsra_ref = numext::bit_cast<T, SignedT>(numext::bit_cast<SignedT, T>(a) >> s);
       VERIFY_IS_EQUAL(a_bsra, a_bsra_ref);
     }
