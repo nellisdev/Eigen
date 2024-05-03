@@ -1077,7 +1077,7 @@ template <int N, typename Scalar>
 struct slli_op {
   template <typename Scalar>
   Scalar operator()(const Scalar& v) const {
-    return numext::bsll(v, N);
+    return numext::logical_shift_left(v, N);
   }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
@@ -1086,7 +1086,7 @@ struct slli_op {
 };
 template <int N, typename Scalar>
 struct srli_op {
-  Scalar operator()(const Scalar& v) const { return numext::bsrl(v, N); }
+  Scalar operator()(const Scalar& v) const { return numext::logical_shift_right(v, N); }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
     return internal::plogical_shift_right<N>(v);
@@ -1094,7 +1094,7 @@ struct srli_op {
 };
 template <int N, typename Scalar>
 struct srai_op {
-  Scalar operator()(const Scalar& v) const { return numext::bsra(v, N); }
+  Scalar operator()(const Scalar& v) const { return numext::arithmetic_shift_right(v, N); }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
     return internal::parithmetic_shift_right<N>(v);
@@ -1125,15 +1125,15 @@ struct shift_test_impl {
 
     volatile int n = N;
 
-    m2 = m1.unaryExpr([](const Scalar& v) { return numext::bsll(v, N); });
+    m2 = m1.unaryExpr([](const Scalar& v) { return numext::logical_shift_left(v, N); });
     m3 = m1.unaryExpr(slli_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
-    m2 = m1.unaryExpr([](const Scalar& v) { return numext::bsrl(v, N); });
+    m2 = m1.unaryExpr([](const Scalar& v) { return numext::logical_shift_right(v, N); });
     m3 = m1.unaryExpr(srli_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
-    m2 = m1.unaryExpr([](const Scalar& v) { return numext::bsra(v, N); });
+    m2 = m1.unaryExpr([](const Scalar& v) { return numext::arithmetic_shift_right(v, N); });
     m3 = m1.unaryExpr(srai_op<N, Scalar>());
     VERIFY_IS_CWISE_EQUAL(m2, m3);
 
