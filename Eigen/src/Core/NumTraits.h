@@ -95,7 +95,7 @@ struct default_max_digits10_impl<T, false, true>  // Integer
 }  // end namespace internal
 
 namespace numext {
-
+namespace internal {
 template <typename Tgt, typename Src>
 struct bit_cast_impl {
   EIGEN_STATIC_ASSERT(std::is_trivially_copyable<Src>::value, THIS_TYPE_IS_NOT_SUPPORTED);
@@ -119,11 +119,12 @@ struct bit_cast_impl<T, T> {
                       THIS_TYPE_IS_NOT_SUPPORTED);
   static EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC T run(const T& src) { return src; }
 };
+}  // namespace internal
 // TODO: Replace by std::bit_cast (available in C++20)
 /** \internal bit-wise cast without changing the underlying bit representation. */
 template <typename Tgt, typename Src>
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Tgt bit_cast(const Src& src) {
-  return bit_cast_impl<Tgt, Src>::run(src);
+  return internal::bit_cast_impl<Tgt, Src>::run(src);
 }
 }  // namespace numext
 
