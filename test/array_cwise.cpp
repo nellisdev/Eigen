@@ -1075,9 +1075,7 @@ struct shift_imm_traits {
 
 template <int N, typename Scalar>
 struct slli_op {
-  Scalar operator()(const Scalar& v) const {
-    return numext::logical_shift_left(v, N);
-  }
+  Scalar operator()(const Scalar& v) const { return numext::logical_shift_left(v, N); }
   template <typename Packet>
   Packet packetOp(const Packet& v) const {
     return internal::plogical_shift_left<N>(v);
