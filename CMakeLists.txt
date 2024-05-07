@@ -124,20 +124,7 @@ else()
 endif()
 
 #==============================================================================
-# Eigen Library.
-#==============================================================================
-
-set ( EIGEN_VERSION_STRING ${EIGEN_VERSION_NUMBER} )
-set ( EIGEN_VERSION_MAJOR  ${EIGEN_WORLD_VERSION} )
-set ( EIGEN_VERSION_MINOR  ${EIGEN_MAJOR_VERSION} )
-set ( EIGEN_VERSION_PATCH  ${EIGEN_MINOR_VERSION} )
-
-# Alias Eigen_*_DIR to Eigen3_*_DIR:
-set(Eigen_SOURCE_DIR ${Eigen3_SOURCE_DIR})
-set(Eigen_BINARY_DIR ${Eigen3_BINARY_DIR})
-
-#==============================================================================
-# Install Configuration.
+# Install Path Configuration.
 #==============================================================================
 
 # Unconditionally allow install of targets to support nested dependency
@@ -179,6 +166,19 @@ foreach(var INCLUDE_INSTALL_DIR CMAKEPACKAGE_INSTALL_DIR PKGCONFIG_INSTALL_DIR)
   endif()
 endforeach()
 
+#==============================================================================
+# Eigen Library.
+#==============================================================================
+
+set ( EIGEN_VERSION_STRING ${EIGEN_VERSION_NUMBER} )
+set ( EIGEN_VERSION_MAJOR  ${EIGEN_WORLD_VERSION} )
+set ( EIGEN_VERSION_MINOR  ${EIGEN_MAJOR_VERSION} )
+set ( EIGEN_VERSION_PATCH  ${EIGEN_MINOR_VERSION} )
+
+# Alias Eigen_*_DIR to Eigen3_*_DIR:
+set(Eigen_SOURCE_DIR ${Eigen3_SOURCE_DIR})
+set(Eigen_BINARY_DIR ${Eigen3_BINARY_DIR})
+
 # Imported target support
 add_library (eigen INTERFACE)
 add_library (Eigen3::Eigen ALIAS eigen)
@@ -200,6 +200,10 @@ if(EIGEN_BUILD_PKGCONFIG)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
         DESTINATION ${PKGCONFIG_INSTALL_DIR})
 endif()
+
+#==============================================================================
+# Install Rule Configuration.
+#==============================================================================
 
 install(DIRECTORY Eigen DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
