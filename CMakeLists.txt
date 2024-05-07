@@ -190,6 +190,10 @@ target_include_directories (eigen INTERFACE
 # Export as title case Eigen
 set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)
 
+#==============================================================================
+# Install Rule Configuration.
+#==============================================================================
+
 install(FILES
   signature_of_eigen3_matrix_library
   DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel
@@ -200,10 +204,6 @@ if(EIGEN_BUILD_PKGCONFIG)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
         DESTINATION ${PKGCONFIG_INSTALL_DIR})
 endif()
-
-#==============================================================================
-# Install Rule Configuration.
-#==============================================================================
 
 install(DIRECTORY Eigen DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
