@@ -894,6 +894,9 @@ struct nearest_integer_impl {
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar run_round(const Scalar& x) {
     EIGEN_USING_STD(round) return round(x);
   }
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar run_trunc(const Scalar& x) {
+    EIGEN_USING_STD(trunc) return trunc(x);
+  }
 };
 template <typename Scalar>
 struct nearest_integer_impl<Scalar, true> {
@@ -901,6 +904,7 @@ struct nearest_integer_impl<Scalar, true> {
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar run_ceil(const Scalar& x) { return x; }
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar run_rint(const Scalar& x) { return x; }
   static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar run_round(const Scalar& x) { return x; }
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar run_trunc(const Scalar& x) { return x; }
 };
 
 }  // end namespace internal
@@ -1192,17 +1196,26 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar round(const Scalar& x) {
   return internal::nearest_integer_impl<Scalar>::run_round(x);
 }
 
-#if defined(SYCL_DEVICE_ONLY)
-SYCL_SPECIALIZE_FLOATING_TYPES_UNARY(round, round)
-#endif
-
 template <typename Scalar>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar(floor)(const Scalar& x) {
   return internal::nearest_integer_impl<Scalar>::run_floor(x);
 }
 
+template <typename Scalar>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar(ceil)(const Scalar& x) {
+  return internal::nearest_integer_impl<Scalar>::run_ceil(x);
+}
+
+template <typename Scalar>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar(trunc)(const Scalar& x) {
+  return internal::nearest_integer_impl<Scalar>::run_trunc(x);
+}
+
 #if defined(SYCL_DEVICE_ONLY)
+SYCL_SPECIALIZE_FLOATING_TYPES_UNARY(round, round)
 SYCL_SPECIALIZE_FLOATING_TYPES_UNARY(floor, floor)
+SYCL_SPECIALIZE_FLOATING_TYPES_UNARY(ceil, ceil)
+SYCL_SPECIALIZE_FLOATING_TYPES_UNARY(trunc, trunc)
 #endif
 
 #if defined(EIGEN_GPUCC)
@@ -1210,31 +1223,25 @@ template <>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float floor(const float& x) {
   return ::floorf(x);
 }
-
 template <>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double floor(const double& x) {
   return ::floor(x);
 }
-#endif
-
-template <typename Scalar>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar(ceil)(const Scalar& x) {
-  return internal::nearest_integer_impl<Scalar>::run_ceil(x);
-}
-
-#if defined(SYCL_DEVICE_ONLY)
-SYCL_SPECIALIZE_FLOATING_TYPES_UNARY(ceil, ceil)
-#endif
-
-#if defined(EIGEN_GPUCC)
 template <>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float ceil(const float& x) {
   return ::ceilf(x);
 }
-
 template <>
 EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double ceil(const double& x) {
   return ::ceil(x);
+}
+template <>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE float trunc(const float& x) {
+  return ::truncf(x);
+}
+template <>
+EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double trunc(const double& x) {
+  return ::trunc(x);
 }
 #endif
 
@@ -1738,6 +1745,23 @@ EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE double fmod(const double& a, const double&
 #undef SYCL_SPECIALIZE_GEN2_BINARY_FUNC
 #undef SYCL_SPECIALIZE_BINARY_FUNC
 #endif
+
+template <typename Scalar, typename Enable = std::enable_if_t<std::is_integral<Scalar>::value>>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar logical_shift_left(const Scalar& a, int n) {
+  return a << n;
+}
+
+template <typename Scalar, typename Enable = std::enable_if_t<std::is_integral<Scalar>::value>>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar logical_shift_right(const Scalar& a, int n) {
+  using UnsignedScalar = typename numext::get_integer_by_size<sizeof(Scalar)>::unsigned_type;
+  return bit_cast<Scalar, UnsignedScalar>(bit_cast<UnsignedScalar, Scalar>(a) >> n);
+}
+
+template <typename Scalar, typename Enable = std::enable_if_t<std::is_integral<Scalar>::value>>
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar arithmetic_shift_right(const Scalar& a, int n) {
+  using SignedScalar = typename numext::get_integer_by_size<sizeof(Scalar)>::signed_type;
+  return bit_cast<Scalar, SignedScalar>(bit_cast<SignedScalar, Scalar>(a) >> n);
+}
 
 }  // end namespace numext
 

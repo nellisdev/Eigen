@@ -219,7 +219,9 @@ struct functor_traits<core_cast_op<SrcType, DstType>> {
  */
 template <typename Scalar, int N>
 struct scalar_shift_right_op {
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return a >> N; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+    return numext::arithmetic_shift_right(a);
+  }
   template <typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
     return internal::parithmetic_shift_right<N>(a);
@@ -237,7 +239,9 @@ struct functor_traits<scalar_shift_right_op<Scalar, N>> {
  */
 template <typename Scalar, int N>
 struct scalar_shift_left_op {
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return a << N; }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const {
+    return numext::logical_shift_left(a);
+  }
   template <typename Packet>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Packet packetOp(const Packet& a) const {
     return internal::plogical_shift_left<N>(a);
@@ -882,7 +886,7 @@ template <typename Scalar>
 struct functor_traits<scalar_floor_op<Scalar>> {
   enum {
     Cost = NumTraits<Scalar>::MulCost,
-    PacketAccess = packet_traits<Scalar>::HasFloor || NumTraits<Scalar>::IsInteger
+    PacketAccess = packet_traits<Scalar>::HasRound || NumTraits<Scalar>::IsInteger
   };
 };
 
@@ -902,7 +906,7 @@ template <typename Scalar>
 struct functor_traits<scalar_rint_op<Scalar>> {
   enum {
     Cost = NumTraits<Scalar>::MulCost,
-    PacketAccess = packet_traits<Scalar>::HasRint || NumTraits<Scalar>::IsInteger
+    PacketAccess = packet_traits<Scalar>::HasRound || NumTraits<Scalar>::IsInteger
   };
 };
 
@@ -922,7 +926,27 @@ template <typename Scalar>
 struct functor_traits<scalar_ceil_op<Scalar>> {
   enum {
     Cost = NumTraits<Scalar>::MulCost,
-    PacketAccess = packet_traits<Scalar>::HasCeil || NumTraits<Scalar>::IsInteger
+    PacketAccess = packet_traits<Scalar>::HasRound || NumTraits<Scalar>::IsInteger
+  };
+};
+
+/** \internal
+ * \brief Template functor to compute the truncation of a scalar
+ * \sa class CwiseUnaryOp, ArrayBase::floor()
+ */
+template <typename Scalar>
+struct scalar_trunc_op {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar operator()(const Scalar& a) const { return numext::trunc(a); }
+  template <typename Packet>
+  EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const {
+    return internal::ptrunc(a);
+  }
+};
+template <typename Scalar>
+struct functor_traits<scalar_trunc_op<Scalar>> {
+  enum {
+    Cost = NumTraits<Scalar>::MulCost,
+    PacketAccess = packet_traits<Scalar>::HasRound || NumTraits<Scalar>::IsInteger
   };
 };
 
